@@ -34,10 +34,10 @@ jobs:
 
       - name: Package all necessary files
         run: |
-          mkdir Satrre
-          cp ./Satre.exe Satre/
+          mkdir Sartre
+          cp ./Sartre.exe Sartre/
           cp -r ./data Sartre/
-          cp /mingw64/bin/libwinpthread-1.dll Satrte/
+          cp /mingw64/bin/libwinpthread-1.dll Sartre/
           zip -r Sartre-${GITHUB_REF##*/}.zip Sartre
 
       - name: Set variables
