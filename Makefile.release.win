@@ -1,0 +1,15 @@
+CC = gcc
+CFLAGS = -I./src -I/mingw64/include -O2 -Wall
+LDFLAGS = -L/mingw64/lib
+ODIR = obj
+SRCDIR = ./src
+
+_OBJ = main.o
+OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
+
+$(ODIR)/%.o: $(SRCDIR)/%.cpp
+	mkdir -p $(ODIR)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+Sartre.exe: $(OBJ)
+	$(CC) $^ -o $@ $(LDFLAGS)
