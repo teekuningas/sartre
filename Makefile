@@ -1,7 +1,7 @@
 IDIR=./src
-CC=gcc
+CC=g++
 CFLAGS=-I$(IDIR) -O2 -Wall
-LFLAGS = -lX11 -lm -lpthread -lSDL2 -lSDL2_image -lSDL2_mixer
+LFLAGS = -lX11 -lm -lpthread -lSDL2 -lSDL2_image -lSDL2_mixer -lGL
 ODIR=obj
 SRCDIR=./src
 
