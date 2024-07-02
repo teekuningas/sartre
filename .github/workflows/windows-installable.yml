@@ -27,17 +27,13 @@ jobs:
         run: |
           pacman -Sy --noconfirm git
 
-      - name: Clone SDL2_image
+      - name: Build SDL2_image to avoid a lot of dlls
         run: |
           git clone https://github.com/libsdl-org/SDL_image.git
           cd SDL_image
           git checkout release-2.8.2
-
-      - name: Create build directory
-        run: mkdir SDL_image_build
-
-      - name: Configure SDL2_image build
-        run: |
+          cd ..
+          mkdir SDL_image_build
           cd SDL_image_build
           cmake -G "Unix Makefiles" \
             -DCMAKE_MAKE_PROGRAM=${MINGW_PREFIX}/bin/mingw32-make.exe \
@@ -60,10 +56,21 @@ jobs:
             -DSDL2IMAGE_XCF=OFF \
             -DSDL2IMAGE_XPM=OFF \
             -DSDL2IMAGE_XV=OFF ../SDL_image
+          mingw32-make
+          mingw32-make install
 
-      - name: Build and install SDL2_image
+      - name: Build SDL2_mixer to avoid a lot of dlls
         run: |
-          cd SDL_image_build
+          git clone https://github.com/libsdl-org/SDL_mixer.git
+          cd SDL_mixer
+          git checkout release-2.8.0
+          cd ..
+          mkdir SDL_mixer_build
+          cd SDL_mixer_build
+          cmake -G "Unix Makefiles" \
+            -DCMAKE_MAKE_PROGRAM=${MINGW_PREFIX}/bin/mingw32-make.exe \
+            -DCMAKE_C_COMPILER=${MINGW_PREFIX}/bin/gcc.exe \
+            -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} ../SDL_mixer
           mingw32-make
           mingw32-make install
 
@@ -85,12 +92,12 @@ jobs:
           cp /mingw64/bin/SDL2_mixer.dll Sartre/
           cp /mingw64/bin/SDL2_image.dll Sartre/
           cp /mingw64/bin/libstdc++-6.dll Sartre/
-          cp /mingw64/bin/libmpg123-0.dll Sartre/
-          cp /mingw64/bin/libopusfile-0.dll Sartre/
-          cp /mingw64/bin/libgcc_s_seh-1.dll Sartre/
+          # cp /mingw64/bin/libmpg123-0.dll Sartre/
+          # cp /mingw64/bin/libopusfile-0.dll Sartre/
+          # cp /mingw64/bin/libogg-0.dll Sartre/
+          # cp /mingw64/bin/libopus-0.dll Sartre/
+          # cp /mingw64/bin/libgcc_s_seh-1.dll Sartre/
           cp /mingw64/bin/libwinpthread-1.dll Sartre/
-          cp /mingw64/bin/libogg-0.dll Sartre/
-          cp /mingw64/bin/libopus-0.dll Sartre/
           zip -r Sartre-${GITHUB_REF##*/}.zip Sartre
 
       - name: Set variables
