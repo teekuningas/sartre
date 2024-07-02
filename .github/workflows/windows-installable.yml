@@ -84,6 +84,9 @@ jobs:
           cp /mingw64/bin/SDL2.dll Sartre/
           cp /mingw64/bin/SDL2_mixer.dll Sartre/
           cp /mingw64/bin/SDL2_image.dll Sartre/
+          cp /mingw64/bin/libstdc++-6.dll Sartre/
+          cp /mingw64/bin/libmpg123-0.dll Sartre/
+          cp /mingw64/bin/libopusfile-0.dll Sartre/
           zip -r Sartre-${GITHUB_REF##*/}.zip Sartre
 
       - name: Set variables
