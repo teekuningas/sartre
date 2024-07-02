@@ -1,6 +1,6 @@
-CC = gcc
-CFLAGS = -I./src -I/mingw64/include -I/mingw64/include/SDL2 -O2 -Wall
-LDFLAGS = -L/mingw64/lib -lSDL2 -lSDL2_image -lSDL2_mixer -lGL
+CXX = g++
+CXXFLAGS = -O2 -Wall -I$(MINGW_PREFIX)/include/SDL2
+LDFLAGS = -L$(MINGW_PREFIX)/lib -lSDL2 -lSDL2_image -lSDL2_mixer -lopengl32
 ODIR = obj
 SRCDIR = ./src
 
@@ -8,8 +8,8 @@ _OBJ = main.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 $(ODIR)/%.o: $(SRCDIR)/%.cpp
-	mkdir -p $(ODIR)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	@mkdir -p $(ODIR)
+	$(CXX) -v -c -o $@ $< $(CXXFLAGS)
 
 Sartre.exe: $(OBJ)
-	$(CC) $^ -o $@ $(LDFLAGS)
+	$(CXX) $^ -o $@ $(LDFLAGS)

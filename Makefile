@@ -1,6 +1,4 @@
-IDIR=./src
 CC=g++
-CFLAGS=-I$(IDIR) -O2 -Wall
 LFLAGS = -lX11 -lm -lpthread -lSDL2 -lSDL2_image -lSDL2_mixer -lGL
 ODIR=obj
 SRCDIR=./src
@@ -18,10 +16,6 @@ main: $(OBJ)
 .PHONY: run
 run:
 	nix run --override-input nixpkgs nixpkgs/nixos-23.05 --impure github:guibou/nixGL -- ./main --windowed
-
-.PHONY: clean
-clean:
-	rm -f $(ODIR)/*.o *~ core $(IDIR)/*~ 
 
 .PHONY: shell
 shell:
