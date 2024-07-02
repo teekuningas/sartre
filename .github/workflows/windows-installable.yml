@@ -21,7 +21,51 @@ jobs:
         with:
           msystem: MINGW64
           update: true
-          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-make mingw-w64-x86_64-SDL2 mingw-w64-x86_64-SDL2_image mingw-w64-x86_64-SDL2_mixer
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-make mingw-w64-x86_64-cmake mingw-w64-x86_64-SDL2 mingw-w64-x86_64-SDL2_mixer mingw-w64-x86_64-libpng mingw-w64-x86_64-zlib
+
+      - name: Install general deps
+        run: |
+          pacman -Sy --noconfirm git
+
+      - name: Clone SDL2_image
+        run: |
+          git clone https://github.com/libsdl-org/SDL_image.git
+          cd SDL_image
+          git checkout release-2.8.2
+
+      - name: Create build directory
+        run: mkdir SDL_image_build
+
+      - name: Configure SDL2_image build
+        run: |
+          cd SDL_image_build
+          cmake -G "Unix Makefiles" \
+            -DCMAKE_MAKE_PROGRAM=${MINGW_PREFIX}/bin/mingw32-make.exe \
+            -DCMAKE_C_COMPILER=${MINGW_PREFIX}/bin/gcc.exe \
+            -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+            -DSDL2IMAGE_AVIF=OFF \
+            -DSDL2IMAGE_BMP=OFF \
+            -DSDL2IMAGE_GIF=OFF \
+            -DSDL2IMAGE_JPG=OFF \
+            -DSDL2IMAGE_JXL=OFF \
+            -DSDL2IMAGE_LBM=OFF \
+            -DSDL2IMAGE_PCX=OFF \
+            -DSDL2IMAGE_PNG=ON \
+            -DSDL2IMAGE_PNM=OFF \
+            -DSDL2IMAGE_QOI=OFF \
+            -DSDL2IMAGE_SVG=OFF \
+            -DSDL2IMAGE_TGA=OFF \
+            -DSDL2IMAGE_TIF=OFF \
+            -DSDL2IMAGE_WEBP=OFF \
+            -DSDL2IMAGE_XCF=OFF \
+            -DSDL2IMAGE_XPM=OFF \
+            -DSDL2IMAGE_XV=OFF ../SDL_image
+
+      - name: Build and install SDL2_image
+        run: |
+          cd SDL_image_build
+          mingw32-make
+          mingw32-make install
 
       - name: Build project
         run: |
@@ -37,14 +81,9 @@ jobs:
           mkdir Sartre
           cp ./Sartre.exe Sartre/
           cp -r ./data Sartre/
-          # cp /mingw64/bin/SDL2.dll Sartre/
+          cp /mingw64/bin/SDL2.dll Sartre/
           cp /mingw64/bin/SDL2_mixer.dll Sartre/
           cp /mingw64/bin/SDL2_image.dll Sartre/
-          # cp /mingw64/bin/libstdc++-6.dll Sartre/
-          # cp /mingw64/bin/libavif-16.dll Sartre/
-          # cp /mingw64/bin/libjpeg-8.dll Sartre/
-          # cp /mingw64/bin/libjxl.dll Sartre/
-          # cp /mingw64/bin/libpng16-16.dll Sartre/
           zip -r Sartre-${GITHUB_REF##*/}.zip Sartre
 
       - name: Set variables
