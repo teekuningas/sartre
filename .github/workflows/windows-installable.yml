@@ -79,6 +79,8 @@ jobs:
             -DSDL2MIXER_OPUS=OFF \
             -DSDL2MIXER_VORBIS=OFF \
             -DSDL2MIXER_WAVE=OFF \
+            -DSDL2MIXER_WAVPACK=OFF \
+            -DSDL2MIXER_MP3=ON \
             ../SDL_mixer
           mingw32-make
           mingw32-make install
