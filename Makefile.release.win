@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -O2 -Wall -I$(MINGW_PREFIX)/include/SDL2
-LDFLAGS = -L$(MINGW_PREFIX)/lib -lSDL2 -lSDL2_image -lSDL2_mixer -lopengl32 -static
+LDFLAGS = -L$(MINGW_PREFIX)/lib -lmingw32 -lSDL2 -lSDL2_image -lSDL2_mixer -lopengl32 -static
 ODIR = obj
 SRCDIR = ./src
 
