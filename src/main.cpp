@@ -1,5 +1,3 @@
-#define SDL_MAIN_HANDLED
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
