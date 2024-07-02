@@ -87,7 +87,6 @@ jobs:
 
       - name: Build project
         run: |
-          echo 'Running in MSYS2!'
           mingw32-make -f Makefile.release.win
 
       - name: Install zip
@@ -103,10 +102,6 @@ jobs:
           cp /mingw64/bin/SDL2_mixer.dll Sartre/
           cp /mingw64/bin/SDL2_image.dll Sartre/
           cp /mingw64/bin/libstdc++-6.dll Sartre/
-          # cp /mingw64/bin/libmpg123-0.dll Sartre/
-          # cp /mingw64/bin/libopusfile-0.dll Sartre/
-          # cp /mingw64/bin/libogg-0.dll Sartre/
-          # cp /mingw64/bin/libopus-0.dll Sartre/
           cp /mingw64/bin/libgcc_s_seh-1.dll Sartre/
           cp /mingw64/bin/libwinpthread-1.dll Sartre/
           zip -r Sartre-${GITHUB_REF##*/}.zip Sartre
