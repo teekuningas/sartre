@@ -37,7 +37,10 @@ jobs:
           mkdir Sartre
           cp ./Sartre.exe Sartre/
           cp -r ./data Sartre/
-          cp /mingw64/bin/libwinpthread-1.dll Sartre/
+          cp /mingw64/bin/SDL2.dll Sartre/
+          cp /mingw64/bin/SDL2_mixer.dll Sartre/
+          cp /mingw64/bin/SDL2_image.dll Sartre/
+          cp /mingw64/bin/libstdc++-6.dll Sartre/
           zip -r Sartre-${GITHUB_REF##*/}.zip Sartre
 
       - name: Set variables
