@@ -87,6 +87,10 @@ jobs:
     needs: build-macos
 
     steps:
+      - name: Set variables
+        id: vars
+        run: |                                                                                                                                                                                                              echo "REF_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
       - name: Download release
         run: |
           curl -L -o Sartre-macos.zip https://github.com/${{ github.repository }}/releases/download/${{ env.REF_NAME }}-macos/Sartre-macos-${{ env.REF_NAME }}.zip
