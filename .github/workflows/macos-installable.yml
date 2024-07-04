@@ -22,6 +22,6 @@ jobs:
 
       - name: Build project
         run: |
-          ls -l /usr/local/include
-          ls -l /usr/local/include/SDL2
+          ls -l /opt/homebrew/include
+          ls -l /opt/homebrew/include/SDL2
           make -f Makefile.release.macos
