@@ -104,7 +104,7 @@ jobs:
           cp /mingw64/bin/libstdc++-6.dll Sartre/
           cp /mingw64/bin/libgcc_s_seh-1.dll Sartre/
           cp /mingw64/bin/libwinpthread-1.dll Sartre/
-          zip -r Sartre-${GITHUB_REF##*/}.zip Sartre
+          zip -r Sartre-win64-${GITHUB_REF##*/}.zip Sartre
 
       - name: Set variables
         id: vars
@@ -129,7 +129,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./Sartre-${{ env.REF_NAME }}.zip
-          asset_name: Sartre-${{ env.REF_NAME }}.zip
+          asset_path: ./Sartre-win64-${{ env.REF_NAME }}.zip
+          asset_name: Sartre-win64-${{ env.REF_NAME }}.zip
           asset_content_type: application/zip
 
