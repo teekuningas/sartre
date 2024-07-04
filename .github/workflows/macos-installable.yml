@@ -21,4 +21,7 @@ jobs:
           brew install sdl2 sdl2_image sdl2_mixer
 
       - name: Build project
-        run: make -f Makefile.release.macos
+        run: |
+          ls -l /usr/local/include
+          ls -l /usr/local/include/SDL2
+          make -f Makefile.release.macos
