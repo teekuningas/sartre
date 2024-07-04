@@ -102,8 +102,8 @@ jobs:
 
       - name: Build project
         run: |
-          export SDL2_INCLUDE_DIR="/opt/homebrew/include/SDL2"
-          export SDL2_LIB_DIR="/opt/homebrew/lib"
+          export SDL2_INCLUDE_DIR="/usr/local/include/SDL2"
+          export SDL2_LIB_DIR="/usr/local/lib"
           export SDL2_LOCAL_INCLUDE_DIR="./local/include/SDL2"
           export SDL2_LOCAL_LIB_DIR="./local/lib"
           make -f Makefile.release.macos
