@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - '*'
+    branches:
+      - 'macos-executable'
 
 jobs:
   build-macos:
@@ -16,108 +18,62 @@ jobs:
       - name: Install dependencies
         run: |
           brew update
-          brew install sdl2 sdl2_image sdl2_mixer
+          brew install sdl2
+
+      - name: Build SDL2_image to avoid a lot of dylibs
+        run: |
+          git clone https://github.com/libsdl-org/SDL_image.git
+          cd SDL_image
+          git checkout release-2.8.2
+          mkdir build
+          cd build
+          cmake .. \
+            -DSDL2IMAGE_AVIF=OFF \
+            -DSDL2IMAGE_BMP=OFF \
+            -DSDL2IMAGE_GIF=OFF \
+            -DSDL2IMAGE_JPG=OFF \
+            -DSDL2IMAGE_JXL=OFF \
+            -DSDL2IMAGE_LBM=OFF \
+            -DSDL2IMAGE_PCX=OFF \
+            -DSDL2IMAGE_PNG=ON \
+            -DSDL2IMAGE_PNM=OFF \
+            -DSDL2IMAGE_QOI=OFF \
+            -DSDL2IMAGE_SVG=OFF \
+            -DSDL2IMAGE_TGA=OFF \
+            -DSDL2IMAGE_TIF=OFF \
+            -DSDL2IMAGE_WEBP=OFF \
+            -DSDL2IMAGE_XCF=OFF \
+            -DSDL2IMAGE_XPM=OFF \
+            -DSDL2IMAGE_XV=OFF
+          make
+          make install
+
+      - name: Build SDL2_mixer to avoid a lot of dylibs
+        run: |
+          git clone https://github.com/libsdl-org/SDL_mixer.git
+          cd SDL_mixer
+          git checkout release-2.8.0
+          mkdir build
+          cd build
+          cmake .. \
+            -DSDL2MIXER_CMD=OFF \
+            -DSDL2MIXER_FLAC=OFF \
+            -DSDL2MIXER_GME=OFF \
+            -DSDL2MIXER_MOD=OFF \
+            -DSDL2MIXER_MIDI=OFF \
+            -DSDL2MIXER_OPUS=OFF \
+            -DSDL2MIXER_VORBIS=OFF \
+            -DSDL2MIXER_WAVE=OFF \
+            -DSDL2MIXER_WAVPACK=OFF \
+            -DSDL2MIXER_MP3=ON
+          make
+          make install
 
       - name: Build project
         run: |
           export SDL2_INCLUDE_DIR="/opt/homebrew/include/SDL2"
           export SDL2_LIB_DIR="/opt/homebrew/lib"
           make -f Makefile.release.macos
-          ls -l
 
       - name: Run smoke test
         run: ./Sartre --smoke
-
-      - name: Create app bundle
-        run: |
-          mkdir -p Sartre.app/Contents/MacOS
-          cp Sartre Sartre.app/Contents/MacOS/
-
-          mkdir -p Sartre.app/Contents/Resources
-          cp -r data Sartre.app/Contents/Resources/
-
-          mkdir -p Sartre.app/Contents/Frameworks
-          cp /opt/homebrew/opt/sdl2/lib/libSDL2-2.0.0.dylib Sartre.app/Contents/Frameworks/
-          install_name_tool -change /opt/homebrew/opt/sdl2/lib/libSDL2-2.0.0.dylib @executable_path/../Frameworks/libSDL2-2.0.0.dylib Sartre.app/Contents/MacOS/Sartre
-
-          cp /opt/homebrew/opt/sdl2_image/lib/libSDL2_image-2.0.0.dylib Sartre.app/Contents/Frameworks/
-          install_name_tool -change /opt/homebrew/opt/sdl2_image/lib/libSDL2_image-2.0.0.dylib @executable_path/../Frameworks/libSDL2_image-2.0.0.dylib Sartre.app/Contents/MacOS/Sartre
-
-          cp /opt/homebrew/opt/sdl2_mixer/lib/libSDL2_mixer-2.0.0.dylib Sartre.app/Contents/Frameworks/
-          install_name_tool -change /opt/homebrew/opt/sdl2_mixer/lib/libSDL2_mixer-2.0.0.dylib @executable_path/../Frameworks/libSDL2_mixer-2.0.0.dylib Sartre.app/Contents/MacOS/Sartre
-
-          cp /opt/homebrew/opt/jpeg-xl/lib/libjxl.0.10.dylib Sartre.app/Contents/Frameworks/
-          install_name_tool -change /opt/homebrew/opt/jpeg-xl/lib/libjxl.0.10.dylib @executable_path/../Frameworks/libjxl.0.10.dylib Sartre.app/Contents/MacOS/Sartre
-
-          cp /opt/homebrew/opt/game-music-emu/lib/libgme.0.dylib Sartre.app/Contents/Frameworks/
-          install_name_tool -change /opt/homebrew/opt/game-music-emu/lib/libgme.0.dylib @executable_path/../Frameworks/libgme.0.dylib Sartre.app/Contents/MacOS/Sartre
-
-          echo '<?xml version="1.0" encoding="UTF-8"?>' > Sartre.app/Contents/Info.plist
-          echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> Sartre.app/Contents/Info.plist
-          echo '<plist version="1.0">' >> Sartre.app/Contents/Info.plist
-          echo '<dict>' >> Sartre.app/Contents/Info.plist
-          echo '  <key>CFBundleExecutable</key>' >> Sartre.app/Contents/Info.plist
-          echo '  <string>Sartre</string>' >> Sartre.app/Contents/Info.plist
-          echo '  <key>CFBundleIdentifier</key>' >> Sartre.app/Contents/Info.plist
-          echo '  <string>com.example.Sartre</string>' >> Sartre.app/Contents/Info.plist
-          echo '  <key>CFBundleName</key>' >> Sartre.app/Contents/Info.plist
-          echo '  <string>Sartre</string>' >> Sartre.app/Contents/Info.plist
-          echo '  <key>CFBundleVersion</key>' >> Sartre.app/Contents/Info.plist
-          echo '  <string>1.0</string>' >> Sartre.app/Contents/Info.plist
-          echo '</dict>' >> Sartre.app/Contents/Info.plist
-          echo '</plist>' >> Sartre.app/Contents/Info.plist
-
-      - name: Run smoke test from app bundle
-        run: Sartre.app/Contents/MacOS/Sartre --smoke
-
-      - name: Zip the bundle
-        run: zip -r Sartre-macos-${GITHUB_REF##*/}.zip Sartre.app
-
-      - name: Set variables
-        id: vars
-        run: |
-          echo "REF_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.REF_NAME }}-macos
-          release_name: Release ${{ env.REF_NAME }}-macos
-          draft: false
-          prerelease: false
-
-      - name: Upload Release Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./Sartre-macos-${{ env.REF_NAME }}.zip
-          asset_name: Sartre-macos-${{ env.REF_NAME }}.zip
-          asset_content_type: application/zip
-
-  test-macos:
-    runs-on: macos-latest
-    needs: build-macos
-
-    steps:
-
-      - name: Set variables
-        id: vars
-        run: |
-          echo "REF_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
-
-      - name: Download release
-        run: |
-          curl -L -o Sartre-macos.zip https://github.com/${{ github.repository }}/releases/download/${{ env.REF_NAME }}-macos/Sartre-macos-${{ env.REF_NAME }}.zip
-
-      - name: Unzip the bundle
-        run: unzip Sartre-macos.zip
-
-      - name: Run smoke test from app bundle
-        run: Sartre.app/Contents/MacOS/Sartre --smoke
-
