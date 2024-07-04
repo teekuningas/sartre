@@ -32,15 +32,26 @@ jobs:
         run: |
           mkdir -p Sartre.app/Contents/MacOS
           cp Sartre Sartre.app/Contents/MacOS/
+
           mkdir -p Sartre.app/Contents/Resources
           cp -r data Sartre.app/Contents/Resources/
+
           mkdir -p Sartre.app/Contents/Frameworks
           cp /opt/homebrew/opt/sdl2/lib/libSDL2-2.0.0.dylib Sartre.app/Contents/Frameworks/
-          cp /opt/homebrew/opt/sdl2_image/lib/libSDL2_image-2.0.0.dylib Sartre.app/Contents/Frameworks/
-          cp /opt/homebrew/opt/sdl2_mixer/lib/libSDL2_mixer-2.0.0.dylib Sartre.app/Contents/Frameworks/
           install_name_tool -change /opt/homebrew/opt/sdl2/lib/libSDL2-2.0.0.dylib @executable_path/../Frameworks/libSDL2-2.0.0.dylib Sartre.app/Contents/MacOS/Sartre
+
+          cp /opt/homebrew/opt/sdl2_image/lib/libSDL2_image-2.0.0.dylib Sartre.app/Contents/Frameworks/
           install_name_tool -change /opt/homebrew/opt/sdl2_image/lib/libSDL2_image-2.0.0.dylib @executable_path/../Frameworks/libSDL2_image-2.0.0.dylib Sartre.app/Contents/MacOS/Sartre
+
+          cp /opt/homebrew/opt/sdl2_mixer/lib/libSDL2_mixer-2.0.0.dylib Sartre.app/Contents/Frameworks/
           install_name_tool -change /opt/homebrew/opt/sdl2_mixer/lib/libSDL2_mixer-2.0.0.dylib @executable_path/../Frameworks/libSDL2_mixer-2.0.0.dylib Sartre.app/Contents/MacOS/Sartre
+
+          cp /opt/homebrew/opt/jpeg-xl/lib/libjxl.0.10.dylib Sartre.app/Contents/Frameworks/
+          install_name_tool -change /opt/homebrew/opt/jpeg-xl/lib/libjxl.0.10.dylib @executable_path/../Frameworks/libjxl.0.10.dylib Sartre.app/Contents/MacOS/Sartre
+
+          cp /opt/homebrew/opt/game-music-emu/lib/libgme.0.dylib Sartre.app/Contents/Frameworks/
+          install_name_tool -change /opt/homebrew/opt/game-music-emu/lib/libgme.0.dylib @executable_path/../Frameworks/libgme.0.dylib Sartre.app/Contents/MacOS/Sartre
+
           echo '<?xml version="1.0" encoding="UTF-8"?>' > Sartre.app/Contents/Info.plist
           echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> Sartre.app/Contents/Info.plist
           echo '<plist version="1.0">' >> Sartre.app/Contents/Info.plist
