@@ -181,7 +181,7 @@ jobs:
 
       - name: Download release
         run: |
-          curl -L -o Sartre-macos.zip https://github.com/${{ github.repository }}/releases/download/${{ env.REF_NAME }}-macos/Sartre-macos-${{ env.REF_NAME }}.zip
+          curl -L -o Sartre-macos.zip https://github.com/${{ github.repository }}/releases/download/${{ env.REF_NAME }}/Sartre-macos-${{ env.REF_NAME }}.zip
 
       - name: Unzip the bundle
         run: unzip Sartre-macos.zip
