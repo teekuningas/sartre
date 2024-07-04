@@ -66,8 +66,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ env.REF_NAME }}
-          release_name: Release ${{ env.REF_NAME }}
+          tag_name: macos-${{ env.REF_NAME }}
+          release_name: Release macos-${{ env.REF_NAME }}
           draft: false
           prerelease: false
 
