@@ -275,6 +275,11 @@ int main(int argc, char **argv)
 	tausta.image = IMG_LoadPNG_RW(rwop);
 	SDL_RWclose(rwop);
 
+	if (!sartre.image[0] || !sartre.image[1] || !sartre.image[2] || !tausta.image) {
+		printf("Error loading images\n");
+		return -1;
+	}
+
 	// Jotta savutesti on tehokkaampi
 	if (argc > 1 && std::strcmp(argv[1], "--smoke") == 0) {
 		std::cout << "Smoketest ran fine!" << std::endl;
@@ -289,7 +294,7 @@ int main(int argc, char **argv)
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
 
 	SDL_Window *window = SDL_CreateWindow(
 	                         "Sartre temmeltaa lehdossa nälkaisenä",
@@ -321,6 +326,8 @@ int main(int argc, char **argv)
 	glClearDepth(1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_TEXTURE_2D);
@@ -366,6 +373,10 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	if (!(Mix_Init(MIX_INIT_MP3) & MIX_INIT_MP3)) {
+		printf("Error initializing SDL_mixer: %s\n", Mix_GetError());
+		return -1;
+	}
 	Mix_Music *backgroundMusic = Mix_LoadMUS((dataPath + "music/Myytti.mp3").c_str());
 	if (backgroundMusic == NULL) {
 		printf("Failed to load background music! SDL_mixer Error: %s\n", Mix_GetError());
