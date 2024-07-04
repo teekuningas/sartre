@@ -31,7 +31,7 @@ jobs:
           prerelease: false
 
   build-macos:
-    runs-on: macos-latest
+    runs-on: macos-13
     needs: create-release
 
     steps:
@@ -173,7 +173,7 @@ jobs:
           asset_content_type: application/zip
 
   test-macos:
-    runs-on: macos-latest
+    runs-on: macos-13
     needs: build-macos
 
     steps:
