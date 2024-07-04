@@ -1,4 +1,4 @@
-name: Build and Package for macOS
+name: Build and Package the Game for different platforms
 
 on:
   push:
@@ -6,8 +6,29 @@ on:
       - '*'
 
 jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Set variables
+        id: vars
+        run: |
+          echo "REF_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.REF_NAME }}
+          release_name: Release ${{ env.REF_NAME }}
+          draft: false
+          prerelease: false
+
   build-macos:
     runs-on: macos-latest
+    needs: create_release
 
     steps:
       - name: Checkout code
@@ -132,24 +153,13 @@ jobs:
         run: |
           echo "REF_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.REF_NAME }}-macos
-          release_name: Release ${{ env.REF_NAME }}-macos
-          draft: false
-          prerelease: false
-
       - name: Upload Release Asset
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
           asset_path: ./Sartre-macos-${{ env.REF_NAME }}.zip
           asset_name: Sartre-macos-${{ env.REF_NAME }}.zip
           asset_content_type: application/zip
@@ -174,3 +184,121 @@ jobs:
 
       - name: Run smoke test from app bundle
         run: Sartre.app/Contents/MacOS/Sartre --smoke
+
+  build-windows:
+    runs-on: windows-latest
+    needs: create_release
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-make mingw-w64-x86_64-cmake mingw-w64-x86_64-SDL2 mingw-w64-x86_64-SDL2_mixer mingw-w64-x86_64-libpng mingw-w64-x86_64-zlib
+
+      - name: Install general deps
+        run: |
+          pacman -Sy --noconfirm git
+
+      - name: Build SDL2_image to avoid a lot of dlls
+        run: |
+          git clone https://github.com/libsdl-org/SDL_image.git
+          cd SDL_image
+          git checkout release-2.8.2
+          cd ..
+          mkdir SDL_image_build
+          cd SDL_image_build
+          cmake -G "Unix Makefiles" \
+            -DCMAKE_MAKE_PROGRAM=${MINGW_PREFIX}/bin/mingw32-make.exe \
+            -DCMAKE_C_COMPILER=${MINGW_PREFIX}/bin/gcc.exe \
+            -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+            -DSDL2IMAGE_AVIF=OFF \
+            -DSDL2IMAGE_BMP=OFF \
+            -DSDL2IMAGE_GIF=OFF \
+            -DSDL2IMAGE_JPG=OFF \
+            -DSDL2IMAGE_JXL=OFF \
+            -DSDL2IMAGE_LBM=OFF \
+            -DSDL2IMAGE_PCX=OFF \
+            -DSDL2IMAGE_PNG=ON \
+            -DSDL2IMAGE_PNM=OFF \
+            -DSDL2IMAGE_QOI=OFF \
+            -DSDL2IMAGE_SVG=OFF \
+            -DSDL2IMAGE_TGA=OFF \
+            -DSDL2IMAGE_TIF=OFF \
+            -DSDL2IMAGE_WEBP=OFF \
+            -DSDL2IMAGE_XCF=OFF \
+            -DSDL2IMAGE_XPM=OFF \
+            -DSDL2IMAGE_XV=OFF ../SDL_image
+          mingw32-make
+          mingw32-make install
+
+      - name: Build SDL2_mixer to avoid a lot of dlls
+        run: |
+          git clone https://github.com/libsdl-org/SDL_mixer.git
+          cd SDL_mixer
+          git checkout release-2.8.0
+          cd ..
+          mkdir SDL_mixer_build
+          cd SDL_mixer_build
+          cmake -G "Unix Makefiles" \
+            -DCMAKE_MAKE_PROGRAM=${MINGW_PREFIX}/bin/mingw32-make.exe \
+            -DCMAKE_C_COMPILER=${MINGW_PREFIX}/bin/gcc.exe \
+            -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+            -DSDL2MIXER_CMD=OFF \
+            -DSDL2MIXER_FLAC=OFF \
+            -DSDL2MIXER_GME=OFF \
+            -DSDL2MIXER_MOD=OFF \
+            -DSDL2MIXER_MIDI=OFF \
+            -DSDL2MIXER_OPUS=OFF \
+            -DSDL2MIXER_VORBIS=OFF \
+            -DSDL2MIXER_WAVE=OFF \
+            -DSDL2MIXER_WAVPACK=OFF \
+            -DSDL2MIXER_MP3=ON \
+            ../SDL_mixer
+          mingw32-make
+          mingw32-make install
+
+      - name: Build project
+        run: |
+          mingw32-make -f Makefile.release.win
+
+      - name: Install zip
+        run: |
+          pacman -Sy --noconfirm zip
+
+      - name: Package all necessary files
+        run: |
+          mkdir Sartre
+          cp ./Sartre.exe Sartre/
+          cp -r ./data Sartre/
+          cp /mingw64/bin/SDL2.dll Sartre/
+          cp /mingw64/bin/SDL2_mixer.dll Sartre/
+          cp /mingw64/bin/SDL2_image.dll Sartre/
+          cp /mingw64/bin/libstdc++-6.dll Sartre/
+          cp /mingw64/bin/libgcc_s_seh-1.dll Sartre/
+          cp /mingw64/bin/libwinpthread-1.dll Sartre/
+          zip -r Sartre-win64-${GITHUB_REF##*/}.zip Sartre
+
+      - name: Set variables
+        id: vars
+        run: |
+          echo "REF_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ./Sartre-win64-${{ env.REF_NAME }}.zip
+          asset_name: Sartre-win64-${{ env.REF_NAME }}.zip
+          asset_content_type: application/zip
+
