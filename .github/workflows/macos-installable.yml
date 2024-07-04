@@ -103,6 +103,11 @@ jobs:
           install_name_tool -id @executable_path/../Frameworks/libSDL2_image-2.0.801.0.0.dylib Sartre.app/Contents/Frameworks/libSDL2_image-2.0.801.0.0.dylib
           install_name_tool -change @rpath/libSDL2_image-2.0.801.0.0.dylib @executable_path/../Frameworks/libSDL2_image-2.0.801.0.0.dylib Sartre.app/Contents/MacOS/Sartre
 
+          # Copy SDL2_mixer library to the app bundle
+          cp ./local/lib/libSDL2_mixer-2.0.801.0.0.dylib Sartre.app/Contents/Frameworks/
+          install_name_tool -id @executable_path/../Frameworks/libSDL2_mixer-2.0.801.0.0.dylib Sartre.app/Contents/Frameworks/libSDL2_mixer-2.0.801.0.0.dylib
+          install_name_tool -change @rpath/libSDL2_mixer-2.0.801.0.0.dylib @executable_path/../Frameworks/libSDL2_mixer-2.0.801.0.0.dylib Sartre.app/Contents/MacOS/Sartre
+
           echo '<?xml version="1.0" encoding="UTF-8"?>' > Sartre.app/Contents/Info.plist
           echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> Sartre.app/Contents/Info.plist
           echo '<plist version="1.0">' >> Sartre.app/Contents/Info.plist
