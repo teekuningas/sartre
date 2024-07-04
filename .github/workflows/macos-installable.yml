@@ -25,3 +25,7 @@ jobs:
           export SDL2_INCLUDE_DIR="/opt/homebrew/include/SDL2"
           export SDL2_LIB_DIR="/opt/homebrew/lib"
           make -f Makefile.release.macos
+          ls -l
+
+      - name: Run smoke test
+        run: ./Sartre --smoke

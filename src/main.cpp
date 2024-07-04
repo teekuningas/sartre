@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
+#include <cstring>
 
 #include <SDL.h>
 #include <SDL_opengl.h>
@@ -92,7 +93,6 @@ int hoida_viestit(void);
 void metsa_piirra(void);
 void metsa_toiminta(float deltaTime);
 
-const int SYVYYS = 16;
 const int IKKUNA_LEVEYS = 1024;
 const int IKKUNA_KORKEUS = 768;
 const int KARTTA_LEVEYS = 2028;
@@ -231,6 +231,12 @@ void metsa_toiminta(float deltaTime)
 
 int main(int argc, char **argv)
 {
+
+	// Check if "--smoke" argument is provided
+	if (argc > 1 && std::strcmp(argv[1], "--smoke") == 0) {
+		std::cout << "Smoketest ran fine!" << std::endl;
+		return 0;
+	}
 
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
 		printf("Virhe: SDL_Init: %s\n", SDL_GetError());
