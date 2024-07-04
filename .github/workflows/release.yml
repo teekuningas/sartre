@@ -16,7 +16,7 @@ jobs:
           echo "REF_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
       - name: Create Release
-        id: create_release
+        id: create-release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -28,7 +28,7 @@ jobs:
 
   build-macos:
     runs-on: macos-latest
-    needs: create_release
+    needs: create-release
 
     steps:
       - name: Checkout code
@@ -159,7 +159,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
           asset_path: ./Sartre-macos-${{ env.REF_NAME }}.zip
           asset_name: Sartre-macos-${{ env.REF_NAME }}.zip
           asset_content_type: application/zip
@@ -187,7 +187,7 @@ jobs:
 
   build-windows:
     runs-on: windows-latest
-    needs: create_release
+    needs: create-release
     defaults:
       run:
         shell: msys2 {0}
@@ -297,7 +297,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
           asset_path: ./Sartre-win64-${{ env.REF_NAME }}.zip
           asset_name: Sartre-win64-${{ env.REF_NAME }}.zip
           asset_content_type: application/zip
