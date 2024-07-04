@@ -53,6 +53,7 @@ jobs:
           mkdir -p ../../local
           cmake .. \
             -DCMAKE_INSTALL_PREFIX=../../local \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
             -DSDL2IMAGE_AVIF=OFF \
             -DSDL2IMAGE_BMP=OFF \
             -DSDL2IMAGE_GIF=OFF \
@@ -83,6 +84,7 @@ jobs:
           mkdir -p ../../local
           cmake .. \
             -DCMAKE_INSTALL_PREFIX=../../local \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=10.10 \
             -DSDL2MIXER_CMD=OFF \
             -DSDL2MIXER_FLAC=OFF \
             -DSDL2MIXER_GME=OFF \
