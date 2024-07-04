@@ -15,7 +15,11 @@ main: $(OBJ)
 
 .PHONY: run
 run:
-	nix run --override-input nixpkgs nixpkgs/nixos-23.05 --impure github:guibou/nixGL -- ./main --windowed
+	nix run --override-input nixpkgs nixpkgs/nixos-23.05 --impure github:guibou/nixGL -- ./main
+
+.PHONY: smoketest
+smoketest:
+	nix run --override-input nixpkgs nixpkgs/nixos-23.05 --impure github:guibou/nixGL -- ./main --smoketest
 
 .PHONY: shell
 shell:

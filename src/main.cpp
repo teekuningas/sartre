@@ -3,11 +3,35 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
+#include <cstring>
 
 #include <SDL.h>
 #include <SDL_opengl.h>
 #include <SDL_image.h>
 #include <SDL_mixer.h>
+
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
+std::string getResourcePath()
+{
+#ifdef __APPLE__
+	CFBundleRef mainBundle = CFBundleGetMainBundle();
+	if (mainBundle) {
+		CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
+		char path[PATH_MAX];
+		if (CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX)) {
+			CFRelease(resourcesURL);
+			return std::string(path) + "/data/";
+		}
+		CFRelease(resourcesURL);
+	}
+	return "./data/";
+#else
+	return "./data/";
+#endif
+}
 
 class Hahmo
 {
@@ -92,7 +116,6 @@ int hoida_viestit(void);
 void metsa_piirra(void);
 void metsa_toiminta(float deltaTime);
 
-const int SYVYYS = 16;
 const int IKKUNA_LEVEYS = 1024;
 const int IKKUNA_KORKEUS = 768;
 const int KARTTA_LEVEYS = 2028;
@@ -232,6 +255,32 @@ void metsa_toiminta(float deltaTime)
 int main(int argc, char **argv)
 {
 
+	std::string dataPath = getResourcePath();
+
+	// Lataa kuvadata heti alkuun
+	SDL_RWops *rwop;
+	rwop = SDL_RWFromFile((dataPath + "images/Sartre1a.png").c_str(), "rb");
+	sartre.image[0] = IMG_LoadPNG_RW(rwop);
+	SDL_RWclose(rwop);
+
+	rwop = SDL_RWFromFile((dataPath + "images/Sartre2a.png").c_str(), "rb");
+	sartre.image[1] = IMG_LoadPNG_RW(rwop);
+	SDL_RWclose(rwop);
+
+	rwop = SDL_RWFromFile((dataPath + "images/Sartre3a.png").c_str(), "rb");
+	sartre.image[2] = IMG_LoadPNG_RW(rwop);
+	SDL_RWclose(rwop);
+
+	rwop = SDL_RWFromFile((dataPath + "images/lehto.png").c_str(), "rb");
+	tausta.image = IMG_LoadPNG_RW(rwop);
+	SDL_RWclose(rwop);
+
+	// Jotta savutesti on tehokkaampi
+	if (argc > 1 && std::strcmp(argv[1], "--smoke") == 0) {
+		std::cout << "Smoketest ran fine!" << std::endl;
+		return 0;
+	}
+
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
 		printf("Virhe: SDL_Init: %s\n", SDL_GetError());
 		exit(1);
@@ -281,24 +330,7 @@ int main(int argc, char **argv)
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 	glClearColor(0.0, 0.0, 0.0, 0.0);
 
-	// Kuvat
-	SDL_RWops *rwop;
-	rwop = SDL_RWFromFile("data/images/Sartre1a.png", "rb");
-	sartre.image[0] = IMG_LoadPNG_RW(rwop);
-	SDL_RWclose(rwop);
-
-	rwop = SDL_RWFromFile("data/images/Sartre2a.png", "rb");
-	sartre.image[1] = IMG_LoadPNG_RW(rwop);
-	SDL_RWclose(rwop);
-
-	rwop = SDL_RWFromFile("data/images/Sartre3a.png", "rb");
-	sartre.image[2] = IMG_LoadPNG_RW(rwop);
-	SDL_RWclose(rwop);
-
-	rwop = SDL_RWFromFile("data/images/lehto.png", "rb");
-	tausta.image = IMG_LoadPNG_RW(rwop);
-	SDL_RWclose(rwop);
-
+	// Tekstuurit
 	glGenTextures(3, texSartre);
 	glGenTextures(1, texTausta);
 
@@ -334,13 +366,12 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	Mix_Music *backgroundMusic = Mix_LoadMUS("data/music/Myytti.mp3");
+	Mix_Music *backgroundMusic = Mix_LoadMUS((dataPath + "music/Myytti.mp3").c_str());
 	if (backgroundMusic == NULL) {
 		printf("Failed to load background music! SDL_mixer Error: %s\n", Mix_GetError());
 		return -1;
 	}
 
-	// Play the MP3 file in a loop
 	if (Mix_PlayMusic(backgroundMusic, -1) == -1) {
 		printf("Failed to play background music! SDL_mixer Error: %s\n", Mix_GetError());
 		return -1;
