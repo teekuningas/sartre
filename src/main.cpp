@@ -14,21 +14,22 @@
 #include <CoreFoundation/CoreFoundation.h>
 #endif
 
-std::string getResourcePath() {
+std::string getResourcePath()
+{
 #ifdef __APPLE__
-    CFBundleRef mainBundle = CFBundleGetMainBundle();
-    if (mainBundle) {
-        CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
-        char path[PATH_MAX];
-        if (CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX)) {
-            CFRelease(resourcesURL);
-            return std::string(path) + "/data/";
-        }
-        CFRelease(resourcesURL);
-    }
-    return "./data/";
+	CFBundleRef mainBundle = CFBundleGetMainBundle();
+	if (mainBundle) {
+		CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
+		char path[PATH_MAX];
+		if (CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX)) {
+			CFRelease(resourcesURL);
+			return std::string(path) + "/data/";
+		}
+		CFRelease(resourcesURL);
+	}
+	return "./data/";
 #else
-    return "./data/";
+	return "./data/";
 #endif
 }
 
@@ -254,13 +255,31 @@ void metsa_toiminta(float deltaTime)
 int main(int argc, char **argv)
 {
 
-	// Check if "--smoke" argument is provided
+	std::string dataPath = getResourcePath();
+
+	// Lataa kuvadata heti alkuun
+	SDL_RWops *rwop;
+	rwop = SDL_RWFromFile((dataPath + "images/Sartre1a.png").c_str(), "rb");
+	sartre.image[0] = IMG_LoadPNG_RW(rwop);
+	SDL_RWclose(rwop);
+
+	rwop = SDL_RWFromFile((dataPath + "images/Sartre2a.png").c_str(), "rb");
+	sartre.image[1] = IMG_LoadPNG_RW(rwop);
+	SDL_RWclose(rwop);
+
+	rwop = SDL_RWFromFile((dataPath + "images/Sartre3a.png").c_str(), "rb");
+	sartre.image[2] = IMG_LoadPNG_RW(rwop);
+	SDL_RWclose(rwop);
+
+	rwop = SDL_RWFromFile((dataPath + "images/lehto.png").c_str(), "rb");
+	tausta.image = IMG_LoadPNG_RW(rwop);
+	SDL_RWclose(rwop);
+
+	// Jotta savutesti on tehokkaampi
 	if (argc > 1 && std::strcmp(argv[1], "--smoke") == 0) {
 		std::cout << "Smoketest ran fine!" << std::endl;
 		return 0;
 	}
-
-	std::string dataPath = getResourcePath();
 
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
 		printf("Virhe: SDL_Init: %s\n", SDL_GetError());
@@ -311,24 +330,7 @@ int main(int argc, char **argv)
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 	glClearColor(0.0, 0.0, 0.0, 0.0);
 
-	// Kuvat
-	SDL_RWops *rwop;
-	rwop = SDL_RWFromFile((dataPath + "images/Sartre1a.png").c_str(), "rb");
-	sartre.image[0] = IMG_LoadPNG_RW(rwop);
-	SDL_RWclose(rwop);
-
-	rwop = SDL_RWFromFile((dataPath + "images/Sartre2a.png").c_str(), "rb");
-	sartre.image[1] = IMG_LoadPNG_RW(rwop);
-	SDL_RWclose(rwop);
-
-	rwop = SDL_RWFromFile((dataPath + "images/Sartre3a.png").c_str(), "rb");
-	sartre.image[2] = IMG_LoadPNG_RW(rwop);
-	SDL_RWclose(rwop);
-
-	rwop = SDL_RWFromFile((dataPath + "images/lehto.png").c_str(), "rb");
-	tausta.image = IMG_LoadPNG_RW(rwop);
-	SDL_RWclose(rwop);
-
+	// Tekstuurit
 	glGenTextures(3, texSartre);
 	glGenTextures(1, texTausta);
 
@@ -370,7 +372,6 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	// Play the MP3 file in a loop
 	if (Mix_PlayMusic(backgroundMusic, -1) == -1) {
 		printf("Failed to play background music! SDL_mixer Error: %s\n", Mix_GetError());
 		return -1;
