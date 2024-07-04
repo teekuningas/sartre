@@ -77,6 +77,10 @@ jobs:
         run: |
           export SDL2_INCLUDE_DIR="/opt/homebrew/include/SDL2"
           export SDL2_LIB_DIR="/opt/homebrew/lib"
+          export SDL2_LOCAL_INCLUDE_DIR="./local/include/SDL2"
+          export SDL2_LOCAL_LIB_DIR="./local/lib"
+          ls -l ./
+          ls -l ./local
           make -f Makefile.release.macos
 
       - name: Run smoke test
