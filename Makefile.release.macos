@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -O2 -Wall -I${SDL2_INCLUDE_DIR}
-LDFLAGS = -L${SDL2_LIB_DIR} -lSDL2main -lSDL2 -lSDL2_image -lSDL2_mixer -framework OpenGL
+LDFLAGS = -L${SDL2_LIB_DIR} -lSDL2main -lSDL2 -lSDL2_image -lSDL2_mixer -framework OpenGL -framework CoreFoundation
 ODIR = obj
 SRCDIR = ./src
 
