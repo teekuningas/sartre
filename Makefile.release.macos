@@ -1,6 +1,6 @@
 CXX = g++
-CXXFLAGS = -O2 -Wall -I${SDL2_INCLUDE_DIR} -I${SDL2_LOCAL_INCLUDE_DIR} -mmacosx-version-min=13
-LDFLAGS = -L${SDL2_LIB_DIR} -L${SDL2_LOCAL_LIB_DIR} -lSDL2main -lSDL2 -lSDL2_image -lSDL2_mixer -framework OpenGL -framework CoreFoundation -mmacosx-version-min=13
+CXXFLAGS = -O2 -Wall -I${SDL2_INCLUDE_DIR} -I${SDL2_LOCAL_INCLUDE_DIR} -mmacosx-version-min=13 -arch x86_64
+LDFLAGS = -L${SDL2_LIB_DIR} -L${SDL2_LOCAL_LIB_DIR} -lSDL2main -lSDL2 -lSDL2_image -lSDL2_mixer -framework OpenGL -framework CoreFoundation -mmacosx-version-min=13 -arch x86_64
 ODIR = obj
 SRCDIR = ./src
 
