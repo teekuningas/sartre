@@ -27,7 +27,9 @@ jobs:
           git checkout release-2.8.2
           mkdir build
           cd build
+          mkdir -p ../../local
           cmake .. \
+            -DCMAKE_INSTALL_PREFIX=../../local \
             -DSDL2IMAGE_AVIF=OFF \
             -DSDL2IMAGE_BMP=OFF \
             -DSDL2IMAGE_GIF=OFF \
@@ -55,7 +57,9 @@ jobs:
           git checkout release-2.8.0
           mkdir build
           cd build
+          mkdir -p ../../local
           cmake .. \
+            -DCMAKE_INSTALL_PREFIX=../../local \
             -DSDL2MIXER_CMD=OFF \
             -DSDL2MIXER_FLAC=OFF \
             -DSDL2MIXER_GME=OFF \
