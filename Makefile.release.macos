@@ -1,0 +1,15 @@
+CXX = g++
+CXXFLAGS = -O2 -Wall -I/usr/local/include/SDL2
+LDFLAGS = -L/usr/local/lib -lSDL2main -lSDL2 -lSDL2_image -lSDL2_mixer -framework OpenGL
+ODIR = obj
+SRCDIR = ./src
+
+_OBJ = main.o
+OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
+
+$(ODIR)/%.o: $(SRCDIR)/%.cpp
+		@mkdir -p $(ODIR)
+			$(CXX) -v -c -o $@ $< $(CXXFLAGS)
+
+Sartre: $(OBJ)
+		$(CXX) $^ -o $@ $(LDFLAGS)
