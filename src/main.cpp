@@ -10,6 +10,28 @@
 #include <SDL_image.h>
 #include <SDL_mixer.h>
 
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
+std::string getResourcePath() {
+#ifdef __APPLE__
+    CFBundleRef mainBundle = CFBundleGetMainBundle();
+    if (mainBundle) {
+        CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
+        char path[PATH_MAX];
+        if (CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX)) {
+            CFRelease(resourcesURL);
+            return std::string(path) + "/data/";
+        }
+        CFRelease(resourcesURL);
+    }
+    return "./data/";
+#else
+    return "./data/";
+#endif
+}
+
 class Hahmo
 {
 private:
@@ -238,6 +260,8 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	std::string dataPath = getResourcePath();
+
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
 		printf("Virhe: SDL_Init: %s\n", SDL_GetError());
 		exit(1);
@@ -289,19 +313,19 @@ int main(int argc, char **argv)
 
 	// Kuvat
 	SDL_RWops *rwop;
-	rwop = SDL_RWFromFile("data/images/Sartre1a.png", "rb");
+	rwop = SDL_RWFromFile((dataPath + "images/Sartre1a.png").c_str(), "rb");
 	sartre.image[0] = IMG_LoadPNG_RW(rwop);
 	SDL_RWclose(rwop);
 
-	rwop = SDL_RWFromFile("data/images/Sartre2a.png", "rb");
+	rwop = SDL_RWFromFile((dataPath + "images/Sartre2a.png").c_str(), "rb");
 	sartre.image[1] = IMG_LoadPNG_RW(rwop);
 	SDL_RWclose(rwop);
 
-	rwop = SDL_RWFromFile("data/images/Sartre3a.png", "rb");
+	rwop = SDL_RWFromFile((dataPath + "images/Sartre3a.png").c_str(), "rb");
 	sartre.image[2] = IMG_LoadPNG_RW(rwop);
 	SDL_RWclose(rwop);
 
-	rwop = SDL_RWFromFile("data/images/lehto.png", "rb");
+	rwop = SDL_RWFromFile((dataPath + "images/lehto.png").c_str(), "rb");
 	tausta.image = IMG_LoadPNG_RW(rwop);
 	SDL_RWclose(rwop);
 
@@ -340,7 +364,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	Mix_Music *backgroundMusic = Mix_LoadMUS("data/music/Myytti.mp3");
+	Mix_Music *backgroundMusic = Mix_LoadMUS((dataPath + "music/Myytti.mp3").c_str());
 	if (backgroundMusic == NULL) {
 		printf("Failed to load background music! SDL_mixer Error: %s\n", Mix_GetError());
 		return -1;

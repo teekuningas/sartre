@@ -29,3 +29,27 @@ jobs:
 
       - name: Run smoke test
         run: ./Sartre --smoke
+
+      - name: Create app bundle
+        run: |
+          mkdir -p Sartre.app/Contents/MacOS
+          cp Sartre Sartre.app/Contents/MacOS/
+          mkdir -p Sartre.app/Contents/Resources
+          cp -r data Sartre.app/Contents/Resources/
+          echo '<?xml version="1.0" encoding="UTF-8"?>' > Sartre.app/Contents/Info.plist
+          echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> Sartre.app/Contents/Info.plist
+          echo '<plist version="1.0">' >> Sartre.app/Contents/Info.plist
+          echo '<dict>' >> Sartre.app/Contents/Info.plist
+          echo '  <key>CFBundleExecutable</key>' >> Sartre.app/Contents/Info.plist
+          echo '  <string>Sartre</string>' >> Sartre.app/Contents/Info.plist
+          echo '  <key>CFBundleIdentifier</key>' >> Sartre.app/Contents/Info.plist
+          echo '  <string>com.example.Sartre</string>' >> Sartre.app/Contents/Info.plist
+          echo '  <key>CFBundleName</key>' >> Sartre.app/Contents/Info.plist
+          echo '  <string>Sartre</string>' >> Sartre.app/Contents/Info.plist
+          echo '  <key>CFBundleVersion</key>' >> Sartre.app/Contents/Info.plist
+          echo '  <string>1.0</string>' >> Sartre.app/Contents/Info.plist
+          echo '</dict>' >> Sartre.app/Contents/Info.plist
+          echo '</plist>' >> Sartre.app/Contents/Info.plist
+
+      - name: Run smoke test from app bundle
+        run: Sartre.app/Contents/MacOS/Sartre --smoke
