@@ -66,8 +66,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: macos-${{ env.REF_NAME }}
-          release_name: Release macos-${{ env.REF_NAME }}
+          tag_name: ${{ env.REF_NAME }}-macos
+          release_name: Release ${{ env.REF_NAME }}-macos
           draft: false
           prerelease: false
 
@@ -81,4 +81,19 @@ jobs:
           asset_path: ./Sartre-macos-${{ env.REF_NAME }}.zip
           asset_name: Sartre-macos-${{ env.REF_NAME }}.zip
           asset_content_type: application/zip
+
+  test-macos:
+    runs-on: macos-latest
+    needs: build-macos
+
+    steps:
+      - name: Download release
+        run: |
+          curl -L -o Sartre-macos.zip https://github.com/${{ github.repository }}/releases/download/${{ env.REF_NAME }}-macos/Sartre-macos-${{ env.REF_NAME }}.zip
+
+      - name: Unzip the bundle
+        run: unzip Sartre-macos.zip
+
+      - name: Run smoke test from app bundle
+        run: Sartre.app/Contents/MacOS/Sartre --smoke
 

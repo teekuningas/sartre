@@ -6,7 +6,7 @@ on:
       - '*'
 
 jobs:
-  build-windows-installable:
+  build-windows:
     runs-on: windows-latest
     defaults:
       run:
@@ -117,8 +117,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: win64-${{ env.REF_NAME }}
-          release_name: Release win64-${{ env.REF_NAME }}
+          tag_name: ${{ env.REF_NAME }}-win64
+          release_name: Release ${{ env.REF_NAME }}-win64
           draft: false
           prerelease: false
 
