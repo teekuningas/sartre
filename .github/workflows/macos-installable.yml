@@ -79,9 +79,44 @@ jobs:
           export SDL2_LIB_DIR="/opt/homebrew/lib"
           export SDL2_LOCAL_INCLUDE_DIR="./local/include/SDL2"
           export SDL2_LOCAL_LIB_DIR="./local/lib"
-          ls -l ./
-          ls -l ./local
           make -f Makefile.release.macos
 
-      - name: Run smoke test
-        run: ./Sartre --smoke
+      - name: Create app bundle
+        run: |
+          mkdir -p Sartre.app/Contents/MacOS
+          cp Sartre Sartre.app/Contents/MacOS/
+
+          mkdir -p Sartre.app/Contents/Resources
+          cp -r data Sartre.app/Contents/Resources/
+
+          mkdir -p Sartre.app/Contents/Frameworks
+
+          # Add rpath to the executable
+          install_name_tool -add_rpath @executable_path/../Frameworks Sartre
+
+          # Copy SDL2 library to the app bundle
+          cp /opt/homebrew/opt/sdl2/lib/libSDL2-2.0.0.dylib Sartre.app/Contents/Frameworks/
+          install_name_tool -change /opt/homebrew/opt/sdl2/lib/libSDL2-2.0.0.dylib @executable_path/../Frameworks/libSDL2-2.0.0.dylib Sartre.app/Contents/MacOS/Sartre
+
+          # Copy SDL2_image library to the app bundle
+          cp ./local/lib/libSDL2_image-2.0.801.0.0.dylib Sartre.app/Contents/Frameworks/
+          install_name_tool -id @executable_path/../Frameworks/libSDL2_image-2.0.801.0.0.dylib Sartre.app/Contents/Frameworks/libSDL2_image-2.0.801.0.0.dylib
+          install_name_tool -change @rpath/libSDL2_image-2.0.801.0.0.dylib @executable_path/../Frameworks/libSDL2_image-2.0.801.0.0.dylib Sartre.app/Contents/MacOS/Sartre
+
+          echo '<?xml version="1.0" encoding="UTF-8"?>' > Sartre.app/Contents/Info.plist
+          echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> Sartre.app/Contents/Info.plist
+          echo '<plist version="1.0">' >> Sartre.app/Contents/Info.plist
+          echo '<dict>' >> Sartre.app/Contents/Info.plist
+          echo '  <key>CFBundleExecutable</key>' >> Sartre.app/Contents/Info.plist
+          echo '  <string>Sartre</string>' >> Sartre.app/Contents/Info.plist
+          echo '  <key>CFBundleIdentifier</key>' >> Sartre.app/Contents/Info.plist
+          echo '  <string>com.example.Sartre</string>' >> Sartre.app/Contents/Info.plist
+          echo '  <key>CFBundleName</key>' >> Sartre.app/Contents/Info.plist
+          echo '  <string>Sartre</string>' >> Sartre.app/Contents/Info.plist
+          echo '  <key>CFBundleVersion</key>' >> Sartre.app/Contents/Info.plist
+          echo '  <string>1.0</string>' >> Sartre.app/Contents/Info.plist
+          echo '</dict>' >> Sartre.app/Contents/Info.plist
+          echo '</plist>' >> Sartre.app/Contents/Info.plist
+
+      - name: Run smoke test from app bundle
+        run: Sartre.app/Contents/MacOS/Sartre --smoke
