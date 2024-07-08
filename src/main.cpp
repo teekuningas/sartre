@@ -33,88 +33,45 @@ std::string getResourcePath()
 #endif
 }
 
-class Hahmo
-{
-private:
+struct Sartre {
 	GLfloat x;
 	GLfloat y;
 	GLfloat vy;
-	GLfloat alkupy;
 	GLfloat vx;
-public:
-	SDL_Surface *image[3];
+	GLfloat alkupy;
 	int hahmo;
 	bool hyppy;
-	void MuutaX(GLfloat xpar)
-	{
-		x = xpar;
-	}
-	void MuutaY(GLfloat ypar)
-	{
-		y = ypar;
-	}
-	void MuutaVY(GLfloat vypar)
-	{
-		vy = vypar;
-	}
-	void MuutaVX(GLfloat vxpar)
-	{
-		vx = vxpar;
-	}
-	void MuutaAlkupY(GLfloat alkupypar)
-	{
-		alkupy = alkupypar;
-	}
-	GLfloat LueX()
-	{
-		return x;
-	}
-	GLfloat LueY()
-	{
-		return y;
-	}
-	GLfloat LueVY()
-	{
-		return vy;
-	}
-	GLfloat LueVX()
-	{
-		return vx;
-	}
-	GLfloat LueAlkupY()
-	{
-		return alkupy;
-	}
 };
 
-class Tausta
-{
-private:
+struct Tausta {
 	GLfloat x;
 	GLfloat y;
-public:
-	SDL_Surface *image;
-	void MuutaX(GLfloat xpar)
-	{
-		x = xpar;
-	}
-	void MuutaY(GLfloat ypar)
-	{
-		y = ypar;
-	}
-	GLfloat LueX()
-	{
-		return x;
-	}
-	GLfloat LueY()
-	{
-		return y;
-	}
 };
 
-int hoida_viestit(void);
-void metsa_piirra(void);
-void metsa_toiminta(float deltaTime);
+enum GameMode { MENU, FOREST, RESULTS, EXIT };
+
+struct GameStateForest {
+	Sartre sartre;
+	Tausta tausta;
+};
+
+struct GameStateMenu {
+	int selectedButton = 0;
+};
+
+struct GameStateResults {
+
+};
+
+struct InputResult {
+	bool transition;
+	GameMode transitionTo;
+};
+
+struct Textures {
+	GLuint forestSartre[3];
+	GLuint forestTausta[1];
+};
 
 const int IKKUNA_LEVEYS = 1024;
 const int IKKUNA_KORKEUS = 768;
@@ -123,57 +80,113 @@ const int KARTTA_KORKEUS = 768;
 const int HAHMO_LEVEYS = 100;
 const int HAHMO_KORKEUS = 100;
 
-GLuint tex[4];
-
-Hahmo sartre;
-GLuint texSartre[3];
-Tausta tausta;
-GLuint texTausta[1];
-
-int MySDL_glTexImage2D(SDL_Surface *kuva)
+SDL_Surface* format_sdl_surface(SDL_Surface *surface)
 {
-	if (!kuva || !kuva->w || !kuva->h || (kuva->w & 1) || (kuva->h & 1)) {
-		return -1;
+	if (!surface || !surface->w || !surface->h || (surface->w & 1) || (surface->h & 1)) {
+		std::cerr << "Error: Invalid SDL surface." << std::endl;
+		return nullptr; // Indicate failure with nullptr
 	}
 
-	SDL_Surface *formattedSurface = SDL_ConvertSurfaceFormat(kuva, SDL_PIXELFORMAT_RGBA32, 0);
-	if (!formattedSurface) {
-		return -1;
-	}
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedSurface->w, formattedSurface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, formattedSurface->pixels);
-
-	SDL_FreeSurface(formattedSurface);
-	return 0;
+	return SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32, 0);
 }
 
-int hoida_viestit(void)
+void load_textures(Textures &textures, std::string dataPath)
+{
+	SDL_Surface *forestSartreImage[3];
+	SDL_Surface *forestTaustaImage;
+
+	// Lataa kuvadata heti alkuun
+	SDL_RWops *rwop;
+	rwop = SDL_RWFromFile((dataPath + "images/Sartre1a.png").c_str(), "rb");
+	forestSartreImage[0] = IMG_LoadPNG_RW(rwop);
+	SDL_RWclose(rwop);
+
+	rwop = SDL_RWFromFile((dataPath + "images/Sartre2a.png").c_str(), "rb");
+	forestSartreImage[1] = IMG_LoadPNG_RW(rwop);
+	SDL_RWclose(rwop);
+
+	rwop = SDL_RWFromFile((dataPath + "images/Sartre3a.png").c_str(), "rb");
+	forestSartreImage[2] = IMG_LoadPNG_RW(rwop);
+	SDL_RWclose(rwop);
+
+	rwop = SDL_RWFromFile((dataPath + "images/lehto.png").c_str(), "rb");
+	forestTaustaImage = IMG_LoadPNG_RW(rwop);
+	SDL_RWclose(rwop);
+
+	// Sartret
+	glGenTextures(3, textures.forestSartre);
+	for (int i = 0; i < 3; i++) {
+		SDL_Surface* formattedSurface = format_sdl_surface(forestSartreImage[i]);
+		if (!formattedSurface) {
+			printf("Virhe: Could not format a surface: %s\n", SDL_GetError());
+			exit(1);
+		}
+		glBindTexture(GL_TEXTURE_2D, textures.forestSartre[i]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedSurface->w, formattedSurface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, formattedSurface->pixels);
+		SDL_FreeSurface(formattedSurface);
+		SDL_FreeSurface(forestSartreImage[i]);
+	}
+
+	// Metsän tausta
+	SDL_Surface* formattedSurface = format_sdl_surface(forestTaustaImage);
+	if (!formattedSurface) {
+		printf("Virhe: Could not format a surface: %s\n", SDL_GetError());
+		exit(1);
+	}
+	glGenTextures(1, textures.forestTausta);
+	glBindTexture(GL_TEXTURE_2D, textures.forestTausta[0]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedSurface->w, formattedSurface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, formattedSurface->pixels);
+	SDL_FreeSurface(formattedSurface);
+	SDL_FreeSurface(forestTaustaImage);
+
+}
+void free_textures(Textures &textures)
+{
+	for (int a = 0; a < 4; a++) {
+		glDeleteTextures(1, &textures.forestSartre[a]);
+	}
+	glDeleteTextures(1, &textures.forestTausta[0]);
+}
+
+InputResult handle_input(GameMode &gameMode)
 {
 	SDL_Event event;
 
+	InputResult inputResult;
+	inputResult.transition = false;
+
 	while (SDL_PollEvent(&event)) {
 		if (event.type == SDL_QUIT) {
-			return -1;
+			inputResult.transitionTo = EXIT;
+			inputResult.transition = true;
 		}
 		if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
-			return -1;
+			inputResult.transitionTo = EXIT;
+			inputResult.transition = true;
 		}
 	}
-	return 0;
+	return inputResult;
 }
 
-void metsa_piirra(void)
+void forest_draw(GameStateForest &gameStateForest, Textures &textures)
 {
+	Sartre &sartre = gameStateForest.sartre;
+	Tausta &tausta = gameStateForest.tausta;
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
-	glTranslatef(sartre.LueX(), sartre.LueY(), 0.0f);
+	glTranslatef(sartre.x, sartre.y, 0.0f);
 
 	glEnable(GL_BLEND);
 	glEnable(GL_ALPHA_TEST);
 
-	if (sartre.hahmo == 0) glBindTexture(GL_TEXTURE_2D, texSartre[0]);
-	else if (sartre.hahmo == 1) glBindTexture(GL_TEXTURE_2D, texSartre[1]);
-	else glBindTexture(GL_TEXTURE_2D, texSartre[2]);
+	if (sartre.hahmo == 0) glBindTexture(GL_TEXTURE_2D, textures.forestSartre[0]);
+	else if (sartre.hahmo == 1) glBindTexture(GL_TEXTURE_2D, textures.forestSartre[1]);
+	else glBindTexture(GL_TEXTURE_2D, textures.forestSartre[2]);
 
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, -1.0f);
@@ -191,8 +204,8 @@ void metsa_piirra(void)
 
 	glLoadIdentity();
 
-	glTranslatef(tausta.LueX(), tausta.LueY(), 0.0f);
-	glBindTexture(GL_TEXTURE_2D, texTausta[0]);
+	glTranslatef(tausta.x, tausta.y, 0.0f);
+	glBindTexture(GL_TEXTURE_2D, textures.forestTausta[0]);
 	glBegin(GL_QUADS);
 	// Cropataan vähän reunasta
 	glTexCoord2f(0.01f, 0.0f);
@@ -207,46 +220,58 @@ void metsa_piirra(void)
 	glEnd();
 }
 
-void metsa_toiminta(float deltaTime)
+void forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float deltaTime)
 {
+	Sartre &sartre = gameStateForest.sartre;
+	Tausta &tausta = gameStateForest.tausta;
+
+	// Vaihda hahmoa
+	if (totalElapsed % 1000 <= 333) {
+		sartre.hahmo = 0;
+	} else if (totalElapsed % 1000 <= 666) {
+		sartre.hahmo = 1;
+	} else {
+		sartre.hahmo = 2;
+	}
+
 	const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
 	if (keystate[SDL_SCANCODE_RIGHT]) {
-		if (tausta.LueX() > -(KARTTA_LEVEYS*2 - IKKUNA_LEVEYS)) {
-			if (sartre.LueX() < ((IKKUNA_LEVEYS / 4) * 3)) {
-				sartre.MuutaX(sartre.LueX() + deltaTime*sartre.LueVX());
-			} else tausta.MuutaX(tausta.LueX() - deltaTime*sartre.LueVX());
+		if (tausta.x > -(KARTTA_LEVEYS*2 - IKKUNA_LEVEYS)) {
+			if (sartre.x < ((IKKUNA_LEVEYS / 4) * 3)) {
+				sartre.x = sartre.x + deltaTime*sartre.vx;
+			} else tausta.x = tausta.x - deltaTime*sartre.vx;
 		} else {
-			if (sartre.LueX() < IKKUNA_LEVEYS - 100) {
-				sartre.MuutaX(sartre.LueX() + deltaTime*sartre.LueVX());
+			if (sartre.x < IKKUNA_LEVEYS - 100) {
+				sartre.x = sartre.x + deltaTime*sartre.vx;
 			}
 		}
 	}
 
 	if (keystate[SDL_SCANCODE_LEFT]) {
-		if (tausta.LueX() < KARTTA_LEVEYS*2) {
-			if (sartre.LueX() > (IKKUNA_LEVEYS / 4)) {
-				sartre.MuutaX(sartre.LueX() - deltaTime*sartre.LueVX());
-			} else tausta.MuutaX(tausta.LueX() + deltaTime*sartre.LueVX());
+		if (tausta.x < KARTTA_LEVEYS*2) {
+			if (sartre.x > (IKKUNA_LEVEYS / 4)) {
+				sartre.x = sartre.x - deltaTime*sartre.vx;
+			} else tausta.x = tausta.x + deltaTime*sartre.vx;
 		} else {
-			if (sartre.LueX() > 0 + 100) {
-				sartre.MuutaX(sartre.LueX() - deltaTime*sartre.LueVX());
+			if (sartre.x > 0 + 100) {
+				sartre.x = sartre.x - deltaTime*sartre.vx;
 			}
 		}
 	}
 
 	if (sartre.hyppy == 0 && keystate[SDL_SCANCODE_UP]) {
 		sartre.hyppy = 1;
-		sartre.MuutaVY(-1200);
-		sartre.MuutaAlkupY(sartre.LueY());
+		sartre.vy = -1200;
+		sartre.alkupy = sartre.y;
 	}
 
 	if (sartre.hyppy == 1) {
-		sartre.MuutaY(sartre.LueY() + deltaTime*sartre.LueVY());
-		sartre.MuutaVY(sartre.LueVY() + deltaTime*3000);
-		if (sartre.LueY() > sartre.LueAlkupY()) {
+		sartre.y = sartre.y + deltaTime*sartre.vy;
+		sartre.vy = sartre.vy + deltaTime*3000;
+		if (sartre.y > sartre.alkupy) {
 			sartre.hyppy = 0;
-			sartre.MuutaY(sartre.LueAlkupY());
+			sartre.y = sartre.alkupy;
 		}
 	}
 }
@@ -257,30 +282,7 @@ int main(int argc, char **argv)
 
 	std::string dataPath = getResourcePath();
 
-	// Lataa kuvadata heti alkuun
-	SDL_RWops *rwop;
-	rwop = SDL_RWFromFile((dataPath + "images/Sartre1a.png").c_str(), "rb");
-	sartre.image[0] = IMG_LoadPNG_RW(rwop);
-	SDL_RWclose(rwop);
-
-	rwop = SDL_RWFromFile((dataPath + "images/Sartre2a.png").c_str(), "rb");
-	sartre.image[1] = IMG_LoadPNG_RW(rwop);
-	SDL_RWclose(rwop);
-
-	rwop = SDL_RWFromFile((dataPath + "images/Sartre3a.png").c_str(), "rb");
-	sartre.image[2] = IMG_LoadPNG_RW(rwop);
-	SDL_RWclose(rwop);
-
-	rwop = SDL_RWFromFile((dataPath + "images/lehto.png").c_str(), "rb");
-	tausta.image = IMG_LoadPNG_RW(rwop);
-	SDL_RWclose(rwop);
-
-	if (!sartre.image[0] || !sartre.image[1] || !sartre.image[2] || !tausta.image) {
-		printf("Error loading images\n");
-		return -1;
-	}
-
-	// Jotta savutesti on tehokkaampi
+	// Tee savutesti
 	if (argc > 1 && std::strcmp(argv[1], "--smoke") == 0) {
 		std::cout << "Smoketest ran fine!" << std::endl;
 		return 0;
@@ -337,29 +339,25 @@ int main(int argc, char **argv)
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 	glClearColor(0.0, 0.0, 0.0, 0.0);
 
-	// Tekstuurit
-	glGenTextures(3, texSartre);
-	glGenTextures(1, texTausta);
+	// Alusta tila
+	GameStateForest gameStateForest;
+	Sartre &sartre = gameStateForest.sartre;
+	Tausta &tausta = gameStateForest.tausta;
 
-	glBindTexture(GL_TEXTURE_2D, texSartre[0]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	MySDL_glTexImage2D(sartre.image[0]);
+	// Alusta hahmo
+	sartre.x = 400.0;
+	sartre.y = 650.0;
+	sartre.hahmo = 0;
+	sartre.hyppy = 0;
+	sartre.vx = 500;
 
-	glBindTexture(GL_TEXTURE_2D, texSartre[1]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	MySDL_glTexImage2D(sartre.image[1]);
+	// Alusta tausta
+	tausta.x = 0.0;
+	tausta.y = 0.0;
 
-	glBindTexture(GL_TEXTURE_2D, texSartre[2]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	MySDL_glTexImage2D(sartre.image[2]);
-
-	glBindTexture(GL_TEXTURE_2D, texTausta[0]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	MySDL_glTexImage2D(tausta.image);
+	// Lattaa kaikki tekstuurit heti alkuun
+	Textures textures;
+	load_textures(textures, dataPath);
 
 	// Musiikki
 
@@ -388,55 +386,43 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	// Alusta hahmo
-	sartre.MuutaX(400.0);
-	sartre.MuutaY(650.0);
-	sartre.hahmo = 0;
-	sartre.hyppy = 0;
-	sartre.MuutaVX(500);
-
-	if (hoida_viestit() != 0) {
-		exit(0);
-	}
+	GameMode gameMode = FOREST;
 
 	Uint32 lastTick = SDL_GetTicks();
 	Uint32 currentTick = 0;
-	Uint32 hahmoElapsed = 0;
+	Uint32 totalElapsed = 0;
 	float deltaTime = 0.0f;
 
-	while (hoida_viestit() == 0) {
+	while (true) {
+
+		InputResult inputResult = handle_input(gameMode);
+		if (inputResult.transition == true && inputResult.transitionTo == EXIT) {
+			break;
+		}
+
 		currentTick = SDL_GetTicks();
 		deltaTime = (currentTick - lastTick) / 1000.0f;
-		hahmoElapsed += currentTick - lastTick;
+		totalElapsed += currentTick - lastTick;
 		lastTick = currentTick;
 
-		// Laske liikkeet
-		metsa_toiminta(deltaTime);
-
-		// Vaihda hahmoa
-		if (hahmoElapsed >= 300) {
-			sartre.hahmo = (sartre.hahmo + 1) % 3;
-			hahmoElapsed = 0;
+		// Päivitä
+		if (gameMode == FOREST) {
+			forest_update(gameStateForest, totalElapsed, deltaTime);
 		}
 
 		// Piirrä
-		metsa_piirra();
-		SDL_GL_SwapWindow(window);
+		if (gameMode == FOREST) {
+			forest_draw(gameStateForest, textures);
+		}
 
+		SDL_GL_SwapWindow(window);
 
 		SDL_Delay(1);
 	}
 
-	for (int a = 0; a < 3; a++) {
-		SDL_FreeSurface(sartre.image[a]);
-	}
-	SDL_FreeSurface(tausta.image);
+	free_textures(textures);
 
-	for (int a = 0; a < 4; a++) {
-		glDeleteTextures(1, &texSartre[a]);
-	}
-	glDeleteTextures(1, &texTausta[0]);
-
+	// Tuhoa loput
 	SDL_GL_DeleteContext(context);
 	SDL_DestroyWindow(window);
 
