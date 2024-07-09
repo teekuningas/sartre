@@ -74,11 +74,11 @@ struct Textures {
 };
 
 const int IKKUNA_LEVEYS = 1024;
-const int IKKUNA_KORKEUS = 768;
-const int KARTTA_LEVEYS = 2028;
-const int KARTTA_KORKEUS = 768;
-const int HAHMO_LEVEYS = 100;
-const int HAHMO_KORKEUS = 100;
+const int IKKUNA_KORKEUS = 1024;
+const int KARTTA_LEVEYS = 2048;
+const int KARTTA_KORKEUS = 2048;
+const int HAHMO_LEVEYS = 500;
+const int HAHMO_KORKEUS = 500;
 
 SDL_Surface* format_sdl_surface(SDL_Surface *surface)
 {
@@ -190,13 +190,13 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures)
 
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, -1.0f);
-	glVertex3f(-HAHMO_LEVEYS, -HAHMO_KORKEUS, 1.0f); // Bottom Left
+	glVertex3f(-HAHMO_LEVEYS/2, HAHMO_KORKEUS/2, 1.0f); // Top Left
 	glTexCoord2f(1.0f, -1.0f);
-	glVertex3f(HAHMO_LEVEYS, -HAHMO_KORKEUS, 1.0f); // Bottom Right
+	glVertex3f(HAHMO_LEVEYS/2, HAHMO_KORKEUS/2, 1.0f); // Top Right
 	glTexCoord2f(1.0f, 0.0f);
-	glVertex3f(HAHMO_LEVEYS, HAHMO_KORKEUS, 1.0f); // Top Right
+	glVertex3f(HAHMO_LEVEYS/2, -HAHMO_KORKEUS/2, 1.0f); // Bottom Right
 	glTexCoord2f(0.0f, 0.0f);
-	glVertex3f(-HAHMO_LEVEYS, HAHMO_KORKEUS, 1.0f); // Top Left
+	glVertex3f(-HAHMO_LEVEYS/2, -HAHMO_KORKEUS/2, 1.0f); // Bottom Left
 	glEnd();
 
 	glDisable(GL_BLEND);
@@ -207,16 +207,14 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures)
 	glTranslatef(tausta.x, tausta.y, 0.0f);
 	glBindTexture(GL_TEXTURE_2D, textures.forestTausta[0]);
 	glBegin(GL_QUADS);
-	// Cropataan vähän reunasta
-	glTexCoord2f(0.01f, 0.0f);
-	glVertex3f(-KARTTA_LEVEYS*2, KARTTA_KORKEUS, 0.0f); // Bottom Left
-	glTexCoord2f(1.0f, 0.0f);
-	glVertex3f(KARTTA_LEVEYS*2, KARTTA_KORKEUS, 0.0f); // Bottom Right
+	glTexCoord2f(0.0f, -1.0f);
+	glVertex3f(-KARTTA_LEVEYS, KARTTA_KORKEUS*2, 0.0f); // Top Left
 	glTexCoord2f(1.0f, -1.0f);
-	glVertex3f(KARTTA_LEVEYS*2, 0.0f, 0.0f); // Top Right
-	// Cropataan vähän reunasta
-	glTexCoord2f(0.01f, -1.0f);
-	glVertex3f(-KARTTA_LEVEYS*2, 0.0f, 0.0f); // Top Left
+	glVertex3f(KARTTA_LEVEYS, KARTTA_KORKEUS*2, 0.0f); // Top Right
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex3f(KARTTA_LEVEYS, 0.0f, 0.0f); // Bottom Right
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex3f(-KARTTA_LEVEYS, 0.0f, 0.0f); // Bottom Left
 	glEnd();
 }
 
@@ -237,39 +235,23 @@ void forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float 
 	const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
 	if (keystate[SDL_SCANCODE_RIGHT]) {
-		if (tausta.x > -(KARTTA_LEVEYS*2 - IKKUNA_LEVEYS)) {
-			if (sartre.x < ((IKKUNA_LEVEYS / 4) * 3)) {
-				sartre.x = sartre.x + deltaTime*sartre.vx;
-			} else tausta.x = tausta.x - deltaTime*sartre.vx;
-		} else {
-			if (sartre.x < IKKUNA_LEVEYS - 100) {
-				sartre.x = sartre.x + deltaTime*sartre.vx;
-			}
-		}
+		sartre.x = sartre.x + deltaTime*sartre.vx;
 	}
 
 	if (keystate[SDL_SCANCODE_LEFT]) {
-		if (tausta.x < KARTTA_LEVEYS*2) {
-			if (sartre.x > (IKKUNA_LEVEYS / 4)) {
-				sartre.x = sartre.x - deltaTime*sartre.vx;
-			} else tausta.x = tausta.x + deltaTime*sartre.vx;
-		} else {
-			if (sartre.x > 0 + 100) {
-				sartre.x = sartre.x - deltaTime*sartre.vx;
-			}
-		}
+		sartre.x = sartre.x - deltaTime*sartre.vx;
 	}
 
 	if (sartre.hyppy == 0 && keystate[SDL_SCANCODE_UP]) {
 		sartre.hyppy = 1;
-		sartre.vy = -1200;
+		sartre.vy = 3000;
 		sartre.alkupy = sartre.y;
 	}
 
 	if (sartre.hyppy == 1) {
 		sartre.y = sartre.y + deltaTime*sartre.vy;
-		sartre.vy = sartre.vy + deltaTime*3000;
-		if (sartre.y > sartre.alkupy) {
+		sartre.vy = sartre.vy - deltaTime*5000;
+		if (sartre.y < sartre.alkupy) {
 			sartre.hyppy = 0;
 			sartre.y = sartre.alkupy;
 		}
@@ -299,7 +281,7 @@ int main(int argc, char **argv)
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
 
 	SDL_Window *window = SDL_CreateWindow(
-	                         "Sartre temmeltaa lehdossa nälkaisenä",
+	                         "Sartre temmeltää lehdossa nälkaisenä",
 	                         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 	                         IKKUNA_LEVEYS, IKKUNA_KORKEUS,
 	                         SDL_WINDOW_OPENGL | 0
@@ -321,7 +303,7 @@ int main(int argc, char **argv)
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 
-	glOrtho(0.0f, IKKUNA_LEVEYS, IKKUNA_KORKEUS, 0.0f, -100.0f, 100.0f);
+	glOrtho(-KARTTA_LEVEYS, KARTTA_LEVEYS, 0.0f, KARTTA_KORKEUS*2, -100.0f, 100.0f);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glShadeModel(GL_SMOOTH);
@@ -345,11 +327,11 @@ int main(int argc, char **argv)
 	Tausta &tausta = gameStateForest.tausta;
 
 	// Alusta hahmo
-	sartre.x = 400.0;
-	sartre.y = 650.0;
+	sartre.x = 0.0;
+	sartre.y = HAHMO_KORKEUS + 50.0f; // ground
 	sartre.hahmo = 0;
 	sartre.hyppy = 0;
-	sartre.vx = 500;
+	sartre.vx = 1000;
 
 	// Alusta tausta
 	tausta.x = 0.0;
