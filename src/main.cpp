@@ -61,7 +61,7 @@ struct InputResult {
 };
 
 struct Textures {
-	GLuint forestSartre[3];
+	GLuint forestSartre[2];
 	GLuint forestTausta[1];
 };
 
@@ -76,8 +76,8 @@ struct ImageData {
 
 const int KARTTA_LEVEYS = 2048;
 const int KARTTA_KORKEUS = 2048;
-const int HAHMO_LEVEYS = 250;
-const int HAHMO_KORKEUS = 250;
+const int HAHMO_LEVEYS = 256;
+const int HAHMO_KORKEUS = 350;
 const int MAA_KORKEUS = 50;
 
 const float HAHMO_VX = 800.0f;
@@ -99,19 +99,15 @@ void load_images(Textures &textures, Surfaces &surfaces, std::string dataPath)
 	SDL_RWops *rwop;
 
 	// Load textures
-	SDL_Surface *forestSartreImage[3];
+	SDL_Surface *forestSartreImage[2];
 	SDL_Surface *forestTaustaImage;
 
-	rwop = SDL_RWFromFile((dataPath + "images/Sartre1a.png").c_str(), "rb");
+	rwop = SDL_RWFromFile((dataPath + "images/sartre.png").c_str(), "rb");
 	forestSartreImage[0] = IMG_LoadPNG_RW(rwop);
 	SDL_RWclose(rwop);
 
-	rwop = SDL_RWFromFile((dataPath + "images/Sartre2a.png").c_str(), "rb");
+	rwop = SDL_RWFromFile((dataPath + "images/sartre2.png").c_str(), "rb");
 	forestSartreImage[1] = IMG_LoadPNG_RW(rwop);
-	SDL_RWclose(rwop);
-
-	rwop = SDL_RWFromFile((dataPath + "images/Sartre3a.png").c_str(), "rb");
-	forestSartreImage[2] = IMG_LoadPNG_RW(rwop);
 	SDL_RWclose(rwop);
 
 	rwop = SDL_RWFromFile((dataPath + "images/lehto.png").c_str(), "rb");
@@ -119,8 +115,8 @@ void load_images(Textures &textures, Surfaces &surfaces, std::string dataPath)
 	SDL_RWclose(rwop);
 
 	// Sartret
-	glGenTextures(3, textures.forestSartre);
-	for (int i = 0; i < 3; i++) {
+	glGenTextures(2, textures.forestSartre);
+	for (int i = 0; i < 2; i++) {
 		SDL_Surface* formattedSurface = format_sdl_surface(forestSartreImage[i]);
 		if (!formattedSurface) {
 			printf("Virhe: Could not format a surface: %s\n", SDL_GetError());
@@ -157,7 +153,7 @@ void load_images(Textures &textures, Surfaces &surfaces, std::string dataPath)
 void free_images(Textures &textures, Surfaces &surfaces)
 {
 	// Free textures
-	for (int a = 0; a < 4; a++) {
+	for (int a = 0; a < 2; a++) {
 		glDeleteTextures(1, &textures.forestSartre[a]);
 	}
 	glDeleteTextures(1, &textures.forestTausta[0]);
@@ -218,17 +214,16 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures)
 	glEnable(GL_ALPHA_TEST);
 
 	if (sartre.hahmo == 0) glBindTexture(GL_TEXTURE_2D, textures.forestSartre[0]);
-	else if (sartre.hahmo == 1) glBindTexture(GL_TEXTURE_2D, textures.forestSartre[1]);
-	else glBindTexture(GL_TEXTURE_2D, textures.forestSartre[2]);
+	else glBindTexture(GL_TEXTURE_2D, textures.forestSartre[1]);
 
 	glBegin(GL_QUADS);
-	glTexCoord2f(0.0f, -1.0f);
+	glTexCoord2f(0.01f, -0.99f);
 	glVertex3f(-HAHMO_LEVEYS/2, HAHMO_KORKEUS/2, 0.0f); // Top Left
-	glTexCoord2f(1.0f, -1.0f);
+	glTexCoord2f(0.99f, -0.99f);
 	glVertex3f(HAHMO_LEVEYS/2, HAHMO_KORKEUS/2, 0.0f); // Top Right
-	glTexCoord2f(1.0f, 0.0f);
+	glTexCoord2f(0.99f, 0.01f);
 	glVertex3f(HAHMO_LEVEYS/2, -HAHMO_KORKEUS/2, 0.0f); // Bottom Right
-	glTexCoord2f(0.0f, 0.0f);
+	glTexCoord2f(0.01f, 0.01f);
 	glVertex3f(-HAHMO_LEVEYS/2, -HAHMO_KORKEUS/2, 0.0f); // Bottom Left
 	glEnd();
 
@@ -260,15 +255,11 @@ InputResult forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed,
 
 	const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
-	// Vaihda hahmoa liikkeessä
-	if (keystate[SDL_SCANCODE_RIGHT] || keystate[SDL_SCANCODE_LEFT]) {
-		if (totalElapsed % 1000 <= 333) {
-			sartre.hahmo = 0;
-		} else if (totalElapsed % 1000 <= 666) {
-			sartre.hahmo = 1;
-		} else {
-			sartre.hahmo = 2;
-		}
+	// Vaihda hahmoa
+	if (totalElapsed % 1000 <= 500) {
+		sartre.hahmo = 0;
+	} else {
+		sartre.hahmo = 1;
 	}
 
 	if (keystate[SDL_SCANCODE_RIGHT]) {
