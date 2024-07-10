@@ -212,7 +212,7 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures)
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
-	glTranslatef(sartre.x, sartre.y, 0.0f);
+	glTranslatef(sartre.x, sartre.y, 0.1f); // foreground
 
 	glEnable(GL_BLEND);
 	glEnable(GL_ALPHA_TEST);
@@ -223,13 +223,13 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures)
 
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, -1.0f);
-	glVertex3f(-HAHMO_LEVEYS/2, HAHMO_KORKEUS/2, 1.0f); // Top Left
+	glVertex3f(-HAHMO_LEVEYS/2, HAHMO_KORKEUS/2, 0.0f); // Top Left
 	glTexCoord2f(1.0f, -1.0f);
-	glVertex3f(HAHMO_LEVEYS/2, HAHMO_KORKEUS/2, 1.0f); // Top Right
+	glVertex3f(HAHMO_LEVEYS/2, HAHMO_KORKEUS/2, 0.0f); // Top Right
 	glTexCoord2f(1.0f, 0.0f);
-	glVertex3f(HAHMO_LEVEYS/2, -HAHMO_KORKEUS/2, 1.0f); // Bottom Right
+	glVertex3f(HAHMO_LEVEYS/2, -HAHMO_KORKEUS/2, 0.0f); // Bottom Right
 	glTexCoord2f(0.0f, 0.0f);
-	glVertex3f(-HAHMO_LEVEYS/2, -HAHMO_KORKEUS/2, 1.0f); // Bottom Left
+	glVertex3f(-HAHMO_LEVEYS/2, -HAHMO_KORKEUS/2, 0.0f); // Bottom Left
 	glEnd();
 
 	glDisable(GL_BLEND);
