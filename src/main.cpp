@@ -37,22 +37,14 @@ struct Sartre {
 	GLfloat x;
 	GLfloat y;
 	GLfloat vy;
-	GLfloat vx;
-	GLfloat alkupy;
 	int hahmo;
 	bool hyppy;
-};
-
-struct Tausta {
-	GLfloat x;
-	GLfloat y;
 };
 
 enum GameMode { MENU, FOREST, RESULTS, EXIT };
 
 struct GameStateForest {
 	Sartre sartre;
-	Tausta tausta;
 };
 
 struct GameStateMenu {
@@ -73,12 +65,24 @@ struct Textures {
 	GLuint forestTausta[1];
 };
 
-const int IKKUNA_LEVEYS = 1024;
-const int IKKUNA_KORKEUS = 1024;
+struct Surfaces {
+	SDL_Surface* forestCollisionMap;
+};
+
+struct ImageData {
+	Textures textures;
+	Surfaces surfaces;
+};
+
 const int KARTTA_LEVEYS = 2048;
 const int KARTTA_KORKEUS = 2048;
-const int HAHMO_LEVEYS = 500;
-const int HAHMO_KORKEUS = 500;
+const int HAHMO_LEVEYS = 250;
+const int HAHMO_KORKEUS = 250;
+const int MAA_KORKEUS = 50;
+
+const float HAHMO_VX = 800.0f;
+const float HAHMO_G = 4000.0f;
+const float HAHMO_HYPPYNOPEUS = 2100.0f;
 
 SDL_Surface* format_sdl_surface(SDL_Surface *surface)
 {
@@ -90,13 +94,14 @@ SDL_Surface* format_sdl_surface(SDL_Surface *surface)
 	return SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32, 0);
 }
 
-void load_textures(Textures &textures, std::string dataPath)
+void load_images(Textures &textures, Surfaces &surfaces, std::string dataPath)
 {
+	SDL_RWops *rwop;
+
+	// Load textures
 	SDL_Surface *forestSartreImage[3];
 	SDL_Surface *forestTaustaImage;
 
-	// Lataa kuvadata heti alkuun
-	SDL_RWops *rwop;
 	rwop = SDL_RWFromFile((dataPath + "images/Sartre1a.png").c_str(), "rb");
 	forestSartreImage[0] = IMG_LoadPNG_RW(rwop);
 	SDL_RWclose(rwop);
@@ -143,16 +148,36 @@ void load_textures(Textures &textures, std::string dataPath)
 	SDL_FreeSurface(formattedSurface);
 	SDL_FreeSurface(forestTaustaImage);
 
+	// Load collision map
+	rwop = SDL_RWFromFile((dataPath + "images/lehto_platforms.png").c_str(), "rb");
+	surfaces.forestCollisionMap = IMG_LoadPNG_RW(rwop);
+	SDL_RWclose(rwop);
+
 }
-void free_textures(Textures &textures)
+void free_images(Textures &textures, Surfaces &surfaces)
 {
+	// Free textures
 	for (int a = 0; a < 4; a++) {
 		glDeleteTextures(1, &textures.forestSartre[a]);
 	}
 	glDeleteTextures(1, &textures.forestTausta[0]);
+
+	// Free surfaces
+	SDL_FreeSurface(surfaces.forestCollisionMap);
 }
 
-InputResult handle_input(GameMode &gameMode)
+bool isPixelBlack(SDL_Surface* surface, int x, int y, Uint8 threshold = 50)
+{
+	if (x < 0 || x >= surface->w || y < 0 || y >= surface->h) {
+		return false; // Out of bounds, consider it non-colliding (white)
+	}
+
+	Uint8 pixel = *((Uint8*)surface->pixels + y * surface->pitch + x); // Direct pixel access for 8-bit grayscale
+
+	return pixel < threshold; // Black if below the threshold
+}
+
+InputResult handle_events(GameMode &gameMode, bool fullscreen)
 {
 	SDL_Event event;
 
@@ -160,13 +185,22 @@ InputResult handle_input(GameMode &gameMode)
 	inputResult.transition = false;
 
 	while (SDL_PollEvent(&event)) {
-		if (event.type == SDL_QUIT) {
+		switch (event.type) {
+		case SDL_QUIT:
 			inputResult.transitionTo = EXIT;
 			inputResult.transition = true;
-		}
-		if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
-			inputResult.transitionTo = EXIT;
-			inputResult.transition = true;
+			break;
+
+		case SDL_WINDOWEVENT:
+			if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
+				if(!fullscreen) {
+					int windowWidth = event.window.data1;
+					int windowHeight = event.window.data2;
+					int viewportSize = std::min(windowWidth, windowHeight);
+					glViewport((windowWidth - viewportSize) / 2, (windowHeight - viewportSize) / 2, viewportSize, viewportSize);
+				}
+			}
+			break;
 		}
 	}
 	return inputResult;
@@ -175,7 +209,6 @@ InputResult handle_input(GameMode &gameMode)
 void forest_draw(GameStateForest &gameStateForest, Textures &textures)
 {
 	Sartre &sartre = gameStateForest.sartre;
-	Tausta &tausta = gameStateForest.tausta;
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
@@ -204,58 +237,86 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures)
 
 	glLoadIdentity();
 
-	glTranslatef(tausta.x, tausta.y, 0.0f);
+	glTranslatef(0.0f, 0.0f, 0.0f);
 	glBindTexture(GL_TEXTURE_2D, textures.forestTausta[0]);
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, -1.0f);
-	glVertex3f(-KARTTA_LEVEYS, KARTTA_KORKEUS*2, 0.0f); // Top Left
+	glVertex3f(-KARTTA_LEVEYS / 2, KARTTA_KORKEUS, 0.0f); // Top Left
 	glTexCoord2f(1.0f, -1.0f);
-	glVertex3f(KARTTA_LEVEYS, KARTTA_KORKEUS*2, 0.0f); // Top Right
+	glVertex3f(KARTTA_LEVEYS / 2, KARTTA_KORKEUS, 0.0f); // Top Right
 	glTexCoord2f(1.0f, 0.0f);
-	glVertex3f(KARTTA_LEVEYS, 0.0f, 0.0f); // Bottom Right
+	glVertex3f(KARTTA_LEVEYS / 2, 0.0f, 0.0f); // Bottom Right
 	glTexCoord2f(0.0f, 0.0f);
-	glVertex3f(-KARTTA_LEVEYS, 0.0f, 0.0f); // Bottom Left
+	glVertex3f(-KARTTA_LEVEYS / 2, 0.0f, 0.0f); // Bottom Left
 	glEnd();
 }
 
-void forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float deltaTime)
+InputResult forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float deltaTime, Surfaces &surfaces)
 {
-	Sartre &sartre = gameStateForest.sartre;
-	Tausta &tausta = gameStateForest.tausta;
+	InputResult inputResult;
+	inputResult.transition = false;
 
-	// Vaihda hahmoa
-	if (totalElapsed % 1000 <= 333) {
-		sartre.hahmo = 0;
-	} else if (totalElapsed % 1000 <= 666) {
-		sartre.hahmo = 1;
-	} else {
-		sartre.hahmo = 2;
-	}
+	Sartre &sartre = gameStateForest.sartre;
 
 	const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
+	// Vaihda hahmoa liikkeessä
+	if (keystate[SDL_SCANCODE_RIGHT] || keystate[SDL_SCANCODE_LEFT]) {
+		if (totalElapsed % 1000 <= 333) {
+			sartre.hahmo = 0;
+		} else if (totalElapsed % 1000 <= 666) {
+			sartre.hahmo = 1;
+		} else {
+			sartre.hahmo = 2;
+		}
+	}
+
 	if (keystate[SDL_SCANCODE_RIGHT]) {
-		sartre.x = sartre.x + deltaTime*sartre.vx;
+		if (sartre.x < KARTTA_LEVEYS / 2 - HAHMO_LEVEYS / 2) {
+			sartre.x = sartre.x + deltaTime*HAHMO_VX;
+		}
 	}
 
 	if (keystate[SDL_SCANCODE_LEFT]) {
-		sartre.x = sartre.x - deltaTime*sartre.vx;
+		if (sartre.x > -KARTTA_LEVEYS / 2 + HAHMO_LEVEYS / 2) {
+			sartre.x = sartre.x - deltaTime*HAHMO_VX;
+		}
 	}
 
 	if (sartre.hyppy == 0 && keystate[SDL_SCANCODE_UP]) {
 		sartre.hyppy = 1;
-		sartre.vy = 3000;
-		sartre.alkupy = sartre.y;
+		sartre.vy = HAHMO_HYPPYNOPEUS;
 	}
 
-	if (sartre.hyppy == 1) {
+	GLfloat predictedY = sartre.y + deltaTime*sartre.vy;
+
+	int sartreXPixels = (int)(sartre.x + KARTTA_LEVEYS / 2);
+	int commonExtra = HAHMO_KORKEUS / 8;
+	int padding = 2; // if the platform is not exactly exactly straight
+	int sartreYPixels = (int)(sartre.y - HAHMO_KORKEUS / 2 + commonExtra);
+	int predictedYPixels = (int)(predictedY - HAHMO_KORKEUS / 2 + commonExtra - padding);
+
+	if (sartre.y >= HAHMO_KORKEUS / 2 + MAA_KORKEUS && predictedY < HAHMO_KORKEUS / 2 + MAA_KORKEUS) {
+		sartre.hyppy = 0;
+		sartre.vy = 0;
+	} else if (
+	    predictedY < sartre.y &&
+	    !isPixelBlack(surfaces.forestCollisionMap, sartreXPixels, KARTTA_KORKEUS - sartreYPixels) &&
+	    isPixelBlack(surfaces.forestCollisionMap, sartreXPixels, KARTTA_KORKEUS - predictedYPixels)
+	) {
+		sartre.hyppy = 0;
+		sartre.vy = 0;
+	} else {
 		sartre.y = sartre.y + deltaTime*sartre.vy;
-		sartre.vy = sartre.vy - deltaTime*5000;
-		if (sartre.y < sartre.alkupy) {
-			sartre.hyppy = 0;
-			sartre.y = sartre.alkupy;
-		}
+		sartre.vy = sartre.vy - deltaTime*HAHMO_G;
 	}
+
+	if (keystate[SDL_SCANCODE_ESCAPE]) {
+		inputResult.transitionTo = EXIT;
+		inputResult.transition = true;
+	}
+
+	return inputResult;
 }
 
 
@@ -270,6 +331,11 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	bool fullscreen = false;
+	if (argc > 1 && std::strcmp(argv[1], "--fullscreen") == 0) {
+		fullscreen = true;
+	}
+
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
 		printf("Virhe: SDL_Init: %s\n", SDL_GetError());
 		exit(1);
@@ -280,11 +346,40 @@ int main(int argc, char **argv)
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
 
+	SDL_DisplayMode DM;
+	SDL_GetCurrentDisplayMode(0, &DM);
+	int screenWidth = DM.w;
+	int screenHeight = DM.h;
+	printf("Screen width: %d\n", screenWidth);
+	printf("Screen height: %d\n", screenHeight);
+
+	// Pick smaller of the screen dimensions for viewport size.
+	int viewportSize;
+	if (fullscreen) {
+		viewportSize = std::min(screenWidth, screenHeight);
+	} else {
+		// Include some extra space in windowed mode
+		viewportSize = (std::min(screenWidth, screenHeight) / 4) * 3;
+	}
+	int windowWidth;
+	int windowHeight;
+	if(fullscreen) {
+		windowWidth = screenWidth;
+		windowHeight = screenHeight;
+	} else {
+		windowWidth = viewportSize;
+		windowHeight = viewportSize;
+	}
+
+	Uint32 windowFlags = SDL_WINDOW_OPENGL;
+	if (fullscreen) {
+		windowFlags |= SDL_WINDOW_FULLSCREEN;
+	}
 	SDL_Window *window = SDL_CreateWindow(
-	                         "Sartre temmeltää lehdossa nälkaisenä",
+	                         "Sartre lehdossa inhottavien asioiden ympäröimänä",
 	                         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-	                         IKKUNA_LEVEYS, IKKUNA_KORKEUS,
-	                         SDL_WINDOW_OPENGL | 0
+	                         windowWidth, windowHeight,
+	                         windowFlags
 	                     );
 
 	if (!window) {
@@ -298,12 +393,11 @@ int main(int argc, char **argv)
 		SDL_DestroyWindow(window);
 		exit(2);
 	}
-
-	glViewport(0, 0, IKKUNA_LEVEYS, IKKUNA_KORKEUS);
+	glViewport((windowWidth - viewportSize) / 2, (windowHeight - viewportSize) / 2, viewportSize, viewportSize);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 
-	glOrtho(-KARTTA_LEVEYS, KARTTA_LEVEYS, 0.0f, KARTTA_KORKEUS*2, -100.0f, 100.0f);
+	glOrtho(-KARTTA_LEVEYS / 2, KARTTA_LEVEYS / 2, 0.0f, KARTTA_KORKEUS, -100.0f, 100.0f);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glShadeModel(GL_SMOOTH);
@@ -324,22 +418,18 @@ int main(int argc, char **argv)
 	// Alusta tila
 	GameStateForest gameStateForest;
 	Sartre &sartre = gameStateForest.sartre;
-	Tausta &tausta = gameStateForest.tausta;
 
 	// Alusta hahmo
 	sartre.x = 0.0;
-	sartre.y = HAHMO_KORKEUS + 50.0f; // ground
+	sartre.y = HAHMO_KORKEUS / 2 + MAA_KORKEUS;
 	sartre.hahmo = 0;
 	sartre.hyppy = 0;
-	sartre.vx = 1000;
-
-	// Alusta tausta
-	tausta.x = 0.0;
-	tausta.y = 0.0;
 
 	// Lattaa kaikki tekstuurit heti alkuun
-	Textures textures;
-	load_textures(textures, dataPath);
+	ImageData imageData;
+	Textures &textures = imageData.textures;
+	Surfaces &surfaces = imageData.surfaces;
+	load_images(textures, surfaces, dataPath);
 
 	// Musiikki
 
@@ -376,8 +466,8 @@ int main(int argc, char **argv)
 	float deltaTime = 0.0f;
 
 	while (true) {
-
-		InputResult inputResult = handle_input(gameMode);
+		InputResult inputResult;
+		inputResult = handle_events(gameMode, fullscreen);
 		if (inputResult.transition == true && inputResult.transitionTo == EXIT) {
 			break;
 		}
@@ -389,7 +479,10 @@ int main(int argc, char **argv)
 
 		// Päivitä
 		if (gameMode == FOREST) {
-			forest_update(gameStateForest, totalElapsed, deltaTime);
+			inputResult = forest_update(gameStateForest, totalElapsed, deltaTime, surfaces);
+			if (inputResult.transition == true && inputResult.transitionTo == EXIT) {
+				break;
+			}
 		}
 
 		// Piirrä
@@ -402,7 +495,7 @@ int main(int argc, char **argv)
 		SDL_Delay(1);
 	}
 
-	free_textures(textures);
+	free_images(textures, surfaces);
 
 	// Tuhoa loput
 	SDL_GL_DeleteContext(context);
