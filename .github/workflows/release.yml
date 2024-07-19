@@ -100,6 +100,22 @@ jobs:
           make
           make install
 
+      - name: Build SDL2_ttf to avoid a lot of dylibs
+        run: |
+          git clone https://github.com/libsdl-org/SDL_ttf.git
+          cd SDL_ttf
+          git checkout release-2.22.0
+          mkdir build
+          cd build
+          mkdir -p ../../local
+          cmake .. \
+            -DCMAKE_INSTALL_PREFIX=../../local \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=13 \
+            -DCMAKE_OSX_ARCHITECTURES=x86_64 \
+            -DSDL2TTF_HARFBUZZ=OFF \
+          make
+          make install
+
       - name: Build project
         run: |
           export SDL2_INCLUDE_DIR="/usr/local/include/SDL2"
@@ -124,10 +140,6 @@ jobs:
           # Copy SDL2 library to the app bundle
           cp /usr/local/opt/sdl2/lib/libSDL2-2.0.0.dylib Sartre.app/Contents/Frameworks/
           install_name_tool -change /usr/local/opt/sdl2/lib/libSDL2-2.0.0.dylib @executable_path/../Frameworks/libSDL2-2.0.0.dylib Sartre.app/Contents/MacOS/Sartre
-
-          # Copy SDL2_ttf library to the app bundle
-          cp /usr/local/opt/sdl2/lib/libSDL2_ttf-2.0.0.dylib Sartre.app/Contents/Frameworks/
-          install_name_tool -change /usr/local/opt/sdl2/lib/libSDL2_ttf-2.0.0.dylib @executable_path/../Frameworks/libSDL2_ttf-2.0.0.dylib Sartre.app/Contents/MacOS/Sartre
 
           # Copy SDL2_image library to the app bundle
           cp ./local/lib/libSDL2_image-2.0.801.0.0.dylib Sartre.app/Contents/Frameworks/
@@ -213,7 +225,7 @@ jobs:
         with:
           msystem: MINGW64
           update: true
-          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-make mingw-w64-x86_64-cmake mingw-w64-x86_64-SDL2 mingw-w64-x86_64-SDL2_ttf mingw-w64-x86_64-libpng mingw-w64-x86_64-zlib
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-make mingw-w64-x86_64-cmake mingw-w64-x86_64-SDL2 mingw-w64-x86_64-libpng mingw-w64-x86_64-zlib
 
       - name: Install general deps
         run: |
@@ -274,6 +286,23 @@ jobs:
             -DSDL2MIXER_WAVPACK=OFF \
             -DSDL2MIXER_MP3=ON \
             ../SDL_mixer
+          mingw32-make
+          mingw32-make install
+
+      - name: Build SDL2_ttf to avoid a lot of dlls
+        run: |
+          git clone https://github.com/libsdl-org/SDL_ttf.git
+          cd SDL_ttf
+          git checkout release-2.22.0
+          cd ..
+          mkdir SDL_ttf_build
+          cd SDL_ttf_build
+          cmake -G "Unix Makefiles" \
+            -DCMAKE_MAKE_PROGRAM=${MINGW_PREFIX}/bin/mingw32-make.exe \
+            -DCMAKE_C_COMPILER=${MINGW_PREFIX}/bin/gcc.exe \
+            -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
+            -DSDL2TTF_HARFBUZZ=OFF \
+            ../SDL_ttf
           mingw32-make
           mingw32-make install
 
