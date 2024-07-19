@@ -1,5 +1,5 @@
 CC=g++
-LFLAGS = -lX11 -lm -lpthread -lSDL2 -lSDL2_image -lSDL2_mixer -lGL
+LFLAGS = -lX11 -lm -lpthread -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL
 ODIR=obj
 SRCDIR=./src
 
