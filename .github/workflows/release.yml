@@ -340,6 +340,8 @@ jobs:
           cp /mingw64/bin/libpng16-16.dll Sartre/
           cp /mingw64/bin/libharfbuzz-0.dll Sartre/
           cp /mingw64/bin/zlib1.dll Sartre/
+          cp /mingw64/bin/libglib-2.0-0.dll Sartre/
+          cp /mingw64/bin/libgraphite2.dll Sartre/
           # other deps
           cp /mingw64/bin/libstdc++-6.dll Sartre/
           cp /mingw64/bin/libgcc_s_seh-1.dll Sartre/
