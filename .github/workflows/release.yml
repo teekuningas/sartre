@@ -121,9 +121,13 @@ jobs:
           # Add rpath to the executable
           install_name_tool -add_rpath @executable_path/../Frameworks Sartre
 
-          # # Copy SDL2 library to the app bundle
+          # Copy SDL2 library to the app bundle
           cp /usr/local/opt/sdl2/lib/libSDL2-2.0.0.dylib Sartre.app/Contents/Frameworks/
           install_name_tool -change /usr/local/opt/sdl2/lib/libSDL2-2.0.0.dylib @executable_path/../Frameworks/libSDL2-2.0.0.dylib Sartre.app/Contents/MacOS/Sartre
+
+          # Copy SDL2_ttf library to the app bundle
+          cp /usr/local/opt/sdl2/lib/libSDL2_ttf-2.0.0.dylib Sartre.app/Contents/Frameworks/
+          install_name_tool -change /usr/local/opt/sdl2/lib/libSDL2_ttf-2.0.0.dylib @executable_path/../Frameworks/libSDL2_ttf-2.0.0.dylib Sartre.app/Contents/MacOS/Sartre
 
           # Copy SDL2_image library to the app bundle
           cp ./local/lib/libSDL2_image-2.0.801.0.0.dylib Sartre.app/Contents/Frameworks/
@@ -289,6 +293,7 @@ jobs:
           cp /mingw64/bin/SDL2.dll Sartre/
           cp /mingw64/bin/SDL2_mixer.dll Sartre/
           cp /mingw64/bin/SDL2_image.dll Sartre/
+          cp /mingw64/bin/SDL2_ttf.dll Sartre/
           cp /mingw64/bin/libstdc++-6.dll Sartre/
           cp /mingw64/bin/libgcc_s_seh-1.dll Sartre/
           cp /mingw64/bin/libwinpthread-1.dll Sartre/
