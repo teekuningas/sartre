@@ -41,7 +41,7 @@ jobs:
       - name: Install dependencies
         run: |
           brew update
-          brew install sdl2
+          brew install sdl2 sdl2_ttf
 
       - name: Build SDL2_image to avoid a lot of dylibs
         run: |
@@ -209,7 +209,7 @@ jobs:
         with:
           msystem: MINGW64
           update: true
-          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-make mingw-w64-x86_64-cmake mingw-w64-x86_64-SDL2 mingw-w64-x86_64-SDL2_mixer mingw-w64-x86_64-libpng mingw-w64-x86_64-zlib
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-make mingw-w64-x86_64-cmake mingw-w64-x86_64-SDL2 mingw-w64-x86_64-SDL2_ttf mingw-w64-x86_64-libpng mingw-w64-x86_64-zlib
 
       - name: Install general deps
         run: |
