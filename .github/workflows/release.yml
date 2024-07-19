@@ -142,6 +142,8 @@ jobs:
           cp /usr/local/opt/sdl2/lib/libSDL2-2.0.0.dylib Sartre.app/Contents/Frameworks/
           install_name_tool -change /usr/local/opt/sdl2/lib/libSDL2-2.0.0.dylib @executable_path/../Frameworks/libSDL2-2.0.0.dylib Sartre.app/Contents/MacOS/Sartre
 
+          ls -la ./local/lib/
+
           # Copy SDL2_image library to the app bundle
           cp ./local/lib/libSDL2_image-2.0.801.0.0.dylib Sartre.app/Contents/Frameworks/
           install_name_tool -id @executable_path/../Frameworks/libSDL2_image-2.0.801.0.0.dylib Sartre.app/Contents/Frameworks/libSDL2_image-2.0.801.0.0.dylib
