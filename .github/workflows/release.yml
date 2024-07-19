@@ -113,6 +113,7 @@ jobs:
             -DCMAKE_OSX_DEPLOYMENT_TARGET=13 \
             -DCMAKE_OSX_ARCHITECTURES=x86_64 \
             -DSDL2TTF_HARFBUZZ=OFF \
+            -DSDL2TTF_SAMPLES=OFF
           make
           make install
 
@@ -147,9 +148,9 @@ jobs:
           install_name_tool -change @rpath/libSDL2_image-2.0.801.0.0.dylib @executable_path/../Frameworks/libSDL2_image-2.0.801.0.0.dylib Sartre.app/Contents/MacOS/Sartre
 
           # Copy SDL2_ttf library to the app bundle
-          cp ./local/lib/libSDL2_ttf-2.0.0.dylib Sartre.app/Contents/Frameworks/
-          install_name_tool -id @executable_path/../Frameworks/libSDL2_ttf-2.0.0.dylib Sartre.app/Contents/Frameworks/libSDL2_ttf-2.0.0.dylib
-          install_name_tool -change @rpath/libSDL2_ttf-2.0.0.dylib @executable_path/../Frameworks/libSDL2_ttf-2.0.0.dylib Sartre.app/Contents/MacOS/Sartre
+          cp ./local/lib/libSDL2_ttf-2.0.801.0.0.dylib Sartre.app/Contents/Frameworks/
+          install_name_tool -id @executable_path/../Frameworks/libSDL2_ttf-2.0.801.0.0.dylib Sartre.app/Contents/Frameworks/libSDL2_ttf-2.0.801.0.0.dylib
+          install_name_tool -change @rpath/libSDL2_ttf-2.0.801.0.0.dylib @executable_path/../Frameworks/libSDL2_ttf-2.0.801.0.0.dylib Sartre.app/Contents/MacOS/Sartre
 
           # Copy SDL2_mixer library to the app bundle
           cp ./local/lib/libSDL2_mixer-2.0.801.0.0.dylib Sartre.app/Contents/Frameworks/
@@ -307,6 +308,7 @@ jobs:
             -DCMAKE_C_COMPILER=${MINGW_PREFIX}/bin/gcc.exe \
             -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
             -DSDL2TTF_HARFBUZZ=OFF \
+            -DSDL2TTF_SAMPLES=OFF
             ../SDL_ttf
           mingw32-make
           mingw32-make install
