@@ -308,7 +308,7 @@ jobs:
             -DCMAKE_C_COMPILER=${MINGW_PREFIX}/bin/gcc.exe \
             -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
             -DSDL2TTF_HARFBUZZ=OFF \
-            -DSDL2TTF_SAMPLES=OFF
+            -DSDL2TTF_SAMPLES=OFF \
             ../SDL_ttf
           mingw32-make
           mingw32-make install
