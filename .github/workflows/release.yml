@@ -171,7 +171,7 @@ jobs:
           # TTF library also depends on freetype which sometimes is not found on the wild macoses.
           # So include it here too.
           cp /usr/local/opt/freetype/lib/libfreetype.6.dylib Sartre.app/Contents/Frameworks/
-          install_name_tool -change /usr/local/opt/freetype/lib/libfreetype.6.dylib @executable_path/../Frameworks/libfreetype.6.dylib Sartre.app/Contents/MacOS/Sartre
+          install_name_tool -change /usr/local/opt/freetype/lib/libfreetype.6.dylib @executable_path/../Frameworks/libfreetype.6.dylib Sartre.app/Contents/Frameworks/libSDL2_ttf-2.0.2201.0.0.dylib
 
           echo '<?xml version="1.0" encoding="UTF-8"?>' > Sartre.app/Contents/Info.plist
           echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> Sartre.app/Contents/Info.plist
