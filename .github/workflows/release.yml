@@ -125,17 +125,6 @@ jobs:
           export SDL2_LOCAL_LIB_DIR="./local/lib"
           make -f Makefile.release.macos
 
-      - name: Inspect dependencies
-        run: |
-          echo "Sartre:"
-          otool -L Sartre
-          echo "SDL2_image:"
-          otool -L ./local/lib/libSDL2_image-2.0.801.0.0.dylib
-          echo "SDL2_ttf:"
-          otool -L ./local/lib/libSDL2_ttf-2.0.2201.0.0.dylib
-          echo "SDL2_mixer:"
-          otool -L ./local/lib/libSDL2_mixer-2.0.801.0.0.dylib
-
       - name: Create app bundle
         run: |
           mkdir -p Sartre.app/Contents/MacOS
@@ -187,6 +176,19 @@ jobs:
           echo '  <string>1.0</string>' >> Sartre.app/Contents/Info.plist
           echo '</dict>' >> Sartre.app/Contents/Info.plist
           echo '</plist>' >> Sartre.app/Contents/Info.plist
+
+      - name: Inspect dependencies
+        run: |
+          echo "Sartre:"
+          otool -L Sartre.app/Contents/MacOS/Sartre
+          echo "SDL2_image:"
+          otool -L Sartre.app/Contents/Frameworks/libSDL2_image-2.0.801.0.0.dylib
+          echo "SDL2_ttf:"
+          otool -L Sartre.app/Contents/Frameworks/libSDL2_ttf-2.0.2201.0.0.dylib
+          echo "SDL2_mixer:"
+          otool -L Sartre.app/Contents/Frameworks/libSDL2_mixer-2.0.801.0.0.dylib
+          echo "libfreetype:"
+          otool -L Sartre.app/Contents/Frameworks/libfreetype.6.dylib
 
       - name: Run smoke test from app bundle
         run: Sartre.app/Contents/MacOS/Sartre --smoke
