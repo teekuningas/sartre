@@ -20,6 +20,7 @@
         ];
         ldLibraryPath = pkgs.lib.makeLibraryPath buildInputs;
         cpath = "${pkgs.SDL2.dev}/include/SDL2:${pkgs.SDL2_image}/include/SDL2:${pkgs.SDL2_mixer.dev}/include/SDL2:${pkgs.SDL2_ttf}/include/SDL2";
+        src = ./.;
       in {
         formatter = pkgs.nixfmt;
 
@@ -33,9 +34,9 @@
           pname = "sartre";
           version = "0.1.0";
 
-          src = ./.;
+          src = src;
 
-          buildInputs = buildInputs;
+          buildInputs = buildInputs ++ [ pkgs.makeWrapper ];
 
           buildPhase = ''
             export LD_LIBRARY_PATH=${ldLibraryPath}
@@ -47,11 +48,17 @@
           installPhase = ''
             mkdir -p $out/bin
             cp main $out/bin/sartre
+            cp -r ${src}/data $out/data
+          '';
+
+          postFixup = ''
+            wrapProgram $out/bin/sartre \
+              --set SARTRE_DATA_PATH $out/data
           '';
 
         };
 
-        defaultApp = {
+        packages.app = {
           type = "app";
           program = "${self.packages.${system}.default}/bin/sartre";
         };

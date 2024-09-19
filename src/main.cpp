@@ -17,6 +17,11 @@
 
 std::string getResourcePath()
 {
+	const char* dataPath = getenv("SARTRE_DATA_PATH");
+	if (dataPath != nullptr) {
+		printf("Reading data from path: %s\n", dataPath);
+		return std::string(dataPath) + "/";
+	}
 #ifdef __APPLE__
 	CFBundleRef mainBundle = CFBundleGetMainBundle();
 	if (mainBundle) {
