@@ -1,15 +1,16 @@
-CC=g++
-LFLAGS = -lX11 -lm -lpthread -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL
-ODIR=obj
-SRCDIR=./src
+CC = g++
+LFLAGS = -lX11 -lm -lpthread -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW
+ODIR = obj
+SRCDIR = ./src
 
-_OBJ = main.o
+_OBJ = main.o shader_utils.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-obj/%.o: $(SRCDIR)/%.cpp
-	mkdir -p obj
+$(ODIR)/%.o: $(SRCDIR)/%.cpp
+	@mkdir -p $(ODIR)
 	$(CC) -c -o $@ $^ $(CFLAGS)
 
+# Compile main
 main: $(OBJ)
 	$(CC) $^ -o $@ $(CFLAGS) $(LFLAGS)
 

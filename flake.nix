@@ -9,14 +9,16 @@
       let
         pkgs = nixpkgs.legacyPackages.${system};
         buildInputs = with pkgs; [
+          emscripten
           SDL2.dev
           SDL2_image
           SDL2_mixer.dev
           SDL2_ttf
-          xorg.libX11
-          gcc
-          astyle
           alsa-lib
+          astyle
+          gcc
+          glew
+          xorg.libX11
         ];
         ldLibraryPath = pkgs.lib.makeLibraryPath buildInputs;
         cpath = "${pkgs.SDL2.dev}/include/SDL2:${pkgs.SDL2_image}/include/SDL2:${pkgs.SDL2_mixer.dev}/include/SDL2:${pkgs.SDL2_ttf}/include/SDL2";
