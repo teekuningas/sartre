@@ -1,15 +1,16 @@
-CC=g++
-LFLAGS = -lX11 -lm -lpthread -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL
-ODIR=obj
-SRCDIR=./src
+CC = g++
+LFLAGS = -lX11 -lm -lpthread -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -lGLEW
+ODIR = obj
+SRCDIR = ./src
 
-_OBJ = main.o
+_OBJ = main.o shader_utils.o matrix.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-obj/%.o: $(SRCDIR)/%.cpp
-	mkdir -p obj
+$(ODIR)/%.o: $(SRCDIR)/%.cpp
+	@mkdir -p $(ODIR)
 	$(CC) -c -o $@ $^ $(CFLAGS)
 
+# Compile main
 main: $(OBJ)
 	$(CC) $^ -o $@ $(CFLAGS) $(LFLAGS)
 
@@ -24,7 +25,7 @@ run_fullscreen:
 
 .PHONY: smoketest
 smoketest:
-	nix run --override-input nixpkgs nixpkgs/nixos-23.05 --impure github:guibou/nixGL -- ./main --smoketest
+	nix run --override-input nixpkgs nixpkgs/nixos-23.05 --impure github:guibou/nixGL -- ./main --smoke
 
 .PHONY: shell
 shell:

@@ -1,15 +1,18 @@
 CXX = g++
-CXXFLAGS = -O2 -Wall -I${SDL2_INCLUDE_DIR} -I${SDL2_LOCAL_INCLUDE_DIR} -mmacosx-version-min=13 -arch x86_64
-LDFLAGS = -L${SDL2_LIB_DIR} -L${SDL2_LOCAL_LIB_DIR} -lSDL2main -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -framework OpenGL -framework CoreFoundation -mmacosx-version-min=13 -arch x86_64
+CXXFLAGS = -O2 -Wall -I${SDL2_INCLUDE_DIR} -I${SDL2_LOCAL_INCLUDE_DIR} -I/usr/local/include -mmacosx-version-min=13 -arch x86_64
+LDFLAGS = -L${SDL2_LIB_DIR} -L${SDL2_LOCAL_LIB_DIR} \
+          -L/usr/local/lib -lSDL2main -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf \
+          -framework OpenGL -framework CoreFoundation -mmacosx-version-min=13 -arch x86_64 \
+          -lGLEW
 ODIR = obj
 SRCDIR = ./src
 
-_OBJ = main.o
+_OBJ = main.o shader_utils.o matrix.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 $(ODIR)/%.o: $(SRCDIR)/%.cpp
-		@mkdir -p $(ODIR)
-			$(CXX) -v -c -o $@ $< $(CXXFLAGS)
+	@mkdir -p $(ODIR)
+	$(CXX) -v -c -o $@ $< $(CXXFLAGS)
 
 Sartre: $(OBJ)
-		$(CXX) $^ -o $@ $(LDFLAGS)
+	$(CXX) $^ -o $@ $(LDFLAGS)
