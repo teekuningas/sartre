@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <cstring>
+#include <vector>
 
 #include <SDL.h>
 #include <SDL_image.h>
@@ -21,11 +22,10 @@
 
 // Vertex Shader Source for Text Rendering
 const char* textVertexShaderSource =
-    "#version 300 es\n"
-    "precision mediump float;\n"
-    "layout(location = 0) in vec2 position;\n"
-    "layout(location = 1) in vec2 texCoord;\n"
-    "out vec2 fragTexCoord;\n"
+    "#version 100\n"
+    "attribute vec2 position;\n"
+    "attribute vec2 texCoord;\n"
+    "varying vec2 fragTexCoord;\n"
     "uniform mat4 projection;\n"
     "void main() {\n"
     "    gl_Position = projection * vec4(position, 0.0, 1.0);\n"
@@ -34,24 +34,22 @@ const char* textVertexShaderSource =
 
 // Fragment Shader Source for Text Rendering
 const char* textFragmentShaderSource =
-    "#version 300 es\n"
+    "#version 100\n"
     "precision mediump float;\n"
-    "in vec2 fragTexCoord;\n"
-    "out vec4 fragColor;\n"
+    "varying vec2 fragTexCoord;\n"
     "uniform sampler2D textTexture;\n"
     "uniform vec4 textColor;\n"
     "void main() {\n"
-    "    vec4 sampled = texture(textTexture, fragTexCoord);\n"
-    "    fragColor = textColor * sampled;\n"
+    "    vec4 sampled = texture2D(textTexture, fragTexCoord);\n"
+    "    gl_FragColor = textColor * sampled;\n"
     "}\n";
 
 // Vertex Shader Source for Forest Rendering
 const char* forestVertexShaderSource =
-    "#version 300 es\n"
-    "precision mediump float;\n"
-    "layout(location = 0) in vec2 position;\n"
-    "layout(location = 1) in vec2 texCoord;\n"
-    "out vec2 fragTexCoord;\n"
+    "#version 100\n"
+    "attribute vec2 position;\n"
+    "attribute vec2 texCoord;\n"
+    "varying vec2 fragTexCoord;\n"
     "uniform mat4 projection;\n"
     "uniform mat4 model;\n"
     "void main() {\n"
@@ -61,15 +59,14 @@ const char* forestVertexShaderSource =
 
 // Fragment Shader Source for Forest Rendering
 const char* forestFragmentShaderSource =
-    "#version 300 es\n"
+    "#version 100\n"
     "precision mediump float;\n"
-    "in vec2 fragTexCoord;\n"
-    "out vec4 fragColor;\n"
+    "varying vec2 fragTexCoord;\n"
     "uniform sampler2D ourTexture;\n"
     "void main() {\n"
-    "    vec4 texColor = texture(ourTexture, fragTexCoord);\n"
-    "    fragColor = texColor;\n"
+    "    vec4 texColor = texture2D(ourTexture, fragTexCoord);\n"
     "    if (texColor.a <= 0.1) discard;\n"
+    "    gl_FragColor = texColor;\n"
     "}\n";
 
 std::string getResourcePath()
@@ -162,41 +159,55 @@ const float HAHMO_HYPPYNOPEUS = 2100.0f;
 
 SDL_Surface* format_sdl_surface(SDL_Surface *surface)
 {
-	if (!surface || !surface->w || !surface->h || (surface->w & 1) || (surface->h & 1)) {
-		std::cerr << "Error: Invalid SDL surface." << std::endl;
-		return nullptr; // Indicate failure with nullptr
+	if (!surface) {
+		printf("Error: SDL surface null.\n");
+		return nullptr;
+	}
+	if (!surface->w || !surface->h || (surface->w & 1) || (surface->h & 1)) {
+		printf("Error: Invalid SDL surface.\n");
+		return nullptr;
 	}
 
-	return SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32, 0);
+	SDL_Surface* formattedSurface = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA32, 0);
+	if (!formattedSurface) {
+		printf("Error: Could not format a surface: %s\n", SDL_GetError());
+		return nullptr;
+	}
+	return formattedSurface;
 }
 
 
 void load_images(Textures &textures, Surfaces &surfaces, std::string dataPath)
 {
-	SDL_RWops *rwop;
+
 
 	// Load textures
 	SDL_Surface *forestSartreImage[2];
 	SDL_Surface *forestTaustaImage;
 
-	rwop = SDL_RWFromFile((dataPath + "images/sartre.png").c_str(), "rb");
-	forestSartreImage[0] = IMG_LoadPNG_RW(rwop);
-	SDL_RWclose(rwop);
+	forestSartreImage[0] = IMG_Load((dataPath + "images/sartre.png").c_str());
+	if (!forestSartreImage[0]) {
+	    printf("Error loading image: %s\n", SDL_GetError());
+	    exit(1); // Handle error as needed
+	}
 
-	rwop = SDL_RWFromFile((dataPath + "images/sartre2.png").c_str(), "rb");
-	forestSartreImage[1] = IMG_LoadPNG_RW(rwop);
-	SDL_RWclose(rwop);
+	forestSartreImage[1] = IMG_Load((dataPath + "images/sartre2.png").c_str());
+	if (!forestSartreImage[1]) {
+	    printf("Error loading image: %s\n", SDL_GetError());
+	    exit(1); // Handle error as needed
+	}
 
-	rwop = SDL_RWFromFile((dataPath + "images/lehto.png").c_str(), "rb");
-	forestTaustaImage = IMG_LoadPNG_RW(rwop);
-	SDL_RWclose(rwop);
+	forestTaustaImage = IMG_Load((dataPath + "images/lehto.png").c_str());
+	if (!forestTaustaImage) {
+	    printf("Error loading image: %s\n", SDL_GetError());
+	    exit(1); // Handle error as needed
+	}
 
 	// Sartret
 	glGenTextures(2, textures.forestSartre);
 	for (int i = 0; i < 2; i++) {
 		SDL_Surface* formattedSurface = format_sdl_surface(forestSartreImage[i]);
 		if (!formattedSurface) {
-			printf("Virhe: Could not format a surface: %s\n", SDL_GetError());
 			exit(1);
 		}
 		glBindTexture(GL_TEXTURE_2D, textures.forestSartre[i]);
@@ -209,7 +220,6 @@ void load_images(Textures &textures, Surfaces &surfaces, std::string dataPath)
 
 	SDL_Surface* formattedSurface = format_sdl_surface(forestTaustaImage);
 	if (!formattedSurface) {
-		printf("Virhe: Could not format a surface: %s\n", SDL_GetError());
 		exit(1);
 	}
 	glGenTextures(1, textures.forestTausta);
@@ -221,9 +231,13 @@ void load_images(Textures &textures, Surfaces &surfaces, std::string dataPath)
 	SDL_FreeSurface(forestTaustaImage);
 
 	// Load collision map
-	rwop = SDL_RWFromFile((dataPath + "images/lehto_platforms.png").c_str(), "rb");
-	surfaces.forestCollisionMap = IMG_LoadPNG_RW(rwop);
-	SDL_RWclose(rwop);
+	surfaces.forestCollisionMap = IMG_Load((dataPath + "images/lehto_platforms.png").c_str());
+	if (!surfaces.forestCollisionMap) {
+	    printf("Error loading image: %s\n", SDL_GetError());
+	    exit(1); // Handle error as needed
+	}
+
+
 }
 
 void free_images(Textures &textures, Surfaces &surfaces)
@@ -247,12 +261,18 @@ bool isPixelBlack(SDL_Surface* surface, int x, int y, Uint8 threshold = 50)
 	return pixel < threshold; // Black if below the threshold
 }
 
-void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint shader, GLuint VAO, GLuint VBO, float x, float y)
-{
+void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint shader, GLuint VAO, GLuint VBO, float x, float y) {
 	// Create an SDL surface with the text
 	SDL_Surface* surface = TTF_RenderUTF8_Blended(font, text.c_str(), color);
 	if (!surface) {
-		std::cerr << "Failed to render text surface: " << TTF_GetError() << std::endl;
+		printf("Failed to render text surface: %s\n", TTF_GetError());
+		return;
+	}
+
+	// Ensure the surface has the expected format
+	if (surface->format->BytesPerPixel != 4) {
+		printf("Unexpected surface format: %d bytes per pixel\n", surface->format->BytesPerPixel);
+		SDL_FreeSurface(surface);
 		return;
 	}
 
@@ -261,33 +281,48 @@ void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
 
-	// Set the alignment
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Safe choice that handles byte alignment
-	glPixelStorei(GL_UNPACK_ROW_LENGTH, surface->pitch / surface->format->BytesPerPixel);
+	// Use glPixelStorei to set unpack alignment
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-	// Texture upload
-	int mode = (surface->format->BytesPerPixel == 4) ? GL_RGBA : GL_RGB;
-	glTexImage2D(GL_TEXTURE_2D, 0, mode, surface->w, surface->h, 0, mode, GL_UNSIGNED_BYTE, surface->pixels);
+	// Manually buffer pixel data to handle pitch (row alignment) issues
+	int mode = GL_RGBA;
+	const int pitch = surface->pitch; // The bytes per row in the surface
+	const int width = surface->w;
+	const int height = surface->h;
 
+	// Allocate buffer for tightly packed pixel data
+	std::vector<unsigned char> pixels(width * height * 4); // 4 bytes per pixel for RGBA
+
+	// Copy each row from surface->pixels to the new buffer
+	for (int y = 0; y < height; ++y) {
+		std::memcpy(
+			&pixels[y * width * 4], // Target
+			static_cast<unsigned char*>(surface->pixels) + y * pitch, // Source
+			width * 4 // Number of bytes to copy
+		);
+	}
+
+	// Upload to OpenGL
+	glTexImage2D(GL_TEXTURE_2D, 0, mode, width, height, 0, mode, GL_UNSIGNED_BYTE, pixels.data());
+
+	// Set texture parameters
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	// Specify the texture uniform and text color uniform
-	GLint textTextureLoc = glGetUniformLocation(shader, "textTexture");
-	glUniform1i(textTextureLoc, 0);
+	// Set the texture uniform and text color uniform
 	GLint textColorLoc = glGetUniformLocation(shader, "textColor");
 	glUniform4f(textColorLoc, color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
 
 	// Define the vertices and texture coordinates for a quad
-	float w = static_cast<float>(surface->w);
-	float h = static_cast<float>(surface->h);
+	float w = static_cast<float>(width);
+	float h = static_cast<float>(height);
 	float vertices[] = {
 		x,     y,     0.0f, 0.0f,
 		x + w, y,     1.0f, 0.0f,
 		x + w, y - h, 1.0f, 1.0f,
-		x,     y - h, 0.0f, 1.0f
+		x,     y - h, 0.0f, 1.0f 
 	};
 
 	// Bind the text VAO and update buffer data
@@ -295,9 +330,9 @@ void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
 
-	// Draw the quad using the uploaded vertex data
+	// Use the uploaded texture in your shader
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+	glDrawArrays(GL_TRIANGLE_FAN, 0, 4); // Drawing the quad
 
 	// Unbind the VAO and texture
 	glBindVertexArray(0);
@@ -307,6 +342,7 @@ void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint
 	glDeleteTextures(1, &texture);
 	SDL_FreeSurface(surface);
 }
+
 
 InputResult handle_events(GameMode &gameMode, bool fullscreen)
 {
@@ -828,6 +864,8 @@ int main(int argc, char **argv)
 		case RESULTS:
 			inputResult = results_update(gameStateResults, totalElapsed, deltaTime, surfaces);
 			break;
+		default:
+			break;
 		}
 
 		// Clear the screen
@@ -842,6 +880,8 @@ int main(int argc, char **argv)
 			break;
 		case RESULTS:
 			results_draw(context.font, textShaderProgram, textVAO, textVBO);
+			break;
+		default:
 			break;
 		}
 
