@@ -144,7 +144,6 @@ jobs:
           install_name_tool -add_rpath @executable_path/../Frameworks Sartre
 
           # Copy GLEW library to the app bundle
-          ls -la /usr/local/opt/glew/lib/*
           cp /usr/local/opt/glew/lib/libGLEW.2.2.dylib Sartre.app/Contents/Frameworks/
           install_name_tool -id @executable_path/../Frameworks/libGLEW.2.2.dylib Sartre.app/Contents/Frameworks/libGLEW.2.2.dylib
           install_name_tool -change /usr/local/opt/glew/lib/libGLEW.2.2.dylib @executable_path/../Frameworks/libGLEW.2.2.dylib Sartre.app/Contents/MacOS/Sartre
