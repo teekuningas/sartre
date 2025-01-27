@@ -212,18 +212,22 @@ void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// Set the alignment
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Safe choice that handles byte alignment
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, surface->pitch / surface->format->BytesPerPixel);
 
 	// Texture upload
 	int mode = (surface->format->BytesPerPixel == 4) ? GL_RGBA : GL_RGB;
 	glTexImage2D(GL_TEXTURE_2D, 0, mode, surface->w, surface->h, 0, mode, GL_UNSIGNED_BYTE, surface->pixels);
 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
 	// Specify the texture uniform and text color uniform
 	GLint textTextureLoc = glGetUniformLocation(shader, "textTexture");
-	glUniform1i(textTextureLoc, 0); // Texture unit 0
+	glUniform1i(textTextureLoc, 0);
 	GLint textColorLoc = glGetUniformLocation(shader, "textColor");
 	glUniform4f(textColorLoc, color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
 
@@ -622,6 +626,16 @@ int main(int argc, char **argv)
 
 	glViewport((windowWidth - viewportSize) / 2, (windowHeight - viewportSize) / 2, viewportSize, viewportSize);
 
+	glEnable(GL_ALPHA_TEST);
+	glAlphaFunc(GL_GREATER, 0.1f);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // // These should be set in forest, not globally.
+	// glEnable(GL_DEPTH_TEST);
+	// glDepthFunc(GL_LEQUAL);
+
 	GameStateMenu gameStateMenu;
 	GameStateForest gameStateForest;
 	GameStateResults gameStateResults;
@@ -687,7 +701,8 @@ int main(int argc, char **argv)
 
 		switch (gameMode) {
 		case MENU:
-			menu_draw_triangle(context.font, triangleShaderProgram, triangleVAO, triangleVBO);
+			// menu_draw_triangle(context.font, triangleShaderProgram, triangleVAO, triangleVBO);
+			menu_draw(context.font, textShaderProgram, textVAO, textVBO);
 			break;
 		case FOREST:
 			forest_draw(gameStateForest, textures);
