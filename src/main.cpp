@@ -20,61 +20,57 @@
 #endif
 
 // Vertex Shader Source for Text Rendering
-const char* textVertexShaderSource = R"glsl(
-#version 300 es
-precision mediump float;
-layout(location = 0) in vec2 position;
-layout(location = 1) in vec2 texCoord;
-out vec2 fragTexCoord;
-uniform mat4 projection;
-void main() {
-    gl_Position = projection * vec4(position, 0.0, 1.0);
-    fragTexCoord = texCoord;
-}
-)glsl";
+const char* textVertexShaderSource =
+    "#version 300 es\n"
+    "precision mediump float;\n"
+    "layout(location = 0) in vec2 position;\n"
+    "layout(location = 1) in vec2 texCoord;\n"
+    "out vec2 fragTexCoord;\n"
+    "uniform mat4 projection;\n"
+    "void main() {\n"
+    "    gl_Position = projection * vec4(position, 0.0, 1.0);\n"
+    "    fragTexCoord = texCoord;\n"
+    "}\n";
 
 // Fragment Shader Source for Text Rendering
-const char* textFragmentShaderSource = R"glsl(
-#version 300 es
-precision mediump float;
-in vec2 fragTexCoord;
-out vec4 fragColor;
-uniform sampler2D textTexture;
-uniform vec4 textColor;
-void main() {
-    vec4 sampled = texture(textTexture, fragTexCoord);
-    fragColor = textColor * sampled;
-}
-)glsl";
+const char* textFragmentShaderSource =
+    "#version 300 es\n"
+    "precision mediump float;\n"
+    "in vec2 fragTexCoord;\n"
+    "out vec4 fragColor;\n"
+    "uniform sampler2D textTexture;\n"
+    "uniform vec4 textColor;\n"
+    "void main() {\n"
+    "    vec4 sampled = texture(textTexture, fragTexCoord);\n"
+    "    fragColor = textColor * sampled;\n"
+    "}\n";
 
 // Vertex Shader Source for Forest Rendering
-const char* forestVertexShaderSource = R"glsl(
-#version 300 es
-precision mediump float;
-layout(location = 0) in vec2 position;
-layout(location = 1) in vec2 texCoord;
-out vec2 fragTexCoord;
-uniform mat4 projection;
-uniform mat4 model;
-void main() {
-    gl_Position = projection * model * vec4(position, 0.0, 1.0);
-    fragTexCoord = texCoord;
-}
-)glsl";
+const char* forestVertexShaderSource =
+    "#version 300 es\n"
+    "precision mediump float;\n"
+    "layout(location = 0) in vec2 position;\n"
+    "layout(location = 1) in vec2 texCoord;\n"
+    "out vec2 fragTexCoord;\n"
+    "uniform mat4 projection;\n"
+    "uniform mat4 model;\n"
+    "void main() {\n"
+    "    gl_Position = projection * model * vec4(position, 0.0, 1.0);\n"
+    "    fragTexCoord = texCoord;\n"
+    "}\n";
 
 // Fragment Shader Source for Forest Rendering
-const char* forestFragmentShaderSource = R"glsl(
-#version 300 es
-precision mediump float;
-in vec2 fragTexCoord;
-out vec4 fragColor;
-uniform sampler2D ourTexture;
-void main() {
-    vec4 texColor = texture(ourTexture, fragTexCoord);
-    fragColor = texColor;
-    if (texColor.a <= 0.1) discard;
-}
-)glsl";
+const char* forestFragmentShaderSource =
+    "#version 300 es\n"
+    "precision mediump float;\n"
+    "in vec2 fragTexCoord;\n"
+    "out vec4 fragColor;\n"
+    "uniform sampler2D ourTexture;\n"
+    "void main() {\n"
+    "    vec4 texColor = texture(ourTexture, fragTexCoord);\n"
+    "    fragColor = texColor;\n"
+    "    if (texColor.a <= 0.1) discard;\n"
+    "}\n";
 
 std::string getResourcePath()
 {
@@ -251,7 +247,8 @@ bool isPixelBlack(SDL_Surface* surface, int x, int y, Uint8 threshold = 50)
 	return pixel < threshold; // Black if below the threshold
 }
 
-void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint shader, GLuint VAO, GLuint VBO, float x, float y) {
+void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint shader, GLuint VAO, GLuint VBO, float x, float y)
+{
 	// Create an SDL surface with the text
 	SDL_Surface* surface = TTF_RenderUTF8_Blended(font, text.c_str(), color);
 	if (!surface) {
@@ -368,7 +365,8 @@ void forest_init(GameStateForest &gameStateForest)
 	sartre.hyppy = 0;
 }
 
-void forest_draw(GameStateForest &gameStateForest, Textures &textures, GLuint shaderProgram, GLuint VAO, GLuint VBO) {
+void forest_draw(GameStateForest &gameStateForest, Textures &textures, GLuint shaderProgram, GLuint VAO, GLuint VBO)
+{
 	Sartre &sartre = gameStateForest.sartre;
 
 	// Use the shader program
@@ -403,10 +401,10 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, GLuint sh
 	// Define the quad vertices and texture coordinates for Sartre
 	float sartreVertices[] = {
 		-HAHMO_LEVEYS/2, HAHMO_KORKEUS/2, 0.01f, -0.99f,
-		 HAHMO_LEVEYS/2, HAHMO_KORKEUS/2, 0.99f, -0.99f,
-		 HAHMO_LEVEYS/2, -HAHMO_KORKEUS/2, 0.99f, 0.01f,
-		-HAHMO_LEVEYS/2, -HAHMO_KORKEUS/2, 0.01f, 0.01f
-	};
+		    HAHMO_LEVEYS/2, HAHMO_KORKEUS/2, 0.99f, -0.99f,
+		    HAHMO_LEVEYS/2, -HAHMO_KORKEUS/2, 0.99f, 0.01f,
+		    -HAHMO_LEVEYS/2, -HAHMO_KORKEUS/2, 0.01f, 0.01f
+	    };
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(sartreVertices), sartreVertices);
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -418,10 +416,10 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, GLuint sh
 	glBindTexture(GL_TEXTURE_2D, textures.forestTausta[0]);
 	float backgroundVertices[] = {
 		-KARTTA_LEVEYS / 2, KARTTA_KORKEUS, 0.0f, -1.0f,
-		 KARTTA_LEVEYS / 2, KARTTA_KORKEUS, 1.0f, -1.0f,
-		 KARTTA_LEVEYS / 2, 0.0f, 1.0f, 0.0f,
-		-KARTTA_LEVEYS / 2, 0.0f, 0.0f, 0.0f
-	};
+		    KARTTA_LEVEYS / 2, KARTTA_KORKEUS, 1.0f, -1.0f,
+		    KARTTA_LEVEYS / 2, 0.0f, 1.0f, 0.0f,
+		    -KARTTA_LEVEYS / 2, 0.0f, 0.0f, 0.0f
+	    };
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(backgroundVertices), backgroundVertices);
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
@@ -478,9 +476,9 @@ InputResult forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed,
 		sartre.hyppy = 0;
 		sartre.vy = 0;
 	} else if (
-		predictedY < sartre.y &&
-		!isPixelBlack(surfaces.forestCollisionMap, sartreXPixels, KARTTA_KORKEUS - sartreYPixels) &&
-		isPixelBlack(surfaces.forestCollisionMap, sartreXPixels, KARTTA_KORKEUS - predictedYPixels)
+	    predictedY < sartre.y &&
+	    !isPixelBlack(surfaces.forestCollisionMap, sartreXPixels, KARTTA_KORKEUS - sartreYPixels) &&
+	    isPixelBlack(surfaces.forestCollisionMap, sartreXPixels, KARTTA_KORKEUS - predictedYPixels)
 	) {
 		sartre.hyppy = 0;
 		sartre.vy = 0;
