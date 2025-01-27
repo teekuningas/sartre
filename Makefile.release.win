@@ -1,10 +1,10 @@
 CXX = g++
-CXXFLAGS = -O2 -Wall -I$(MINGW_PREFIX)/include/SDL2
-LDFLAGS = -L$(MINGW_PREFIX)/lib -lSDL2main -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lopengl32
+CXXFLAGS = -O2 -Wall -I$(MINGW_PREFIX)/include/SDL2 -I$(MINGW_PREFIX)/include
+LDFLAGS = -L$(MINGW_PREFIX)/lib -lSDL2main -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lopengl32 -lglew32
 ODIR = obj
 SRCDIR = ./src
 
-_OBJ = main.o
+_OBJ = main.o shader_utils.o matrix.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 $(ODIR)/%.o: $(SRCDIR)/%.cpp

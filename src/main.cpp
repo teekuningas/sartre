@@ -13,31 +13,11 @@
 #include <GL/glew.h>
 
 #include "shader_utils.h"
+#include "matrix.h"
 
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #endif
-
-// Triangle Vertex Shader Source
-const char* triangleVertexShaderSource = R"glsl(
-#version 300 es
-precision mediump float;
-layout(location = 0) in vec2 position;
-uniform mat4 projection;
-void main() {
-    gl_Position = projection * vec4(position, 0.0, 1.0);
-}
-)glsl";
-
-// Triangle Fragment Shader Source
-const char* triangleFragmentShaderSource = R"glsl(
-#version 300 es
-precision mediump float;
-out vec4 fragColor;
-void main() {
-    fragColor = vec4(1.0, 0.5, 0.2, 1.0); // Orange color
-}
-)glsl";
 
 // Vertex Shader Source for Text Rendering
 const char* textVertexShaderSource = R"glsl(
@@ -67,17 +47,34 @@ void main() {
 }
 )glsl";
 
-// Function to create an orthographic projection matrix
-void createOrthographicMatrix(float left, float right, float bottom, float top, float near, float far, float* matrix) {
-	std::fill(matrix, matrix + 16, 0.0f);
-	matrix[0] = 2.0f / (right - left);
-	matrix[5] = 2.0f / (top - bottom);
-	matrix[10] = -2.0f / (far - near);
-	matrix[12] = -(right + left) / (right - left);
-	matrix[13] = -(top + bottom) / (top - bottom);
-	matrix[14] = -(far + near) / (far - near);
-	matrix[15] = 1.0f;
+// Vertex Shader Source for Forest Rendering
+const char* forestVertexShaderSource = R"glsl(
+#version 300 es
+precision mediump float;
+layout(location = 0) in vec2 position;
+layout(location = 1) in vec2 texCoord;
+out vec2 fragTexCoord;
+uniform mat4 projection;
+uniform mat4 model;
+void main() {
+    gl_Position = projection * model * vec4(position, 0.0, 1.0);
+    fragTexCoord = texCoord;
 }
+)glsl";
+
+// Fragment Shader Source for Forest Rendering
+const char* forestFragmentShaderSource = R"glsl(
+#version 300 es
+precision mediump float;
+in vec2 fragTexCoord;
+out vec4 fragColor;
+uniform sampler2D ourTexture;
+void main() {
+    vec4 texColor = texture(ourTexture, fragTexCoord);
+    fragColor = texColor;
+    if (texColor.a <= 0.1) discard;
+}
+)glsl";
 
 std::string getResourcePath()
 {
@@ -144,7 +141,7 @@ struct ImageData {
 	Surfaces surfaces;
 };
 
-struct SDLContext {
+struct RenderContext {
 	SDL_Window* window = nullptr;
 	SDL_GLContext glContext = nullptr;
 	TTF_Font* font = nullptr;
@@ -180,12 +177,67 @@ SDL_Surface* format_sdl_surface(SDL_Surface *surface)
 
 void load_images(Textures &textures, Surfaces &surfaces, std::string dataPath)
 {
+	SDL_RWops *rwop;
 
+	// Load textures
+	SDL_Surface *forestSartreImage[2];
+	SDL_Surface *forestTaustaImage;
+
+	rwop = SDL_RWFromFile((dataPath + "images/sartre.png").c_str(), "rb");
+	forestSartreImage[0] = IMG_LoadPNG_RW(rwop);
+	SDL_RWclose(rwop);
+
+	rwop = SDL_RWFromFile((dataPath + "images/sartre2.png").c_str(), "rb");
+	forestSartreImage[1] = IMG_LoadPNG_RW(rwop);
+	SDL_RWclose(rwop);
+
+	rwop = SDL_RWFromFile((dataPath + "images/lehto.png").c_str(), "rb");
+	forestTaustaImage = IMG_LoadPNG_RW(rwop);
+	SDL_RWclose(rwop);
+
+	// Sartret
+	glGenTextures(2, textures.forestSartre);
+	for (int i = 0; i < 2; i++) {
+		SDL_Surface* formattedSurface = format_sdl_surface(forestSartreImage[i]);
+		if (!formattedSurface) {
+			printf("Virhe: Could not format a surface: %s\n", SDL_GetError());
+			exit(1);
+		}
+		glBindTexture(GL_TEXTURE_2D, textures.forestSartre[i]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedSurface->w, formattedSurface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, formattedSurface->pixels);
+		SDL_FreeSurface(formattedSurface);
+		SDL_FreeSurface(forestSartreImage[i]);
+	}
+
+	SDL_Surface* formattedSurface = format_sdl_surface(forestTaustaImage);
+	if (!formattedSurface) {
+		printf("Virhe: Could not format a surface: %s\n", SDL_GetError());
+		exit(1);
+	}
+	glGenTextures(1, textures.forestTausta);
+	glBindTexture(GL_TEXTURE_2D, textures.forestTausta[0]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedSurface->w, formattedSurface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, formattedSurface->pixels);
+	SDL_FreeSurface(formattedSurface);
+	SDL_FreeSurface(forestTaustaImage);
+
+	// Load collision map
+	rwop = SDL_RWFromFile((dataPath + "images/lehto_platforms.png").c_str(), "rb");
+	surfaces.forestCollisionMap = IMG_LoadPNG_RW(rwop);
+	SDL_RWclose(rwop);
 }
 
 void free_images(Textures &textures, Surfaces &surfaces)
 {
+	for (int a = 0; a < 2; a++) {
+		glDeleteTextures(1, &textures.forestSartre[a]);
+	}
+	glDeleteTextures(1, &textures.forestTausta[0]);
 
+	SDL_FreeSurface(surfaces.forestCollisionMap);
 }
 
 bool isPixelBlack(SDL_Surface* surface, int x, int y, Uint8 threshold = 50)
@@ -309,17 +361,134 @@ InputResult handle_events(GameMode &gameMode, bool fullscreen)
 
 void forest_init(GameStateForest &gameStateForest)
 {
-
+	Sartre &sartre = gameStateForest.sartre;
+	sartre.x = 0.0;
+	sartre.y = HAHMO_KORKEUS / 2 + MAA_KORKEUS;
+	sartre.hahmo = 0;
+	sartre.hyppy = 0;
 }
 
-void forest_draw(GameStateForest &gameStateForest, Textures &textures)
-{
+void forest_draw(GameStateForest &gameStateForest, Textures &textures, GLuint shaderProgram, GLuint VAO, GLuint VBO) {
+	Sartre &sartre = gameStateForest.sartre;
 
+	// Use the shader program
+	glUseProgram(shaderProgram);
+
+	// Set up the orthographic projection
+	float orthoMatrix[16];
+	createOrthographicMatrix(-KARTTA_LEVEYS / 2, KARTTA_LEVEYS / 2, 0.0f, KARTTA_KORKEUS, -100.0f, 100.0f, orthoMatrix);
+	GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, orthoMatrix);
+
+	float translationMatrix[16];
+	createTranslationMatrix(sartre.x, sartre.y, 0.1f, translationMatrix);
+	GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, translationMatrix);
+
+	// Enable depth test to get sartre visible
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+
+	// Bind the VAO
+	glBindVertexArray(VAO);
+
+	// Sartre Character
+	GLuint sartreTexture = (sartre.hahmo == 0) ? textures.forestSartre[0] : textures.forestSartre[1];
+	glBindTexture(GL_TEXTURE_2D, sartreTexture);
+
+	// Specify the texture uniform
+	GLint ourTextureLoc = glGetUniformLocation(shaderProgram, "ourTexture");
+	glUniform1i(ourTextureLoc, 0);
+
+	// Define the quad vertices and texture coordinates for Sartre
+	float sartreVertices[] = {
+		-HAHMO_LEVEYS/2, HAHMO_KORKEUS/2, 0.01f, -0.99f,
+		 HAHMO_LEVEYS/2, HAHMO_KORKEUS/2, 0.99f, -0.99f,
+		 HAHMO_LEVEYS/2, -HAHMO_KORKEUS/2, 0.99f, 0.01f,
+		-HAHMO_LEVEYS/2, -HAHMO_KORKEUS/2, 0.01f, 0.01f
+	};
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(sartreVertices), sartreVertices);
+	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+	// Forest Background
+	createTranslationMatrix(0.0f, 0.0f, 0.0f, translationMatrix);
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, translationMatrix);
+
+	glBindTexture(GL_TEXTURE_2D, textures.forestTausta[0]);
+	float backgroundVertices[] = {
+		-KARTTA_LEVEYS / 2, KARTTA_KORKEUS, 0.0f, -1.0f,
+		 KARTTA_LEVEYS / 2, KARTTA_KORKEUS, 1.0f, -1.0f,
+		 KARTTA_LEVEYS / 2, 0.0f, 1.0f, 0.0f,
+		-KARTTA_LEVEYS / 2, 0.0f, 0.0f, 0.0f
+	};
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(backgroundVertices), backgroundVertices);
+	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+	// Unbind the VAO and texture
+	glBindVertexArray(0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// Disable depth test not distract others
+	glDisable(GL_DEPTH_TEST);
 }
 
 InputResult forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float deltaTime, Surfaces &surfaces)
 {
 	InputResult inputResult;
+	inputResult.transition = false;
+
+	Sartre &sartre = gameStateForest.sartre;
+
+	const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+
+	// Vaihda hahmoa
+	if (totalElapsed % 1000 <= 500) {
+		sartre.hahmo = 0;
+	} else {
+		sartre.hahmo = 1;
+	}
+
+	if (keystate[SDL_SCANCODE_RIGHT]) {
+		if (sartre.x < KARTTA_LEVEYS / 2 - HAHMO_LEVEYS / 2) {
+			sartre.x = sartre.x + deltaTime*HAHMO_VX;
+		}
+	}
+
+	if (keystate[SDL_SCANCODE_LEFT]) {
+		if (sartre.x > -KARTTA_LEVEYS / 2 + HAHMO_LEVEYS / 2) {
+			sartre.x = sartre.x - deltaTime*HAHMO_VX;
+		}
+	}
+
+	if (sartre.hyppy == 0 && keystate[SDL_SCANCODE_UP]) {
+		sartre.hyppy = 1;
+		sartre.vy = HAHMO_HYPPYNOPEUS;
+	}
+
+	GLfloat predictedY = sartre.y + deltaTime*sartre.vy;
+
+	int sartreXPixels = (int)(sartre.x + KARTTA_LEVEYS / 2);
+	int commonExtra = HAHMO_KORKEUS / 8;
+	int padding = 2; // if the platform is not exactly exactly straight
+	int sartreYPixels = (int)(sartre.y - HAHMO_KORKEUS / 2 + commonExtra);
+	int predictedYPixels = (int)(predictedY - HAHMO_KORKEUS / 2 + commonExtra - padding);
+
+	if (sartre.y >= HAHMO_KORKEUS / 2 + MAA_KORKEUS && predictedY < HAHMO_KORKEUS / 2 + MAA_KORKEUS) {
+		sartre.hyppy = 0;
+		sartre.vy = 0;
+	} else if (
+		predictedY < sartre.y &&
+		!isPixelBlack(surfaces.forestCollisionMap, sartreXPixels, KARTTA_KORKEUS - sartreYPixels) &&
+		isPixelBlack(surfaces.forestCollisionMap, sartreXPixels, KARTTA_KORKEUS - predictedYPixels)
+	) {
+		sartre.hyppy = 0;
+		sartre.vy = 0;
+	} else {
+		sartre.y = sartre.y + deltaTime*sartre.vy;
+		sartre.vy = sartre.vy - deltaTime*HAHMO_G;
+	}
+
 	return inputResult;
 }
 
@@ -328,9 +497,23 @@ void results_init(GameStateResults &gameStateResults)
 
 }
 
-void results_draw(TTF_Font* font)
+void results_draw(TTF_Font* font, GLuint textShaderProgram, GLuint VAO, GLuint VBO)
 {
+	// Set up the orthographic projection for the text rendering
+	float orthoMatrix[16];
+	createOrthographicMatrix(0.0f, KARTTA_LEVEYS, 0.0f, KARTTA_KORKEUS, -1.0f, 1.0f, orthoMatrix);
 
+	// Use the text shader program
+	glUseProgram(textShaderProgram);
+
+	// Pass the projection matrix to the shader
+	GLuint projectionLoc = glGetUniformLocation(textShaderProgram, "projection");
+	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, orthoMatrix);
+
+
+	SDL_Color white = {255, 255, 255, 255};
+	renderText(font, "Ei ole kirjailijan työ aina helppoa!", white, textShaderProgram, VAO, VBO, 300.0f, 1000.0f);
+	renderText(font, "Jatka näpsäyttämällä entteriä", white, textShaderProgram, VAO, VBO, 600.0f, 500.0f);
 }
 
 InputResult results_update(GameStateResults &gameStateResults, Uint32 totalElapsed, float deltaTime, Surfaces &surfaces)
@@ -346,51 +529,24 @@ void menu_init(GameStateMenu &gameStateMenu)
 
 void menu_draw(TTF_Font* font, GLuint textShaderProgram, GLuint VAO, GLuint VBO)
 {
-    // Set up the orthographic projection for the text rendering
-    float orthoMatrix[16];
-    createOrthographicMatrix(0.0f, KARTTA_LEVEYS, 0.0f, KARTTA_KORKEUS, -1.0f, 1.0f, orthoMatrix);
-
-    // Use the text shader program
-    glUseProgram(textShaderProgram);
-
-    // Pass the projection matrix to the shader
-    GLuint projectionLoc = glGetUniformLocation(textShaderProgram, "projection");
-    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, orthoMatrix);
-
-    SDL_Color white = {255, 255, 255, 255};
-
-    // Render text using the modern renderText implementation
-    renderText(font, "Jean-Paul Sartre istui metsän keskellä, ", white, textShaderProgram, VAO, VBO, 300.0f, 1300.0f);
-    renderText(font, "lehtien kahistessa ympärillään, ja kirjoitti uutta kirjaansa,", white, textShaderProgram, VAO, VBO, 300.0f, 1200.0f);
-    renderText(font, "kun äkkiä metsän syvyyksistä alkoi hiipiä häiritseviä varjoja, ", white, textShaderProgram, VAO, VBO, 300.0f, 1100.0f);
-    renderText(font, "jotka uhkasivat keskeyttää hänen luomisprosessinsa.", white, textShaderProgram, VAO, VBO, 300.0f, 1000.0f);
-    renderText(font, "Jatka näpsäyttämällä entteriä", white, textShaderProgram, VAO, VBO, 600.0f, 500.0f);
-}
-
-void menu_draw_triangle(TTF_Font* font, GLuint shaderProgram, GLuint VAO, GLuint VBO)
-{
-
-	glUseProgram(shaderProgram);
-
-	// Set up the orthographic projection
+	// Set up the orthographic projection for the text rendering
 	float orthoMatrix[16];
-	createOrthographicMatrix(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f, orthoMatrix);
+	createOrthographicMatrix(0.0f, KARTTA_LEVEYS, 0.0f, KARTTA_KORKEUS, -1.0f, 1.0f, orthoMatrix);
+
+	// Use the text shader program
+	glUseProgram(textShaderProgram);
 
 	// Pass the projection matrix to the shader
-	GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+	GLuint projectionLoc = glGetUniformLocation(textShaderProgram, "projection");
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, orthoMatrix);
 
-	glBindVertexArray(VAO);
+	SDL_Color white = {255, 255, 255, 255};
 
-	// Clear the screen
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	// Draw the triangle
-	glDrawArrays(GL_TRIANGLES, 0, 3);
-
-	// Cleanup
-	glBindVertexArray(0);
-
+	renderText(font, "Jean-Paul Sartre istui metsän keskellä, ", white, textShaderProgram, VAO, VBO, 300.0f, 1300.0f);
+	renderText(font, "lehtien kahistessa ympärillään, ja kirjoitti uutta kirjaansa,", white, textShaderProgram, VAO, VBO, 300.0f, 1200.0f);
+	renderText(font, "kun äkkiä metsän syvyyksistä alkoi hiipiä häiritseviä varjoja, ", white, textShaderProgram, VAO, VBO, 300.0f, 1100.0f);
+	renderText(font, "jotka uhkasivat keskeyttää hänen luomisprosessinsa.", white, textShaderProgram, VAO, VBO, 300.0f, 1000.0f);
+	renderText(font, "Jatka näpsäyttämällä entteriä", white, textShaderProgram, VAO, VBO, 600.0f, 500.0f);
 }
 
 InputResult menu_update(GameStateMenu &gameStateMenu, Uint32 totalElapsed, float deltaTime, Surfaces &surfaces)
@@ -407,8 +563,6 @@ WindowParams compute_window_params(bool fullscreen)
 
 	int screenWidth = DM.w;
 	int screenHeight = DM.h;
-	printf("Screen width: %d\n", screenWidth);
-	printf("Screen height: %d\n", screenHeight);
 
 	// Pick smaller of the screen dimensions for viewport size.
 	int viewportSize;
@@ -433,19 +587,46 @@ WindowParams compute_window_params(bool fullscreen)
 	return windowParams;
 }
 
-bool initialize_sdl(SDLContext& context, const std::string& dataPath, bool fullscreen)
+void cleanup_render_context(RenderContext& context)
+{
+	SDL_GL_DeleteContext(context.glContext);
+	SDL_DestroyWindow(context.window);
+
+	SDL_Quit();
+
+	if (context.backgroundMusic) {
+		Mix_FreeMusic(context.backgroundMusic);
+	}
+	Mix_CloseAudio();
+	Mix_Quit();
+
+	if (context.font) {
+		TTF_CloseFont(context.font);
+	}
+	TTF_Quit();
+
+	if (context.glContext) {
+		SDL_GL_DeleteContext(context.glContext);
+	}
+	if (context.window) {
+		SDL_DestroyWindow(context.window);
+	}
+
+	SDL_Quit();
+}
+
+
+bool initialize_render_context(RenderContext& context, const std::string& dataPath, bool fullscreen)
 {
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
 		printf("Error: SDL_Init: %s\n", SDL_GetError());
 		return false;
 	}
 
-	// Set the OpenGL version here
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-	// Core profile for OpenGL ES
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-	// Request at least 32-bit depth buffer (or as necessary)
+
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
 	WindowParams windowParams = compute_window_params(fullscreen);
@@ -477,9 +658,6 @@ bool initialize_sdl(SDLContext& context, const std::string& dataPath, bool fulls
 	}
 	context.glContext = glContext;
 
-	// Initialize GLEW to setup OpenGL Function pointers
-	// Make sure GLEW is initialized after the GL context
-	glewExperimental = GL_TRUE; // Needed for OpenGL core profile
 	GLenum glewStatus = glewInit();
 	if (glewStatus != GLEW_OK) {
 		printf("Error: glewInit failed: %s\n", glewGetErrorString(glewStatus));
@@ -525,43 +703,12 @@ bool initialize_sdl(SDLContext& context, const std::string& dataPath, bool fulls
 }
 
 
-void cleanup_sdl(SDLContext& context)
-{
-
-	SDL_GL_DeleteContext(context.glContext);
-	SDL_DestroyWindow(context.window);
-
-	SDL_Quit();
-
-	if (context.backgroundMusic) {
-		Mix_FreeMusic(context.backgroundMusic);
-	}
-	Mix_CloseAudio();
-	Mix_Quit();
-
-	if (context.font) {
-		TTF_CloseFont(context.font);
-	}
-	TTF_Quit();
-
-	if (context.glContext) {
-		SDL_GL_DeleteContext(context.glContext);
-	}
-	if (context.window) {
-		SDL_DestroyWindow(context.window);
-	}
-
-	SDL_Quit();
-}
-
-
-
 int main(int argc, char **argv)
 {
 
 	std::string dataPath = getResourcePath();
 
-	// Tee savutesti
+	// Smoke
 	if (argc > 1 && std::strcmp(argv[1], "--smoke") == 0) {
 		std::cout << "Smoketest ran fine!" << std::endl;
 		return 0;
@@ -572,15 +719,9 @@ int main(int argc, char **argv)
 		fullscreen = true;
 	}
 
-	SDLContext context;
-	if (!initialize_sdl(context, dataPath, fullscreen)) {
-		cleanup_sdl(context);
-		return -1;
-	}
-
-	// Initialize GLEW for modern OpenGL functionality
-	if (glewInit() != GLEW_OK) {
-		printf("Error: glewInit failed.\n");
+	RenderContext context;
+	if (!initialize_render_context(context, dataPath, fullscreen)) {
+		cleanup_render_context(context);
 		return -1;
 	}
 
@@ -589,25 +730,10 @@ int main(int argc, char **argv)
 	int windowHeight = windowParams.windowHeight;
 	int viewportSize = windowParams.viewportSize;
 
-	// Compile shader program and create VAO and VBO for the test triangle
-	GLuint triangleVAO, triangleVBO;
-	GLuint triangleShaderProgram = createProgram(triangleVertexShaderSource, triangleFragmentShaderSource);
-	if (!triangleShaderProgram) {
-		std::cerr << "Failed to create shader program" << std::endl;
-		return -1;
-	}
-	float vertices[] = {
-		0.0f,  0.5f,  // Vertex 1
-		-0.5f, -0.5f, // Vertex 2
-		0.5f, -0.5f  // Vertex 3
-	};
-	glGenVertexArrays(1, &triangleVAO);
-	glGenBuffers(1, &triangleVBO);
-	glBindVertexArray(triangleVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, triangleVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
+	// if (glewInit() != GLEW_OK) {
+	// 	printf("Error: glewInit failed.\n");
+	// 	return -1;
+	// }
 
 	// Compile shader program and create VAO and VBO for text rendering
 	GLuint textShaderProgram = createProgram(textVertexShaderSource, textFragmentShaderSource);
@@ -624,23 +750,30 @@ int main(int argc, char **argv)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
-	glViewport((windowWidth - viewportSize) / 2, (windowHeight - viewportSize) / 2, viewportSize, viewportSize);
+	// Compile shader program and create VAO and VBO for forest rendering
+	GLuint forestShaderProgram = createProgram(forestVertexShaderSource, forestFragmentShaderSource);
+	GLuint forestVAO, forestVBO;
+	glGenVertexArrays(1, &forestVAO);
+	glGenBuffers(1, &forestVBO);
+	glBindVertexArray(forestVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, forestVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 4 * 4, nullptr, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
 
-	glEnable(GL_ALPHA_TEST);
-	glAlphaFunc(GL_GREATER, 0.1f);
+	glViewport((windowWidth - viewportSize) / 2, (windowHeight - viewportSize) / 2, viewportSize, viewportSize);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        // // These should be set in forest, not globally.
-	// glEnable(GL_DEPTH_TEST);
-	// glDepthFunc(GL_LEQUAL);
 
 	GameStateMenu gameStateMenu;
 	GameStateForest gameStateForest;
 	GameStateResults gameStateResults;
 
-	// Lattaa kaikki tekstuurit heti alkuun
 	ImageData imageData;
 	Textures &textures = imageData.textures;
 	Surfaces &surfaces = imageData.surfaces;
@@ -665,7 +798,7 @@ int main(int argc, char **argv)
 				// Start the music
 				if (Mix_PlayMusic(context.backgroundMusic, -1) == -1) {
 					printf("Failed to play background music! SDL_mixer Error: %s\n", Mix_GetError());
-					cleanup_sdl(context);
+					cleanup_render_context(context);
 					return -1;
 				}
 				forest_init(gameStateForest);
@@ -699,16 +832,18 @@ int main(int argc, char **argv)
 			break;
 		}
 
+		// Clear the screen
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 		switch (gameMode) {
 		case MENU:
-			// menu_draw_triangle(context.font, triangleShaderProgram, triangleVAO, triangleVBO);
 			menu_draw(context.font, textShaderProgram, textVAO, textVBO);
 			break;
 		case FOREST:
-			forest_draw(gameStateForest, textures);
+			forest_draw(gameStateForest, textures, forestShaderProgram, forestVAO, forestVBO);
 			break;
 		case RESULTS:
-			results_draw(context.font);
+			results_draw(context.font, textShaderProgram, textVAO, textVBO);
 			break;
 		}
 
@@ -717,18 +852,15 @@ int main(int argc, char **argv)
 		SDL_Delay(1);
 	}
 
-	glDeleteVertexArrays(1, &triangleVAO);
-	glDeleteBuffers(1, &triangleVBO);
+	glDeleteVertexArrays(1, &forestVAO);
+	glDeleteBuffers(1, &forestVBO);
 	glDeleteVertexArrays(1, &textVAO);
 	glDeleteBuffers(1, &textVBO);
-	glDeleteProgram(triangleShaderProgram);
+	glDeleteProgram(forestShaderProgram);
 	glDeleteProgram(textShaderProgram);
 
 	free_images(textures, surfaces);
 
-	cleanup_sdl(context);
+	cleanup_render_context(context);
 	return 0;
-
-
-
 }
