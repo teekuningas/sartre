@@ -11,7 +11,11 @@
 #include <SDL_mixer.h>
 #include <SDL_ttf.h>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/html5.h>
+#else
 #include <GL/glew.h>
+#endif
 
 #include "shader_utils.h"
 #include "matrix.h"
@@ -139,12 +143,36 @@ struct RenderContext {
 	SDL_GLContext glContext = nullptr;
 	TTF_Font* font = nullptr;
 	Mix_Music* backgroundMusic = nullptr;
+
+	GLuint forestVAO;
+	GLuint forestVBO;
+	GLuint forestShaderProgram;
+	GLuint textVAO;
+	GLuint textVBO;
+	GLuint textShaderProgram;
 };
 
 struct WindowParams {
 	int windowHeight;
 	int windowWidth;
 	int viewportSize;
+};
+
+struct GameLoopData {
+    int argc;
+    char **argv;
+    GameMode gameMode;
+    RenderContext context;
+    GameStateMenu gameStateMenu;
+    GameStateForest gameStateForest;
+    GameStateResults gameStateResults;
+    ImageData imageData;
+    Uint32 lastTick;
+    Uint32 currentTick;
+    Uint32 totalElapsed;
+    bool fullscreen;
+    bool shouldExit;
+    bool initialized;
 };
 
 const int KARTTA_LEVEYS = 2048;
@@ -176,11 +204,8 @@ SDL_Surface* format_sdl_surface(SDL_Surface *surface)
 	return formattedSurface;
 }
 
-
 void load_images(Textures &textures, Surfaces &surfaces, std::string dataPath)
 {
-
-
 	// Load textures
 	SDL_Surface *forestSartreImage[2];
 	SDL_Surface *forestTaustaImage;
@@ -188,19 +213,19 @@ void load_images(Textures &textures, Surfaces &surfaces, std::string dataPath)
 	forestSartreImage[0] = IMG_Load((dataPath + "images/sartre.png").c_str());
 	if (!forestSartreImage[0]) {
 	    printf("Error loading image: %s\n", SDL_GetError());
-	    exit(1); // Handle error as needed
+	    exit(1);
 	}
 
 	forestSartreImage[1] = IMG_Load((dataPath + "images/sartre2.png").c_str());
 	if (!forestSartreImage[1]) {
 	    printf("Error loading image: %s\n", SDL_GetError());
-	    exit(1); // Handle error as needed
+	    exit(1);
 	}
 
 	forestTaustaImage = IMG_Load((dataPath + "images/lehto.png").c_str());
 	if (!forestTaustaImage) {
 	    printf("Error loading image: %s\n", SDL_GetError());
-	    exit(1); // Handle error as needed
+	    exit(1);
 	}
 
 	// Sartret
@@ -234,10 +259,8 @@ void load_images(Textures &textures, Surfaces &surfaces, std::string dataPath)
 	surfaces.forestCollisionMap = IMG_Load((dataPath + "images/lehto_platforms.png").c_str());
 	if (!surfaces.forestCollisionMap) {
 	    printf("Error loading image: %s\n", SDL_GetError());
-	    exit(1); // Handle error as needed
+	    exit(1);
 	}
-
-
 }
 
 void free_images(Textures &textures, Surfaces &surfaces)
@@ -623,11 +646,6 @@ WindowParams compute_window_params(bool fullscreen)
 
 void cleanup_render_context(RenderContext& context)
 {
-	SDL_GL_DeleteContext(context.glContext);
-	SDL_DestroyWindow(context.window);
-
-	SDL_Quit();
-
 	if (context.backgroundMusic) {
 		Mix_FreeMusic(context.backgroundMusic);
 	}
@@ -639,6 +657,13 @@ void cleanup_render_context(RenderContext& context)
 	}
 	TTF_Quit();
 
+	glDeleteVertexArrays(1, &context.forestVAO);
+	glDeleteBuffers(1, &context.forestVBO);
+	glDeleteVertexArrays(1, &context.textVAO);
+	glDeleteBuffers(1, &context.textVBO);
+	glDeleteProgram(context.forestShaderProgram);
+	glDeleteProgram(context.textShaderProgram);
+
 	if (context.glContext) {
 		SDL_GL_DeleteContext(context.glContext);
 	}
@@ -648,7 +673,6 @@ void cleanup_render_context(RenderContext& context)
 
 	SDL_Quit();
 }
-
 
 bool initialize_render_context(RenderContext& context, const std::string& dataPath, bool fullscreen)
 {
@@ -692,14 +716,16 @@ bool initialize_render_context(RenderContext& context, const std::string& dataPa
 	}
 	context.glContext = glContext;
 
+
+#ifndef __EMSCRIPTEN__
 	GLenum glewStatus = glewInit();
 	if (glewStatus != GLEW_OK) {
 		printf("Error: glewInit failed: %s\n", glewGetErrorString(glewStatus));
 		return false;
 	}
-
-	// Check if OpenGL and GLEW versions are correct.
 	printf("Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
+#endif
+
 	printf("Status: OpenGL version supported by this platform (%s)\n", glGetString(GL_VERSION));
 
 	// Fonts
@@ -736,46 +762,31 @@ bool initialize_render_context(RenderContext& context, const std::string& dataPa
 	return true;
 }
 
+GameLoopData gameLoopData;
 
-int main(int argc, char **argv)
-{
-
+bool initialize_game_data(int argc, char **argv) {
 	std::string dataPath = getResourcePath();
 
-	// Smoke
 	if (argc > 1 && std::strcmp(argv[1], "--smoke") == 0) {
 		std::cout << "Smoketest ran fine!" << std::endl;
-		return 0;
+		return false;
 	}
 
-	bool fullscreen = false;
-	if (argc > 1 && std::strcmp(argv[1], "--fullscreen") == 0) {
-		fullscreen = true;
+	gameLoopData.fullscreen = (argc > 1 && std::strcmp(argv[1], "--fullscreen") == 0);
+
+	if (!initialize_render_context(gameLoopData.context, dataPath, gameLoopData.fullscreen)) {
+		cleanup_render_context(gameLoopData.context);
+		return false;
 	}
 
-	RenderContext context;
-	if (!initialize_render_context(context, dataPath, fullscreen)) {
-		cleanup_render_context(context);
-		return -1;
-	}
-
-	WindowParams windowParams = compute_window_params(fullscreen);
-	int windowWidth = windowParams.windowWidth;
-	int windowHeight = windowParams.windowHeight;
-	int viewportSize = windowParams.viewportSize;
-
-	// if (glewInit() != GLEW_OK) {
-	// 	printf("Error: glewInit failed.\n");
-	// 	return -1;
-	// }
+	WindowParams windowParams = compute_window_params(gameLoopData.fullscreen);
 
 	// Compile shader program and create VAO and VBO for text rendering
-	GLuint textShaderProgram = createProgram(textVertexShaderSource, textFragmentShaderSource);
-	GLuint textVAO, textVBO;
-	glGenVertexArrays(1, &textVAO);
-	glGenBuffers(1, &textVBO);
-	glBindVertexArray(textVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, textVBO);
+	gameLoopData.context.textShaderProgram = createProgram(textVertexShaderSource, textFragmentShaderSource);
+	glGenVertexArrays(1, &gameLoopData.context.textVAO);
+	glGenBuffers(1, &gameLoopData.context.textVBO);
+	glBindVertexArray(gameLoopData.context.textVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, gameLoopData.context.textVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 4 * 4, nullptr, GL_DYNAMIC_DRAW);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
@@ -785,12 +796,11 @@ int main(int argc, char **argv)
 	glBindVertexArray(0);
 
 	// Compile shader program and create VAO and VBO for forest rendering
-	GLuint forestShaderProgram = createProgram(forestVertexShaderSource, forestFragmentShaderSource);
-	GLuint forestVAO, forestVBO;
-	glGenVertexArrays(1, &forestVAO);
-	glGenBuffers(1, &forestVBO);
-	glBindVertexArray(forestVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, forestVBO);
+	gameLoopData.context.forestShaderProgram = createProgram(forestVertexShaderSource, forestFragmentShaderSource);
+	glGenVertexArrays(1, &gameLoopData.context.forestVAO);
+	glGenBuffers(1, &gameLoopData.context.forestVBO);
+	glBindVertexArray(gameLoopData.context.forestVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, gameLoopData.context.forestVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 4 * 4, nullptr, GL_DYNAMIC_DRAW);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
@@ -799,106 +809,126 @@ int main(int argc, char **argv)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
-	glViewport((windowWidth - viewportSize) / 2, (windowHeight - viewportSize) / 2, viewportSize, viewportSize);
+	glViewport((windowParams.windowWidth - windowParams.viewportSize) / 2,
+	           (windowParams.windowHeight - windowParams.viewportSize) / 2,
+	           windowParams.viewportSize,
+	           windowParams.viewportSize);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	GameStateMenu gameStateMenu;
-	GameStateForest gameStateForest;
-	GameStateResults gameStateResults;
+	load_images(gameLoopData.imageData.textures, gameLoopData.imageData.surfaces, dataPath);
 
-	ImageData imageData;
-	Textures &textures = imageData.textures;
-	Surfaces &surfaces = imageData.surfaces;
-	load_images(textures, surfaces, dataPath);
+	gameLoopData.gameMode = MENU;
+	gameLoopData.lastTick = SDL_GetTicks();
+	gameLoopData.totalElapsed = 0;
 
-	GameMode gameMode = MENU;
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	Uint32 lastTick = SDL_GetTicks();
-	Uint32 currentTick = 0;
-	Uint32 totalElapsed = 0;
-	float deltaTime = 0.0f;
+	return true;
+}
 
-	while (true) {
-		InputResult inputResult;
+void main_loop_iteration() {
+	/* Initialization and cleanup are kept within the loop function for the sake of webgl context which would not be found here
+	   if initializated was outside.
+	*/
 
-		inputResult = handle_events(gameMode, fullscreen);
-		if (inputResult.transition == true) {
-			if (inputResult.transitionTo == EXIT) {
-				break;
-			}
-			if (inputResult.transitionTo == FOREST) {
-				// Start the music
-				if (Mix_PlayMusic(context.backgroundMusic, -1) == -1) {
-					printf("Failed to play background music! SDL_mixer Error: %s\n", Mix_GetError());
-					cleanup_render_context(context);
-					return -1;
-				}
-				forest_init(gameStateForest);
-			} else {
-				Mix_HaltMusic();
-			}
-			if (inputResult.transitionTo == MENU) {
-				menu_init(gameStateMenu);
-			}
-			if (inputResult.transitionTo == RESULTS) {
-				results_init(gameStateResults);
-			}
-			gameMode = inputResult.transitionTo;
-			continue;
-		}
-
-		currentTick = SDL_GetTicks();
-		deltaTime = (currentTick - lastTick) / 1000.0f;
-		totalElapsed += currentTick - lastTick;
-		lastTick = currentTick;
-
-		switch (gameMode) {
-		case MENU:
-			inputResult = menu_update(gameStateMenu, totalElapsed, deltaTime, surfaces);
-			break;
-		case FOREST:
-			inputResult = forest_update(gameStateForest, totalElapsed, deltaTime, surfaces);
-			break;
-		case RESULTS:
-			inputResult = results_update(gameStateResults, totalElapsed, deltaTime, surfaces);
-			break;
-		default:
-			break;
-		}
-
-		// Clear the screen
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		switch (gameMode) {
-		case MENU:
-			menu_draw(context.font, textShaderProgram, textVAO, textVBO);
-			break;
-		case FOREST:
-			forest_draw(gameStateForest, textures, forestShaderProgram, forestVAO, forestVBO);
-			break;
-		case RESULTS:
-			results_draw(context.font, textShaderProgram, textVAO, textVBO);
-			break;
-		default:
-			break;
-		}
-
-		SDL_GL_SwapWindow(context.window);
-
-		SDL_Delay(1);
+	if (gameLoopData.shouldExit) {
+		free_images(gameLoopData.imageData.textures, gameLoopData.imageData.surfaces);
+		cleanup_render_context(gameLoopData.context);
+		exit(1);
 	}
 
-	glDeleteVertexArrays(1, &forestVAO);
-	glDeleteBuffers(1, &forestVBO);
-	glDeleteVertexArrays(1, &textVAO);
-	glDeleteBuffers(1, &textVBO);
-	glDeleteProgram(forestShaderProgram);
-	glDeleteProgram(textShaderProgram);
+	if (!gameLoopData.initialized) {
+		if (!initialize_game_data(gameLoopData.argc, gameLoopData.argv)) {
+			gameLoopData.shouldExit = true;
+			return;
+		}
+		gameLoopData.initialized = true;
+	}
 
-	free_images(textures, surfaces);
+	InputResult inputResult;
+	inputResult = handle_events(gameLoopData.gameMode, gameLoopData.fullscreen);
 
-	cleanup_render_context(context);
+	if (inputResult.transition) {
+		if (inputResult.transitionTo == EXIT) {
+			gameLoopData.shouldExit = true;
+			return;
+		}
+		if (inputResult.transitionTo == FOREST) {
+			if (Mix_PlayMusic(gameLoopData.context.backgroundMusic, -1) == -1) {
+				printf("Failed to play background music! SDL_mixer Error: %s\n", Mix_GetError());
+				gameLoopData.shouldExit = true;
+			}
+			forest_init(gameLoopData.gameStateForest);
+		} else {
+			Mix_HaltMusic();
+		}
+		if (inputResult.transitionTo == MENU) {
+			menu_init(gameLoopData.gameStateMenu);
+		}
+		if (inputResult.transitionTo == RESULTS) {
+			results_init(gameLoopData.gameStateResults);
+		}
+		gameLoopData.gameMode = inputResult.transitionTo;
+		return;
+	}
+
+	gameLoopData.currentTick = SDL_GetTicks();
+	float deltaTime = (gameLoopData.currentTick - gameLoopData.lastTick) / 1000.0f;
+	gameLoopData.totalElapsed += gameLoopData.currentTick - gameLoopData.lastTick;
+	gameLoopData.lastTick = gameLoopData.currentTick;
+
+	switch (gameLoopData.gameMode) {
+	case MENU:
+		inputResult = menu_update(gameLoopData.gameStateMenu, gameLoopData.totalElapsed, deltaTime, gameLoopData.imageData.surfaces);
+		break;
+	case FOREST:
+		inputResult = forest_update(gameLoopData.gameStateForest, gameLoopData.totalElapsed, deltaTime, gameLoopData.imageData.surfaces);
+		break;
+	case RESULTS:
+		inputResult = results_update(gameLoopData.gameStateResults, gameLoopData.totalElapsed, deltaTime, gameLoopData.imageData.surfaces);
+		break;
+	default:
+		break;
+	}
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	switch (gameLoopData.gameMode) {
+	case MENU:
+		menu_draw(gameLoopData.context.font, gameLoopData.context.textShaderProgram, gameLoopData.context.textVAO, gameLoopData.context.textVBO);
+		break;
+	case FOREST:
+		forest_draw(gameLoopData.gameStateForest, gameLoopData.imageData.textures, gameLoopData.context.forestShaderProgram, gameLoopData.context.forestVAO, gameLoopData.context.forestVBO);
+		break;
+	case RESULTS:
+		results_draw(gameLoopData.context.font, gameLoopData.context.textShaderProgram, gameLoopData.context.textVAO, gameLoopData.context.textVBO);
+		break;
+	default:
+		break;
+	}
+
+	SDL_GL_SwapWindow(gameLoopData.context.window);
+#ifndef __EMSCRIPTEN__
+	SDL_Delay(1);
+#endif
+
+}
+
+int main(int argc, char **argv) {
+
+	gameLoopData.argc = argc;
+	gameLoopData.argv = argv;
+	gameLoopData.initialized = false;
+	gameLoopData.shouldExit = false;
+#ifdef __EMSCRIPTEN__
+	emscripten_set_main_loop(main_loop_iteration, 0, 0);
+#else
+	while(true) {
+		main_loop_iteration();
+	}
+#endif
+
 	return 0;
 }

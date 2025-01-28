@@ -1,0 +1,17 @@
+EMCC = emcc
+CXXFLAGS = -O2 -s USE_SDL=2 -s USE_SDL_IMAGE=2 -s USE_SDL_MIXER=2 -s USE_SDL_TTF=2 --preload-file data --use-preload-plugins -s INITIAL_MEMORY=67108864
+SRCDIR = ./src
+OUTDIR = ./obj_wasm
+
+# Source files
+OBJ = main.cpp shader_utils.cpp matrix.cpp
+
+all: $(OUTDIR)/sartre.html
+
+$(OUTDIR)/sartre.html: $(addprefix $(SRCDIR)/, $(OBJ))
+	mkdir -p $(OUTDIR)
+	$(EMCC) $(CXXFLAGS) $^ -o $@
+
+# Clean target to remove generated files
+clean:
+	rm -rf $(OUTDIR)
