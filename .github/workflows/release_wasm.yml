@@ -27,8 +27,8 @@ jobs:
           mkdir -p docs
           cp src_wasm/index.html docs/index.html
           cp obj_wasm/main.js docs/main.js
-          cp obj_wasm/main.js docs/main.wasm
-          cp obj_wasm/main.js docs/main.data
+          cp obj_wasm/main.wasm docs/main.wasm
+          cp obj_wasm/main.data docs/main.data
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
