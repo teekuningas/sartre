@@ -1,0 +1,40 @@
+name: Build and Deploy WASM for GitHub Pages
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build-wasm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.74
+
+      - name: Build WASM
+        run: |
+          make -f Makefile.release.wasm
+
+      - name: Prepare Deployment to GitHub Pages
+        run: |
+          mkdir -p docs
+          cp src_wasm/index.html docs/index.html
+          cp obj_wasm/main.js docs/main.js
+          cp obj_wasm/main.wasm docs/main.wasm
+          cp obj_wasm/main.data docs/main.data
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          destination_dir: ./docs
+          publish_branch: gh-pages
+          keep_files: false
