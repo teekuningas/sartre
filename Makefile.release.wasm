@@ -6,12 +6,15 @@ OUTDIR = ./obj_wasm
 # Source files
 OBJ = main.cpp shader_utils.cpp matrix.cpp
 
-all: $(OUTDIR)/sartre.html
+all: $(OUTDIR)/main.html
 
-$(OUTDIR)/sartre.html: $(addprefix $(SRCDIR)/, $(OBJ))
+$(OUTDIR)/main.html: $(addprefix $(SRCDIR)/, $(OBJ))
 	mkdir -p $(OUTDIR)
 	$(EMCC) $(CXXFLAGS) $^ -o $@
 
 # Clean target to remove generated files
 clean:
 	rm -rf $(OUTDIR)
+
+build_local:
+	rm -f obj_wasm/* && EM_CACHE=${PWD}/.emscripten_cache make -f Makefile.release.wasm all

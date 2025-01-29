@@ -256,7 +256,7 @@ void load_images(Textures &textures, Surfaces &surfaces, std::string dataPath)
 	SDL_FreeSurface(forestTaustaImage);
 
 	// Load collision map
-	surfaces.forestCollisionMap = IMG_Load((dataPath + "images/lehto_platforms.png").c_str());
+	surfaces.forestCollisionMap = format_sdl_surface(IMG_Load((dataPath + "images/lehto_platforms.png").c_str()));
 	if (!surfaces.forestCollisionMap) {
 	    printf("Error loading image: %s\n", SDL_GetError());
 	    exit(1);
@@ -273,15 +273,22 @@ void free_images(Textures &textures, Surfaces &surfaces)
 	SDL_FreeSurface(surfaces.forestCollisionMap);
 }
 
-bool isPixelBlack(SDL_Surface* surface, int x, int y, Uint8 threshold = 50)
-{
+bool isPixelBlack(SDL_Surface* surface, int x, int y, Uint8 threshold = 50) {
 	if (x < 0 || x >= surface->w || y < 0 || y >= surface->h) {
 		return false; // Out of bounds, consider it non-colliding (white)
 	}
 
-	Uint8 pixel = *((Uint8*)surface->pixels + y * surface->pitch + x); // Direct pixel access for 8-bit grayscale
+	// Calculate the position of the pixel's first byte in the pixel array
+	Uint32 pixelIndex = y * surface->pitch + x * 4; // 4 bytes per pixel (RGBA32)
+	Uint8* pixel = (Uint8*)surface->pixels + pixelIndex;
 
-	return pixel < threshold; // Black if below the threshold
+	// Extract the RGB components
+	Uint8 red = pixel[0];
+	Uint8 green = pixel[1];
+	Uint8 blue = pixel[2];
+
+	// Determine if the pixel is black by checking if all RGB values are below the threshold
+	return red < threshold && green < threshold && blue < threshold;
 }
 
 void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint shader, GLuint VAO, GLuint VBO, float x, float y) {
