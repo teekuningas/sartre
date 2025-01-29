@@ -774,11 +774,6 @@ GameLoopData gameLoopData;
 bool initialize_game_data(int argc, char **argv) {
 	std::string dataPath = getResourcePath();
 
-	if (argc > 1 && std::strcmp(argv[1], "--smoke") == 0) {
-		std::cout << "Smoketest ran fine!" << std::endl;
-		return false;
-	}
-
 	gameLoopData.fullscreen = (argc > 1 && std::strcmp(argv[1], "--fullscreen") == 0);
 
 	if (!initialize_render_context(gameLoopData.context, dataPath, gameLoopData.fullscreen)) {
@@ -924,6 +919,11 @@ void main_loop_iteration() {
 }
 
 int main(int argc, char **argv) {
+
+	if (argc > 1 && std::strcmp(argv[1], "--smoke") == 0) {
+		std::cout << "Smoketest ran fine!" << std::endl;
+		return 0;
+	}
 
 	gameLoopData.argc = argc;
 	gameLoopData.argv = argv;
