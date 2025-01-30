@@ -72,16 +72,39 @@ InputResult handle_events(GameMode &gameMode, bool fullscreen)
 void forest_init(GameStateForest &gameStateForest)
 {
 	Sartre &sartre = gameStateForest.sartre;
+	sartre.width = 256;
+	sartre.height = 256;
 	sartre.x = 0.0;
-	sartre.y = HAHMO_KORKEUS / 2 + MAA_KORKEUS;
-	sartre.hahmo = 0;
-	sartre.hyppy = 0;
+	sartre.y = sartre.height / 2 + MAA_KORKEUS;
+	sartre.animIdx = 0;
+	sartre.animSize = 2;
+	sartre.jump = 0;
+
+	size_t numObjects = 5;
+	gameStateForest.pages.resize(numObjects);
+
+	for (auto &obj : gameStateForest.pages) {
+
+		obj.width = 128;
+		obj.height = 128;
+
+		obj.x = (GLfloat)((rand() % (KARTTA_LEVEYS - (int)obj.width)) - (KARTTA_LEVEYS / 2) + (int)(obj.width / 2));
+		obj.y = (GLfloat)((rand() % (KARTTA_KORKEUS - (int)obj.height - (KARTTA_KORKEUS / 4))) + (KARTTA_KORKEUS / 8) + (int)(obj.height / 2));
+
+		obj.vx = 0.3;
+
+		obj.ymid = obj.y;
+		obj.amplitude = 200;
+		obj.frequency = 1.5;
+		obj.phase = (((GLfloat)(rand() % 1000)) / 1000.0f) * 3.141 * 2;
+
+		obj.animIdx = 0;
+		obj.animSize = 2;
+	}
 }
 
 void forest_draw(GameStateForest &gameStateForest, Textures &textures, GLuint shaderProgram, GLuint VAO, GLuint VBO)
 {
-	Sartre &sartre = gameStateForest.sartre;
-
 	// Use the shader program
 	glUseProgram(shaderProgram);
 
@@ -91,38 +114,61 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, GLuint sh
 	GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, orthoMatrix);
 
-	float translationMatrix[16];
-	createTranslationMatrix(sartre.x, sartre.y, 0.1f, translationMatrix);
-	GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, translationMatrix);
-
-	// Enable depth test to get sartre visible
+	// Enable depth test
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 
 	// Bind the VAO
 	glBindVertexArray(VAO);
 
-	// Sartre Character
-	GLuint sartreTexture = (sartre.hahmo == 0) ? textures.forestSartre[0] : textures.forestSartre[1];
+	// Draw the Sartre character
+	Sartre &sartre = gameStateForest.sartre;
+	GLuint sartreTexture = textures.forestSartre[sartre.animIdx];
 	glBindTexture(GL_TEXTURE_2D, sartreTexture);
 
 	// Specify the texture uniform
 	GLint ourTextureLoc = glGetUniformLocation(shaderProgram, "ourTexture");
 	glUniform1i(ourTextureLoc, 0);
 
-	// Define the quad vertices and texture coordinates for Sartre
+	// Set model matrix for Sartre
+	float translationMatrix[16];
+	createTranslationMatrix(sartre.x, sartre.y, 0.1f, translationMatrix);
+	GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, translationMatrix);
+
+	// Define and draw the quad vertices for Sartre
 	float sartreVertices[] = {
-		-HAHMO_LEVEYS/2, HAHMO_KORKEUS/2, 0.01f, -0.99f,
-		    HAHMO_LEVEYS/2, HAHMO_KORKEUS/2, 0.99f, -0.99f,
-		    HAHMO_LEVEYS/2, -HAHMO_KORKEUS/2, 0.99f, 0.01f,
-		    -HAHMO_LEVEYS/2, -HAHMO_KORKEUS/2, 0.01f, 0.01f
+		-sartre.width/2, sartre.height/2, 0.01f, -0.99f,
+		    sartre.width/2, sartre.height/2, 0.99f, -0.99f,
+		    sartre.width/2, -sartre.height/2, 0.99f, 0.01f,
+		    -sartre.width/2, -sartre.height/2, 0.01f, 0.01f
 	    };
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(sartreVertices), sartreVertices);
 	glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
-	// Forest Background
+	for (auto &obj : gameStateForest.pages) {
+		GLuint objTexture = textures.forestPage[obj.animIdx];
+
+		// Bind object texture
+		glBindTexture(GL_TEXTURE_2D, objTexture);
+
+		// Set model matrix for the GameObject
+		createTranslationMatrix(obj.x, obj.y, 0.1f, translationMatrix); // Adjust depth if needed
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, translationMatrix);
+
+		// Define and draw the quad vertices for the Page
+		float objectVertices[] = {
+			-obj.width/2, obj.height/2, 0.01f, -0.99f,
+			    obj.width/2, obj.height/2, 0.99f, -0.99f,
+			    obj.width/2, -obj.height/2, 0.99f, 0.01f,
+			    -obj.width/2, -obj.height/2, 0.01f, 0.01f
+		    };
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(objectVertices), objectVertices);
+		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+	}
+
+	// Draw the Background
 	createTranslationMatrix(0.0f, 0.0f, 0.0f, translationMatrix);
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, translationMatrix);
 
@@ -140,7 +186,7 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, GLuint sh
 	glBindVertexArray(0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	// Disable depth test not distract others
+	// Disable depth test not to distract others
 	glDisable(GL_DEPTH_TEST);
 }
 
@@ -153,50 +199,67 @@ InputResult forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed,
 
 	const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
-	// Vaihda hahmoa
-	if (totalElapsed % 1000 <= 500) {
-		sartre.hahmo = 0;
-	} else {
-		sartre.hahmo = 1;
+	// Update page objects
+	for (auto &obj : gameStateForest.pages) {
+		// Update animation
+		obj.animIdx = (totalElapsed % 1000) / (1000 / obj.animSize);
+
+		// Change position for sinelike trajectory
+		obj.x = obj.x + obj.vx;
+		obj.y = obj.ymid + obj.amplitude * sin(obj.frequency * ((float)totalElapsed / 1000 + obj.phase));
+
+		// If goes outside the window, come out from the other direction
+		if((obj.x > KARTTA_LEVEYS / 2 + obj.width) && (obj.vx > 0)) {
+			obj.x = -(obj.width / 2) - KARTTA_LEVEYS / 2;
+		} else if ((obj.x < -KARTTA_LEVEYS / 2 - obj.width) && (obj.vx < 0)) {
+			obj.x = KARTTA_LEVEYS / 2 + obj.width / 2;
+		}
 	}
 
+	// Update sartre animation
+	sartre.animIdx = (totalElapsed % 1000) / (1000 / sartre.animSize);
+
+	// Update location and velocity based on
 	if (keystate[SDL_SCANCODE_RIGHT]) {
-		if (sartre.x < KARTTA_LEVEYS / 2 - HAHMO_LEVEYS / 2) {
+		if (sartre.x < KARTTA_LEVEYS / 2 - sartre.width / 2) {
 			sartre.x = sartre.x + deltaTime*HAHMO_VX;
 		}
 	}
 
 	if (keystate[SDL_SCANCODE_LEFT]) {
-		if (sartre.x > -KARTTA_LEVEYS / 2 + HAHMO_LEVEYS / 2) {
+		if (sartre.x > -KARTTA_LEVEYS / 2 + sartre.width / 2) {
 			sartre.x = sartre.x - deltaTime*HAHMO_VX;
 		}
 	}
 
-	if (sartre.hyppy == 0 && keystate[SDL_SCANCODE_UP]) {
-		sartre.hyppy = 1;
+	if (sartre.jump == 0 && keystate[SDL_SCANCODE_UP]) {
+		sartre.jump = 1;
 		sartre.vy = HAHMO_HYPPYNOPEUS;
 	}
 
+	// Handle intricacies related to falling down
 	GLfloat predictedY = sartre.y + deltaTime*sartre.vy;
-
 	int sartreXPixels = (int)(sartre.x + KARTTA_LEVEYS / 2);
-	int commonExtra = HAHMO_KORKEUS / 8;
+	int commonExtra = sartre.height / 8;
 	int padding = 2; // if the platform is not exactly exactly straight
-	int sartreYPixels = (int)(sartre.y - HAHMO_KORKEUS / 2 + commonExtra);
-	int predictedYPixels = (int)(predictedY - HAHMO_KORKEUS / 2 + commonExtra - padding);
+	int sartreYPixels = (int)(sartre.y - sartre.height / 2 + commonExtra);
+	int predictedYPixels = (int)(predictedY - sartre.height / 2 + commonExtra - padding);
 
-	if (sartre.y >= HAHMO_KORKEUS / 2 + MAA_KORKEUS && predictedY < HAHMO_KORKEUS / 2 + MAA_KORKEUS) {
-		sartre.hyppy = 0;
+	if (sartre.y >= sartre.height / 2 + MAA_KORKEUS && predictedY < sartre.height / 2 + MAA_KORKEUS) {
+		// We hit the ground, so set vertical speed to zero.
+		sartre.jump = 0;
 		sartre.vy = 0;
 	} else if (
 	    predictedY < sartre.y &&
 	    !isPixelBlack(surfaces.forestCollisionMap, sartreXPixels, KARTTA_KORKEUS - sartreYPixels) &&
 	    isPixelBlack(surfaces.forestCollisionMap, sartreXPixels, KARTTA_KORKEUS - predictedYPixels)
 	) {
-		sartre.hyppy = 0;
+		// We hit a non-ground surface, like a treetop.
+		sartre.jump = 0;
 		sartre.vy = 0;
 	} else {
-		sartre.y = sartre.y + deltaTime*sartre.vy;
+		// We just fall.
+		sartre.y = predictedY;
 		sartre.vy = sartre.vy - deltaTime*HAHMO_G;
 	}
 
@@ -395,6 +458,8 @@ void main_loop_iteration()
 
 int main(int argc, char **argv)
 {
+	srand(time(NULL));
+
 	if (argc > 1 && std::strcmp(argv[1], "--smoke") == 0) {
 		std::cout << "Smoketest ran fine!" << std::endl;
 		return 0;

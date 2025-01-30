@@ -63,28 +63,18 @@ SDL_Surface* format_sdl_surface(SDL_Surface *surface)
 
 void create_textures(Textures &textures, std::string dataPath)
 {
+	// Sartre
 	SDL_Surface *forestSartreImage[2];
-	SDL_Surface *forestTaustaImage;
-
 	forestSartreImage[0] = IMG_Load((dataPath + "images/sartre.png").c_str());
 	if (!forestSartreImage[0]) {
 		printf("Error loading image: %s\n", SDL_GetError());
 		exit(1);
 	}
-
 	forestSartreImage[1] = IMG_Load((dataPath + "images/sartre2.png").c_str());
 	if (!forestSartreImage[1]) {
 		printf("Error loading image: %s\n", SDL_GetError());
 		exit(1);
 	}
-
-	forestTaustaImage = IMG_Load((dataPath + "images/lehto.png").c_str());
-	if (!forestTaustaImage) {
-		printf("Error loading image: %s\n", SDL_GetError());
-		exit(1);
-	}
-
-	// Sartret
 	glGenTextures(2, textures.forestSartre);
 	for (int i = 0; i < 2; i++) {
 		SDL_Surface* formattedSurface = format_sdl_surface(forestSartreImage[i]);
@@ -99,6 +89,39 @@ void create_textures(Textures &textures, std::string dataPath)
 		SDL_FreeSurface(forestSartreImage[i]);
 	}
 
+	// Pages
+	SDL_Surface *forestPageImage[2];
+	forestPageImage[0] = IMG_Load((dataPath + "images/objects/page.png").c_str());
+	if (!forestPageImage[0]) {
+		printf("Error loading image: %s\n", SDL_GetError());
+		exit(1);
+	}
+	forestPageImage[1] = IMG_Load((dataPath + "images/objects/page2.png").c_str());
+	if (!forestPageImage[1]) {
+		printf("Error loading image: %s\n", SDL_GetError());
+		exit(1);
+	}
+	glGenTextures(2, textures.forestPage);
+	for (int i = 0; i < 2; i++) {
+		SDL_Surface* formattedSurface = format_sdl_surface(forestPageImage[i]);
+		if (!formattedSurface) {
+			exit(1);
+		}
+		glBindTexture(GL_TEXTURE_2D, textures.forestPage[i]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedSurface->w, formattedSurface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, formattedSurface->pixels);
+		SDL_FreeSurface(formattedSurface);
+		SDL_FreeSurface(forestPageImage[i]);
+	}
+
+	// Background
+	SDL_Surface *forestTaustaImage;
+	forestTaustaImage = IMG_Load((dataPath + "images/lehto.png").c_str());
+	if (!forestTaustaImage) {
+		printf("Error loading image: %s\n", SDL_GetError());
+		exit(1);
+	}
 	SDL_Surface* formattedSurface = format_sdl_surface(forestTaustaImage);
 	if (!formattedSurface) {
 		exit(1);
@@ -108,7 +131,6 @@ void create_textures(Textures &textures, std::string dataPath)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedSurface->w, formattedSurface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, formattedSurface->pixels);
-
 	SDL_FreeSurface(formattedSurface);
 	SDL_FreeSurface(forestTaustaImage);
 }
@@ -127,6 +149,9 @@ void free_textures(Textures &textures)
 {
 	for (int a = 0; a < 2; a++) {
 		glDeleteTextures(1, &textures.forestSartre[a]);
+	}
+	for (int a = 0; a < 2; a++) {
+		glDeleteTextures(1, &textures.forestPage[a]);
 	}
 	glDeleteTextures(1, &textures.forestTausta[0]);
 }

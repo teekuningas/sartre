@@ -1,6 +1,8 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <vector>
+
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_mixer.h>
@@ -10,16 +12,34 @@
 
 enum GameMode { MENU, FOREST, RESULTS, EXIT };
 
+struct PageObject {
+	GLfloat x;
+	GLfloat y;
+	GLfloat vx;
+	GLfloat ymid;
+	GLfloat width;
+	GLfloat height;
+	GLfloat phase;
+	GLfloat amplitude;
+	GLfloat frequency;
+	int animIdx;
+	int animSize;
+};
+
 struct Sartre {
 	GLfloat x;
 	GLfloat y;
+	GLfloat width;
+	GLfloat height;
 	GLfloat vy;
-	int hahmo;
-	bool hyppy;
+	int animIdx;
+	int animSize;
+	bool jump;
 };
 
 struct GameStateForest {
 	Sartre sartre;
+	std::vector<PageObject> pages;
 };
 
 struct GameStateMenu {
@@ -37,6 +57,7 @@ struct InputResult {
 
 struct Textures {
 	GLuint forestSartre[2];
+	GLuint forestPage[2];
 	GLuint forestTausta[1];
 };
 

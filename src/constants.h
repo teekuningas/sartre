@@ -53,8 +53,6 @@ const char* forestFragmentShaderSource =
 
 const int KARTTA_LEVEYS = 2048;
 const int KARTTA_KORKEUS = 2048;
-const int HAHMO_LEVEYS = 256;
-const int HAHMO_KORKEUS = 256;
 const int MAA_KORKEUS = 50;
 
 const float HAHMO_VX = 800.0f;
