@@ -26,7 +26,7 @@ GLuint loadShader(GLenum type, const std::string& source)
 	return shader;
 }
 
-GLuint createProgram(const std::string& vertexSource, const std::string& fragmentSource)
+void createProgram(const std::string& vertexSource, const std::string& fragmentSource, GLuint& shaderProgram)
 {
 	GLuint vertexShader = loadShader(GL_VERTEX_SHADER, vertexSource);
 	GLuint fragmentShader = loadShader(GL_FRAGMENT_SHADER, fragmentSource);
@@ -45,8 +45,22 @@ GLuint createProgram(const std::string& vertexSource, const std::string& fragmen
 		glGetProgramInfoLog(program, infoLen, &infoLen, &infoLog[0]);
 		std::cerr << "Error linking program:\n" << &infoLog[0] << std::endl;
 		glDeleteProgram(program);
-		return 0;
 	}
 
-	return program;
+	shaderProgram = program;
+}
+
+void createShaderBuffers(GLuint& VAO, GLuint& VBO)
+{
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 4 * 4, nullptr, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
 }

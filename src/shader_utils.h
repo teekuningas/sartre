@@ -6,6 +6,9 @@
 #include <string>
 
 GLuint loadShader(GLenum type, const std::string& source);
-GLuint createProgram(const std::string& vertexSource, const std::string& fragmentSource);
+
+void createProgram(const std::string& vertexSource, const std::string& fragmentSource, GLuint& shaderProgram);
+
+void createShaderBuffers(GLuint& VAO, GLuint& VBO);
 
 #endif
