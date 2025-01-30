@@ -1,5 +1,9 @@
 #include "resources.h"
 
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#endif
+
 std::string getResourcePath()
 {
 	const char* dataPath = getenv("SARTRE_DATA_PATH");

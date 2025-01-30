@@ -21,10 +21,6 @@
 #include "render_context.h"
 #include "utils.h"
 
-#ifdef __APPLE__
-#include <CoreFoundation/CoreFoundation.h>
-#endif
-
 InputResult handle_events(GameMode &gameMode, bool fullscreen)
 {
 	SDL_Event event;
@@ -313,9 +309,9 @@ void main_loop_iteration()
 
 		WindowParams windowParams = compute_window_params(gameLoopData.fullscreen);
 		glViewport((windowParams.windowWidth - windowParams.viewportSize) / 2,
-			   (windowParams.windowHeight - windowParams.viewportSize) / 2,
-			   windowParams.viewportSize,
-			   windowParams.viewportSize);
+		           (windowParams.windowHeight - windowParams.viewportSize) / 2,
+		           windowParams.viewportSize,
+		           windowParams.viewportSize);
 
 		create_textures(gameLoopData.imageData.textures, dataPath);
 		create_surfaces(gameLoopData.imageData.surfaces, dataPath);
