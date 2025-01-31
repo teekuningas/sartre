@@ -90,19 +90,14 @@ void create_textures(Textures &textures, std::string dataPath)
 	}
 
 	// Pages
-	SDL_Surface *forestPageImage[2];
+	SDL_Surface *forestPageImage[1];
 	forestPageImage[0] = IMG_Load((dataPath + "images/objects/page.png").c_str());
 	if (!forestPageImage[0]) {
 		printf("Error loading image: %s\n", SDL_GetError());
 		exit(1);
 	}
-	forestPageImage[1] = IMG_Load((dataPath + "images/objects/page2.png").c_str());
-	if (!forestPageImage[1]) {
-		printf("Error loading image: %s\n", SDL_GetError());
-		exit(1);
-	}
-	glGenTextures(2, textures.forestPage);
-	for (int i = 0; i < 2; i++) {
+	glGenTextures(1, textures.forestPage);
+	for (int i = 0; i < 1; i++) {
 		SDL_Surface* formattedSurface = format_sdl_surface(forestPageImage[i]);
 		if (!formattedSurface) {
 			exit(1);

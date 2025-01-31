@@ -99,7 +99,7 @@ void forest_init(GameStateForest &gameStateForest)
 		obj.phase = (((GLfloat)(rand() % 1000)) / 1000.0f) * 3.141 * 2;
 
 		obj.animIdx = 0;
-		obj.animSize = 2;
+		obj.animSize = 1;
 	}
 }
 
