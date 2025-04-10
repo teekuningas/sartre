@@ -158,6 +158,7 @@ void free_surfaces(Surfaces &surfaces)
 
 bool isPixelBlack(SDL_Surface* surface, int x, int y)
 {
+	// Determine if a pixel is considered “black” by checking that all RGB components are below this threshold.
 	Uint8 threshold = 50;
 	if (x < 0 || x >= surface->w || y < 0 || y >= surface->h) {
 		return false; // Out of bounds, consider it non-colliding (white)
