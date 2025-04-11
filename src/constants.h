@@ -50,7 +50,6 @@ const char* forestFragmentShaderSource =
     "    gl_FragColor = texColor;\n"
     "}\n";
 
-
 const int KARTTA_LEVEYS = 2048;
 const int KARTTA_KORKEUS = 2048;
 const int MAA_KORKEUS = 50;

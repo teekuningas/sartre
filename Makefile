@@ -33,4 +33,4 @@ shell:
 
 .PHONY: format
 format:
-	@for k in $(shell find src -name "*.cpp" -o -name "*.h"); do astyle --style=kr --indent=tab=4 $$k ; done
+	@find src -name "*.cpp" -o -name "*.h" | xargs clang-format -i

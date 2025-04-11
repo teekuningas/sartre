@@ -15,7 +15,7 @@
           SDL2_mixer.dev
           SDL2_ttf
           alsa-lib
-          astyle
+          clang-tools
           gcc
           glew
           xorg.libX11
