@@ -5,6 +5,7 @@
 #endif
 
 std::string getResourcePath() {
+  // Use SARTRE_DATA_PATH env variable if set; otherwise, fallback to default (or macOS bundle path)
   const char* dataPath = getenv("SARTRE_DATA_PATH");
   if (dataPath != nullptr) {
     printf("Reading data from path: %s\n", dataPath);

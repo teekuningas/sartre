@@ -4,6 +4,7 @@
 
 void createOrthographicMatrix(float left, float right, float bottom, float top, float near,
                               float far, float* matrix) {
+  // Create a translation matrix for translating objects by (tx, ty, tz)
   std::fill(matrix, matrix + 16, 0.0f);
   matrix[0] = 2.0f / (right - left);
   matrix[5] = 2.0f / (top - bottom);

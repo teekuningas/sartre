@@ -5,6 +5,7 @@
 #include <vector>
 
 GLuint loadShader(GLenum type, const std::string& source) {
+  // Compile shader of given type (vertex/fragment)
   GLuint shader = glCreateShader(type);
   const char* src = source.c_str();
   glShaderSource(shader, 1, &src, NULL);
@@ -33,6 +34,7 @@ void createProgram(const std::string& vertexSource, const std::string& fragmentS
   GLuint program = glCreateProgram();
   glAttachShader(program, vertexShader);
   glAttachShader(program, fragmentShader);
+  // Link the vertex and fragment shaders into a program
   glLinkProgram(program);
 
   GLint linked;
@@ -52,6 +54,7 @@ void createProgram(const std::string& vertexSource, const std::string& fragmentS
 void createShaderBuffers(GLuint& VAO, GLuint& VBO) {
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
+  // Set up VAO and VBO for dynamic vertex data (position and texCoords)
   glBindVertexArray(VAO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 4 * 4, nullptr, GL_DYNAMIC_DRAW);
