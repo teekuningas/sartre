@@ -213,10 +213,10 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   renderText(context.font, pageText.c_str(), white, context.textShaderProgram, context.textVAO, context.textVBO, 50.0f, KARTTA_KORKEUS - 50.0f); // Position near top-left
 }
 
-InputResult forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float deltaTime,
-                          Surfaces &surfaces) {
-  InputResult inputResult;
-  inputResult.transition = false;
+void forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float deltaTime,
+                   Surfaces &surfaces, InputResult& inputResult) {
+  // inputResult is now passed by reference, transition flag should be managed by the caller for the frame.
+  // Note: The local InputResult declaration was removed.
 
   Sartre &sartre = gameStateForest.sartre;
 
