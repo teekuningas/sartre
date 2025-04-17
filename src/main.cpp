@@ -67,9 +67,9 @@ InputResult handle_events(GameMode &gameMode, bool fullscreen) {
         break;
     }
   }
-  // If we're in the FOREST state and all pages have been collected, transition to RESULTS state.
-  if (gameLoopData.gameMode == FOREST &&
-      gameLoopData.gameStateForest.collectedPages == gameLoopData.gameStateForest.totalPages) {
+
+  // Transition to RESULTS state if all pages have been collected.
+  if (gameStateForest.collectedPages == gameStateForest.totalPages) {
     inputResult.transition = true;
     inputResult.transitionTo = RESULTS;
   }
