@@ -25,8 +25,6 @@
 void handle_events(GameMode &gameMode, bool fullscreen, InputResult& inputResult) {
   SDL_Event event;
 
-  // inputResult is now passed by reference, transition flag should be managed by the caller for the frame.
-
   while (SDL_PollEvent(&event)) {
     switch (event.type) {
       case SDL_QUIT:
@@ -66,8 +64,6 @@ void handle_events(GameMode &gameMode, bool fullscreen, InputResult& inputResult
         break;
     }
   }
-
-  // No return value as inputResult is modified by reference
 }
 
 void forest_init(GameStateForest &gameStateForest) {
@@ -215,9 +211,6 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
 
 void forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float deltaTime,
                    Surfaces &surfaces, InputResult& inputResult) {
-  // inputResult is now passed by reference, transition flag should be managed by the caller for the frame.
-  // Note: The local InputResult declaration was removed.
-
   Sartre &sartre = gameStateForest.sartre;
 
   const Uint8 *keystate = SDL_GetKeyboardState(NULL);
@@ -304,12 +297,9 @@ void forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float 
 
   // Transition to RESULTS state if all pages have been collected.
   if (gameStateForest.collectedPages == gameStateForest.totalPages) {
-    // Signal transition via the reference parameter
     inputResult.transition = true;
     inputResult.transitionTo = RESULTS;
   }
-
-  // No return value
 }
 
 void results_init(GameStateResults &gameStateResults) {}
@@ -335,8 +325,6 @@ void results_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint V
 
 void results_update(GameStateResults &gameStateResults, Uint32 totalElapsed, float deltaTime,
                     Surfaces &surfaces, InputResult& inputResult) {
-  // inputResult is now passed by reference.
-  // Currently, this function doesn't trigger transitions, but signature is updated for consistency.
 }
 
 void menu_init(GameStateMenu &gameStateMenu) {}
@@ -369,8 +357,6 @@ void menu_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint VBO)
 
 void menu_update(GameStateMenu &gameStateMenu, Uint32 totalElapsed, float deltaTime,
                  Surfaces &surfaces, InputResult& inputResult) {
-  // inputResult is now passed by reference.
-  // Currently, this function doesn't trigger transitions, but signature is updated for consistency.
 }
 
 GameLoopData gameLoopData;
