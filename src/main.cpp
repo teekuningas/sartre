@@ -22,11 +22,10 @@
 #include "types.h"
 #include "utils.h"
 
-InputResult handle_events(GameMode &gameMode, bool fullscreen) {
+void handle_events(GameMode &gameMode, bool fullscreen, InputResult& inputResult) {
   SDL_Event event;
 
-  InputResult inputResult;
-  inputResult.transition = false;
+  // inputResult is now passed by reference, transition flag should be managed by the caller for the frame.
 
   while (SDL_PollEvent(&event)) {
     switch (event.type) {
@@ -68,7 +67,7 @@ InputResult handle_events(GameMode &gameMode, bool fullscreen) {
     }
   }
 
-  return inputResult;
+  // No return value as inputResult is modified by reference
 }
 
 void forest_init(GameStateForest &gameStateForest) {
@@ -305,11 +304,12 @@ InputResult forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed,
 
   // Transition to RESULTS state if all pages have been collected.
   if (gameStateForest.collectedPages == gameStateForest.totalPages) {
+    // Signal transition via the reference parameter
     inputResult.transition = true;
     inputResult.transitionTo = RESULTS;
   }
 
-  return inputResult;
+  // No return value
 }
 
 void results_init(GameStateResults &gameStateResults) {}
@@ -333,10 +333,10 @@ void results_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint V
              500.0f);
 }
 
-InputResult results_update(GameStateResults &gameStateResults, Uint32 totalElapsed, float deltaTime,
-                           Surfaces &surfaces) {
-  InputResult inputResult;
-  return inputResult;
+void results_update(GameStateResults &gameStateResults, Uint32 totalElapsed, float deltaTime,
+                    Surfaces &surfaces, InputResult& inputResult) {
+  // inputResult is now passed by reference.
+  // Currently, this function doesn't trigger transitions, but signature is updated for consistency.
 }
 
 void menu_init(GameStateMenu &gameStateMenu) {}
@@ -367,10 +367,10 @@ void menu_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint VBO)
              500.0f);
 }
 
-InputResult menu_update(GameStateMenu &gameStateMenu, Uint32 totalElapsed, float deltaTime,
-                        Surfaces &surfaces) {
-  InputResult inputResult;
-  return inputResult;
+void menu_update(GameStateMenu &gameStateMenu, Uint32 totalElapsed, float deltaTime,
+                 Surfaces &surfaces, InputResult& inputResult) {
+  // inputResult is now passed by reference.
+  // Currently, this function doesn't trigger transitions, but signature is updated for consistency.
 }
 
 GameLoopData gameLoopData;
@@ -430,9 +430,39 @@ void main_loop_iteration() {
     gameLoopData.initialized = true;
   }
 
-  InputResult inputResult;
-  inputResult = handle_events(gameLoopData.gameMode, gameLoopData.fullscreen);
+  // --- Main Loop Logic ---
 
+  InputResult inputResult;
+  inputResult.transition = false; // Initialize for this frame
+
+  // Calculate delta time
+  gameLoopData.currentTick = SDL_GetTicks();
+  float deltaTime = (gameLoopData.currentTick - gameLoopData.lastTick) / 1000.0f;
+  gameLoopData.totalElapsed += gameLoopData.currentTick - gameLoopData.lastTick;
+  gameLoopData.lastTick = gameLoopData.currentTick;
+
+  // 1. Update current game state (can potentially set inputResult.transition)
+  switch (gameLoopData.gameMode) {
+    case MENU:
+      menu_update(gameLoopData.gameStateMenu, gameLoopData.totalElapsed, deltaTime,
+                  gameLoopData.imageData.surfaces, inputResult);
+      break;
+    case FOREST:
+      forest_update(gameLoopData.gameStateForest, gameLoopData.totalElapsed, deltaTime,
+                    gameLoopData.imageData.surfaces, inputResult);
+      break;
+    case RESULTS:
+      results_update(gameLoopData.gameStateResults, gameLoopData.totalElapsed, deltaTime,
+                     gameLoopData.imageData.surfaces, inputResult);
+      break;
+    default:
+      break;
+  }
+
+  // 2. Handle user events (can also set inputResult.transition)
+  handle_events(gameLoopData.gameMode, gameLoopData.fullscreen, inputResult);
+
+  // 3. Check if a transition is requested (either by update or events)
   if (inputResult.transition) {
     if (inputResult.transitionTo == EXIT) {
       gameLoopData.shouldExit = true;
@@ -457,30 +487,8 @@ void main_loop_iteration() {
     return;
   }
 
-  gameLoopData.currentTick = SDL_GetTicks();
-  float deltaTime = (gameLoopData.currentTick - gameLoopData.lastTick) / 1000.0f;
-  gameLoopData.totalElapsed += gameLoopData.currentTick - gameLoopData.lastTick;
-  gameLoopData.lastTick = gameLoopData.currentTick;
-
-  switch (gameLoopData.gameMode) {
-    case MENU:
-      inputResult = menu_update(gameLoopData.gameStateMenu, gameLoopData.totalElapsed, deltaTime,
-                                gameLoopData.imageData.surfaces);
-      break;
-    case FOREST:
-      inputResult = forest_update(gameLoopData.gameStateForest, gameLoopData.totalElapsed,
-                                  deltaTime, gameLoopData.imageData.surfaces);
-      break;
-    case RESULTS:
-      inputResult = results_update(gameLoopData.gameStateResults, gameLoopData.totalElapsed,
-                                   deltaTime, gameLoopData.imageData.surfaces);
-      break;
-    default:
-      break;
-  }
-
+  // 4. Draw the current state
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
   switch (gameLoopData.gameMode) {
     case MENU:
       menu_draw(gameLoopData.context.font, gameLoopData.context.textShaderProgram,
