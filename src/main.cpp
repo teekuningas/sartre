@@ -68,12 +68,6 @@ InputResult handle_events(GameMode &gameMode, bool fullscreen) {
     }
   }
 
-  // Transition to RESULTS state if all pages have been collected.
-  if (gameStateForest.collectedPages == gameStateForest.totalPages) {
-    inputResult.transition = true;
-    inputResult.transitionTo = RESULTS;
-  }
-
   return inputResult;
 }
 
@@ -307,6 +301,12 @@ InputResult forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed,
     // We just fall.
     sartre.y = predictedY;
     sartre.vy = sartre.vy - deltaTime * HAHMO_G;
+  }
+
+  // Transition to RESULTS state if all pages have been collected.
+  if (gameStateForest.collectedPages == gameStateForest.totalPages) {
+    inputResult.transition = true;
+    inputResult.transitionTo = RESULTS;
   }
 
   return inputResult;
