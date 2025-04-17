@@ -39,6 +39,8 @@ struct Sartre {
 struct GameStateForest {
   Sartre sartre;
   std::vector<PageObject> pages;
+  int collectedPages;
+  int totalPages;
 };
 
 struct GameStateMenu {};

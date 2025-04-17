@@ -6,6 +6,7 @@
 #include <SDL_ttf.h>
 
 #include <cstring>
+#include <string> // Required for std::to_string
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/html5.h>
@@ -81,6 +82,8 @@ void forest_init(GameStateForest &gameStateForest) {
 
   size_t numObjects = 5;
   gameStateForest.pages.resize(numObjects);
+  gameStateForest.collectedPages = 0; // Initialize collected pages
+  gameStateForest.totalPages = numObjects; // Initialize total pages
 
   for (auto &obj : gameStateForest.pages) {
     obj.width = 128;
@@ -103,8 +106,8 @@ void forest_init(GameStateForest &gameStateForest) {
   }
 }
 
-void forest_draw(GameStateForest &gameStateForest, Textures &textures, GLuint shaderProgram,
-                 GLuint VAO, GLuint VBO) {
+void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderContext &context,
+                 GLuint shaderProgram, GLuint VAO, GLuint VBO) {
   // Use the shader program
   glUseProgram(shaderProgram);
 
@@ -183,6 +186,25 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, GLuint sh
 
   // Disable depth test not to distract others
   glDisable(GL_DEPTH_TEST);
+
+  // --- Render Page Count Text ---
+
+  // Set up the orthographic projection for the text rendering (top-left corner)
+  float textOrthoMatrix[16];
+  // Using screen pixel coordinates for simplicity, assuming KARTTA dimensions match viewport roughly
+  createOrthographicMatrix(0.0f, KARTTA_LEVEYS, 0.0f, KARTTA_KORKEUS, -1.0f, 1.0f, textOrthoMatrix);
+
+  // Use the text shader program
+  glUseProgram(context.textShaderProgram);
+
+  // Pass the projection matrix to the text shader
+  GLuint textProjectionLoc = glGetUniformLocation(context.textShaderProgram, "projection");
+  glUniformMatrix4fv(textProjectionLoc, 1, GL_FALSE, textOrthoMatrix);
+
+  // Prepare text and color
+  std::string pageText = "Pages: " + std::to_string(gameStateForest.collectedPages) + " / " + std::to_string(gameStateForest.totalPages);
+  SDL_Color white = {255, 255, 255, 255};
+  renderText(context.font, pageText.c_str(), white, context.textShaderProgram, context.textVAO, context.textVBO, 50.0f, KARTTA_KORKEUS - 50.0f); // Position near top-left
 }
 
 InputResult forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float deltaTime,
@@ -438,7 +460,7 @@ void main_loop_iteration() {
       break;
     case FOREST:
       forest_draw(gameLoopData.gameStateForest, gameLoopData.imageData.textures,
-                  gameLoopData.context.forestShaderProgram, gameLoopData.context.forestVAO,
+                  gameLoopData.context, gameLoopData.context.forestShaderProgram, gameLoopData.context.forestVAO,
                   gameLoopData.context.forestVBO);
       break;
     case RESULTS:
