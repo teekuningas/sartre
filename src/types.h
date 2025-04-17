@@ -23,7 +23,7 @@ struct PageObject {
   GLfloat frequency;
   int animIdx;
   int animSize;
-  bool collected; // Added flag
+  bool collected;  // Added flag
 };
 
 struct Sartre {

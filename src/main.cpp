@@ -6,7 +6,7 @@
 #include <SDL_ttf.h>
 
 #include <cstring>
-#include <string> // Required for std::to_string
+#include <string>  // Required for std::to_string
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/html5.h>
@@ -22,7 +22,7 @@
 #include "types.h"
 #include "utils.h"
 
-void handle_events(GameMode &gameMode, bool fullscreen, InputResult& inputResult) {
+void handle_events(GameMode &gameMode, bool fullscreen, InputResult &inputResult) {
   SDL_Event event;
 
   while (SDL_PollEvent(&event)) {
@@ -78,8 +78,8 @@ void forest_init(GameStateForest &gameStateForest) {
 
   size_t numObjects = 5;
   gameStateForest.pages.resize(numObjects);
-  gameStateForest.collectedPages = 0; // Initialize collected pages
-  gameStateForest.totalPages = numObjects; // Initialize total pages
+  gameStateForest.collectedPages = 0;       // Initialize collected pages
+  gameStateForest.totalPages = numObjects;  // Initialize total pages
 
   for (auto &obj : gameStateForest.pages) {
     obj.width = 128;
@@ -97,7 +97,7 @@ void forest_init(GameStateForest &gameStateForest) {
     obj.frequency = 1.5;
     obj.phase = (((GLfloat)(rand() % 1000)) / 1000.0f) * 3.141 * 2;
 
-    obj.collected = false; // Initialize as not collected
+    obj.collected = false;  // Initialize as not collected
     obj.animIdx = 0;
     obj.animSize = 1;
   }
@@ -193,7 +193,8 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
 
   // Set up the orthographic projection for the text rendering (top-left corner)
   float textOrthoMatrix[16];
-  // Using screen pixel coordinates for simplicity, assuming KARTTA dimensions match viewport roughly
+  // Using screen pixel coordinates for simplicity, assuming KARTTA dimensions match viewport
+  // roughly
   createOrthographicMatrix(0.0f, KARTTA_LEVEYS, 0.0f, KARTTA_KORKEUS, -1.0f, 1.0f, textOrthoMatrix);
 
   // Use the text shader program
@@ -204,13 +205,15 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   glUniformMatrix4fv(textProjectionLoc, 1, GL_FALSE, textOrthoMatrix);
 
   // Prepare text and color
-  std::string pageText = "Pages: " + std::to_string(gameStateForest.collectedPages) + " / " + std::to_string(gameStateForest.totalPages);
+  std::string pageText = "Pages: " + std::to_string(gameStateForest.collectedPages) + " / " +
+                         std::to_string(gameStateForest.totalPages);
   SDL_Color white = {255, 255, 255, 255};
-  renderText(context.font, pageText.c_str(), white, context.textShaderProgram, context.textVAO, context.textVBO, 50.0f, KARTTA_KORKEUS - 50.0f); // Position near top-left
+  renderText(context.font, pageText.c_str(), white, context.textShaderProgram, context.textVAO,
+             context.textVBO, 50.0f, KARTTA_KORKEUS - 50.0f);  // Position near top-left
 }
 
 void forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float deltaTime,
-                   Surfaces &surfaces, InputResult& inputResult) {
+                   Surfaces &surfaces, InputResult &inputResult) {
   Sartre &sartre = gameStateForest.sartre;
 
   const Uint8 *keystate = SDL_GetKeyboardState(NULL);
@@ -223,13 +226,13 @@ void forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float 
       obj.animIdx = (totalElapsed % 1000) / (1000 / obj.animSize);
 
       // Change position for sinelike trajectory
-    obj.x = obj.x + obj.vx;
-    obj.y =
-        obj.ymid + obj.amplitude * sin(obj.frequency * ((float)totalElapsed / 1000 + obj.phase));
+      obj.x = obj.x + obj.vx;
+      obj.y =
+          obj.ymid + obj.amplitude * sin(obj.frequency * ((float)totalElapsed / 1000 + obj.phase));
 
-    // If goes outside the window, come out from the other direction
-    if ((obj.x > KARTTA_LEVEYS / 2 + obj.width) && (obj.vx > 0)) {
-      obj.x = -(obj.width / 2) - KARTTA_LEVEYS / 2;
+      // If goes outside the window, come out from the other direction
+      if ((obj.x > KARTTA_LEVEYS / 2 + obj.width) && (obj.vx > 0)) {
+        obj.x = -(obj.width / 2) - KARTTA_LEVEYS / 2;
       } else if ((obj.x < -KARTTA_LEVEYS / 2 - obj.width) && (obj.vx < 0)) {
         obj.x = KARTTA_LEVEYS / 2 + obj.width / 2;
       }
@@ -324,8 +327,7 @@ void results_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint V
 }
 
 void results_update(GameStateResults &gameStateResults, Uint32 totalElapsed, float deltaTime,
-                    Surfaces &surfaces, InputResult& inputResult) {
-}
+                    Surfaces &surfaces, InputResult &inputResult) {}
 
 void menu_init(GameStateMenu &gameStateMenu) {}
 
@@ -356,8 +358,7 @@ void menu_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint VBO)
 }
 
 void menu_update(GameStateMenu &gameStateMenu, Uint32 totalElapsed, float deltaTime,
-                 Surfaces &surfaces, InputResult& inputResult) {
-}
+                 Surfaces &surfaces, InputResult &inputResult) {}
 
 GameLoopData gameLoopData;
 
@@ -419,7 +420,7 @@ void main_loop_iteration() {
   // --- Main Loop Logic ---
 
   InputResult inputResult;
-  inputResult.transition = false; // Initialize for this frame
+  inputResult.transition = false;  // Initialize for this frame
 
   // Calculate delta time
   gameLoopData.currentTick = SDL_GetTicks();
@@ -482,8 +483,8 @@ void main_loop_iteration() {
       break;
     case FOREST:
       forest_draw(gameLoopData.gameStateForest, gameLoopData.imageData.textures,
-                  gameLoopData.context, gameLoopData.context.forestShaderProgram, gameLoopData.context.forestVAO,
-                  gameLoopData.context.forestVBO);
+                  gameLoopData.context, gameLoopData.context.forestShaderProgram,
+                  gameLoopData.context.forestVAO, gameLoopData.context.forestVBO);
       break;
     case RESULTS:
       results_draw(gameLoopData.context.font, gameLoopData.context.textShaderProgram,
