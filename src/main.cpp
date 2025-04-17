@@ -101,6 +101,7 @@ void forest_init(GameStateForest &gameStateForest) {
     obj.frequency = 1.5;
     obj.phase = (((GLfloat)(rand() % 1000)) / 1000.0f) * 3.141 * 2;
 
+    obj.collected = false; // Initialize as not collected
     obj.animIdx = 0;
     obj.animSize = 1;
   }
@@ -150,6 +151,11 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
   for (auto &obj : gameStateForest.pages) {
+    // Skip drawing if collected
+    if (obj.collected) {
+      continue;
+    }
+
     GLuint objTexture = textures.forestPage[obj.animIdx];
 
     // Bind object texture
@@ -218,10 +224,12 @@ InputResult forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed,
 
   // Update page objects
   for (auto &obj : gameStateForest.pages) {
-    // Update animation
-    obj.animIdx = (totalElapsed % 1000) / (1000 / obj.animSize);
+    // Only update and check collision for visible pages
+    if (!obj.collected) {
+      // Update animation
+      obj.animIdx = (totalElapsed % 1000) / (1000 / obj.animSize);
 
-    // Change position for sinelike trajectory
+      // Change position for sinelike trajectory
     obj.x = obj.x + obj.vx;
     obj.y =
         obj.ymid + obj.amplitude * sin(obj.frequency * ((float)totalElapsed / 1000 + obj.phase));
@@ -229,8 +237,21 @@ InputResult forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed,
     // If goes outside the window, come out from the other direction
     if ((obj.x > KARTTA_LEVEYS / 2 + obj.width) && (obj.vx > 0)) {
       obj.x = -(obj.width / 2) - KARTTA_LEVEYS / 2;
-    } else if ((obj.x < -KARTTA_LEVEYS / 2 - obj.width) && (obj.vx < 0)) {
-      obj.x = KARTTA_LEVEYS / 2 + obj.width / 2;
+      } else if ((obj.x < -KARTTA_LEVEYS / 2 - obj.width) && (obj.vx < 0)) {
+        obj.x = KARTTA_LEVEYS / 2 + obj.width / 2;
+      }
+
+      // Check for collision with Sartre (AABB collision detection)
+      bool collisionX = sartre.x + sartre.width / 2 >= obj.x - obj.width / 2 &&
+                        obj.x + obj.width / 2 >= sartre.x - sartre.width / 2;
+      bool collisionY = sartre.y + sartre.height / 2 >= obj.y - obj.height / 2 &&
+                        obj.y + obj.height / 2 >= sartre.y - sartre.height / 2;
+
+      if (collisionX && collisionY) {
+        obj.collected = true;
+        gameStateForest.collectedPages++;
+        // Optional: Add sound effect or visual feedback here
+      }
     }
   }
 
