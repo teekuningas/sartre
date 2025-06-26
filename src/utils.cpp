@@ -87,26 +87,24 @@ void create_textures(Textures& textures, std::string dataPath) {
   }
 
   // Pages
-  SDL_Surface* forestPageImage[1];
-  forestPageImage[0] = IMG_Load((dataPath + "images/objects/page.png").c_str());
-  if (!forestPageImage[0]) {
+  SDL_Surface* forestPageImage;
+  forestPageImage = IMG_Load((dataPath + "images/objects/page.png").c_str());
+  if (!forestPageImage) {
     printf("Error loading image: %s\n", SDL_GetError());
     exit(1);
   }
-  glGenTextures(1, textures.forestPage);
-  for (int i = 0; i < 1; i++) {
-    SDL_Surface* formattedSurface = format_sdl_surface(forestPageImage[i]);
-    if (!formattedSurface) {
-      exit(1);
-    }
-    glBindTexture(GL_TEXTURE_2D, textures.forestPage[i]);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedSurface->w, formattedSurface->h, 0, GL_RGBA,
-                 GL_UNSIGNED_BYTE, formattedSurface->pixels);
-    SDL_FreeSurface(formattedSurface);
-    SDL_FreeSurface(forestPageImage[i]);
+  glGenTextures(1, &textures.forestPage);
+  SDL_Surface* formattedPageSurface = format_sdl_surface(forestPageImage);
+  if (!formattedPageSurface) {
+    exit(1);
   }
+  glBindTexture(GL_TEXTURE_2D, textures.forestPage);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedPageSurface->w, formattedPageSurface->h, 0,
+               GL_RGBA, GL_UNSIGNED_BYTE, formattedPageSurface->pixels);
+  SDL_FreeSurface(formattedPageSurface);
+  SDL_FreeSurface(forestPageImage);
 
   // Background
   SDL_Surface* forestTaustaImage;
@@ -143,9 +141,7 @@ void free_textures(Textures& textures) {
   for (int a = 0; a < 2; a++) {
     glDeleteTextures(1, &textures.forestSartre[a]);
   }
-  for (int a = 0; a < 2; a++) {
-    glDeleteTextures(1, &textures.forestPage[a]);
-  }
+  glDeleteTextures(1, &textures.forestPage);
   glDeleteTextures(1, &textures.forestTausta[0]);
 }
 

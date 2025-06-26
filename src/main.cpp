@@ -98,8 +98,6 @@ void forest_init(GameStateForest &gameStateForest) {
     obj.phase = (((GLfloat)(rand() % 1000)) / 1000.0f) * 3.141 * 2;
 
     obj.collected = false;  // Initialize as not collected
-    obj.animIdx = 0;
-    obj.animSize = 1;
   }
 }
 
@@ -152,7 +150,7 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
       continue;
     }
 
-    GLuint objTexture = textures.forestPage[obj.animIdx];
+    GLuint objTexture = textures.forestPage;
 
     // Bind object texture
     glBindTexture(GL_TEXTURE_2D, objTexture);
@@ -222,9 +220,6 @@ void forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float 
   for (auto &obj : gameStateForest.pages) {
     // Only update and check collision for visible pages
     if (!obj.collected) {
-      // Update animation
-      obj.animIdx = (totalElapsed % 1000) / (1000 / obj.animSize);
-
       // Change position for sinelike trajectory
       obj.x = obj.x + obj.vx;
       obj.y =

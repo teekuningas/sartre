@@ -21,8 +21,6 @@ struct PageObject {
   GLfloat phase;
   GLfloat amplitude;
   GLfloat frequency;
-  int animIdx;
-  int animSize;
   bool collected;  // Added flag
 };
 
@@ -55,7 +53,7 @@ struct InputResult {
 
 struct Textures {
   GLuint forestSartre[2];
-  GLuint forestPage[2];
+  GLuint forestPage;
   GLuint forestTausta[1];
 };
 
