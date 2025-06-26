@@ -364,8 +364,10 @@ void main_loop_iteration() {
    */
 
   if (gameLoopData.shouldExit) {
-    free_textures(gameLoopData.imageData.textures);
-    free_surfaces(gameLoopData.imageData.surfaces);
+    if (gameLoopData.initialized) {
+      free_textures(gameLoopData.imageData.textures);
+      free_surfaces(gameLoopData.imageData.surfaces);
+    }
     cleanup_render_context(gameLoopData.context);
     exit(0);
   }
