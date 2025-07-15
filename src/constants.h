@@ -50,11 +50,9 @@ const int MAP_WIDTH = 2048;
 const int MAP_HEIGHT = 2048;
 const int EARTH_HEIGHT = 50;
 
-// ---- game constants ----
 const int SARTRE_WIDTH = 256;
 const int SARTRE_HEIGHT = 256;
 
-// —— Sartre movement & physics ——
 const float SARTRE_VX = 800.0f;
 const float SARTRE_G = 4000.0f;
 const float SARTRE_JUMP_VELOCITY = 2100.0f;

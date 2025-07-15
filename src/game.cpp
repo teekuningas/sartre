@@ -28,7 +28,6 @@ void run_game_frame(GameLoopData &data) {
       break;
   }
 
-  // 3) handle SDL events
   handle_events(data.gameMode, data.fullscreen, inputResult);
 
   // 4) handle transitions
