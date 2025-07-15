@@ -2,6 +2,8 @@
 #include <emscripten/html5.h>
 #endif
 
+#include <cstdlib>
+#include <ctime>
 #define SDL_MAIN_HANDLED
 #include <cstring>  // for strcmp
 #include <iostream>
