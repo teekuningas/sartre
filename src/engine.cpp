@@ -98,7 +98,6 @@ bool initEngine(RenderContext& context, const std::string& dataPath, bool fullsc
 
   printf("Status: OpenGL version supported by this platform (%s)\n", glGetString(GL_VERSION));
 
-  // Fonts
   if (TTF_Init() == -1) {
     printf("SDL could not initialize! SDL_Error: %s\n", TTF_GetError());
     return false;

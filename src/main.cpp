@@ -12,7 +12,6 @@
 #include "engine.h"     // initEngine, shutdownEngine
 #include "game.h"       // run_game_frame
 #include "graphics.h"   // now carries all of those routines
-//–– getResourcePath moved inline here, no more resources.h/.cpp ––
 
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>

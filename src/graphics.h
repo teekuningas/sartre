@@ -26,16 +26,13 @@ void createTranslationMatrix(float tx, float ty, float tz, float* matrix);
 void createOrthographicMatrix(float left, float right, float bottom, float top, float nearPlane,
                               float farPlane, float* matrix);
 
-// surface‐formatter
 SDL_Surface* format_sdl_surface(SDL_Surface* surface);
 
-// texture / surface loader & freer
 void create_textures(Textures& textures, const std::string& dataPath);
 void create_surfaces(Surfaces& surfaces, const std::string& dataPath);
 void free_textures(Textures& textures);
 void free_surfaces(Surfaces& surfaces);
 
-// text rendering
 void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint shader, GLuint VAO,
                 GLuint VBO, float x, float y);
 

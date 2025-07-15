@@ -40,7 +40,6 @@ void run_game_frame(GameLoopData &data) {
 
   handle_events(data.gameMode, data.fullscreen, inputResult);
 
-  // 4) handle transitions
   if (inputResult.transition) {
     if (inputResult.transitionTo == EXIT) {
       data.shouldExit = true;
@@ -68,7 +67,6 @@ void run_game_frame(GameLoopData &data) {
     return;  // do not draw this frame if you just transitioned
   }
 
-  // 5) draw
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   switch (data.gameMode) {
     case MENU:
@@ -87,7 +85,6 @@ void run_game_frame(GameLoopData &data) {
       break;
   }
 
-  // 6) present
   SDL_GL_SwapWindow(data.context.window);
 #ifndef __EMSCRIPTEN__
   SDL_Delay(1);
