@@ -12,7 +12,35 @@
 #include "engine.h"     // initEngine, shutdownEngine
 #include "game.h"       // run_game_frame
 #include "graphics.h"   // now carries all of those routines
-#include "resources.h"  // getResourcePath()
+//–– getResourcePath moved inline here, no more resources.h/.cpp ––
+
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#include <limits.h>          // for PATH_MAX
+#endif
+
+static std::string getResourcePath() {
+  const char* envPath = std::getenv("SARTRE_DATA_PATH");
+  if (envPath) {
+    printf("Reading data from path: %s\n", envPath);
+    return std::string(envPath) + "/";
+  }
+#ifdef __APPLE__
+  CFBundleRef mainBundle = CFBundleGetMainBundle();
+  if (mainBundle) {
+    CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
+    char path[PATH_MAX];
+    if (CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8*)path, PATH_MAX)) {
+      CFRelease(resourcesURL);
+      return std::string(path) + "/data/";
+    }
+    CFRelease(resourcesURL);
+  }
+  return "./data/";
+#else
+  return "./data/";
+#endif
+}
 
 // ------------------------------------------------------------------------
 void main_loop_iteration(GameLoopData* pdata) {
