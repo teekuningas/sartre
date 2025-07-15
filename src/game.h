@@ -1,11 +1,10 @@
 #ifndef GAME_H
 #define GAME_H
 
-// Game loop entry point
-#include "types.h"       // for GameLoopData, GameStateXXX, RenderContext, Textures, Surfaces, InputResult, GameMode
-#include <SDL.h>         // for Uint32
-#include <GL/glew.h>     // for GLuint
-#include <SDL_ttf.h>     // for TTF_Font
+#include "types.h"
+#include <SDL.h>
+#include <GL/glew.h>
+#include <SDL_ttf.h>
 
 struct GameLoopData;
 
