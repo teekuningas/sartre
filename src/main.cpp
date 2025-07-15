@@ -476,6 +476,9 @@ void main_loop_iteration() {
       return;
     }
     if (inputResult.transitionTo == FOREST) {
+      // reset clock so each run starts fresh
+      gameLoopData.totalElapsed = 0;
+      gameLoopData.lastTick = SDL_GetTicks();
       if (Mix_PlayMusic(gameLoopData.context.backgroundMusic, -1) == -1) {
         printf("Failed to play background music! SDL_mixer Error: %s\n", Mix_GetError());
         gameLoopData.shouldExit = true;
