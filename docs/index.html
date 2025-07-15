@@ -53,17 +53,16 @@
           return false;
         }
 
+        <!-- Create the canvas that the C++ code will draw into -->
+    <canvas id="canvas" oncontextmenu="event.preventDefault()" width="2048" height="2048" style="display: none;"></canvas>
+
+    <script type='text/javascript'>
         // Check if it's a mobile device and display message
         if (!isMobileDevice()) {
             document.getElementById('canvas').style.display = 'block';
             document.getElementById('mobile-unsupported-message').style.display = 'none';
         }
-    </script>
 
-    <!-- Create the canvas that the C++ code will draw into -->
-    <canvas id="canvas" oncontextmenu="event.preventDefault()" width="2048" height="2048" style="display: none;"></canvas>
-
-    <script type='text/javascript'>
         // Function to resize the canvas while maintaining the aspect ratio
         function resizeCanvas() {
             const canvas = document.getElementById('canvas');
