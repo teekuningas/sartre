@@ -3,7 +3,7 @@ LFLAGS = -lX11 -lm -lpthread -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf -lGL -l
 ODIR = obj
 SRCDIR = ./src
 
-_OBJ = main.o graphics.o resources.o engine.o utils.o
+_OBJ = main.o graphics.o resources.o engine.o utils.o game.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 $(ODIR)/%.o: $(SRCDIR)/%.cpp

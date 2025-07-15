@@ -7,7 +7,7 @@ LDFLAGS = -L${SDL2_LIB_DIR} -L${SDL2_LOCAL_LIB_DIR} \
 ODIR = obj
 SRCDIR = ./src
 
-_OBJ = main.o graphics.o resources.o engine.o utils.o
+_OBJ = main.o graphics.o resources.o engine.o utils.o game.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 $(ODIR)/%.o: $(SRCDIR)/%.cpp
