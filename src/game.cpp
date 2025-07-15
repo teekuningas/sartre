@@ -41,6 +41,15 @@ void main_loop_iteration(GameLoopData &data) {
     }
     createShaderBuffers(data.context.forestVAO, data.context.forestVBO);
 
+    // ——— set GL viewport once on init ———
+    WindowParams wp = compute_window_params(data.fullscreen);
+    glViewport(
+      (wp.windowWidth  - wp.viewportSize) / 2,
+      (wp.windowHeight - wp.viewportSize) / 2,
+      wp.viewportSize,
+      wp.viewportSize
+    );
+
     create_textures(data.imageData.textures, data.dataPath);
     create_surfaces(data.imageData.surfaces, data.dataPath);
 
@@ -130,6 +139,12 @@ void main_loop_iteration(GameLoopData &data) {
     default:
       break;
   }
+
+  // ——— present the rendered frame ———
+  SDL_GL_SwapWindow(data.context.window);
+#ifndef __EMSCRIPTEN__
+  SDL_Delay(1);
+#endif
 }
 
 void handle_events(GameMode &gameMode, bool fullscreen, InputResult &inputResult) {
