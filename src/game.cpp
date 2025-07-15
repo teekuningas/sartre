@@ -17,16 +17,16 @@ void run_game_frame(GameLoopData &data) {
   InputResult inputResult{false, data.gameMode};
   switch (data.gameMode) {
     case MENU:
-      menu_update(data.gameStateMenu, data.totalElapsed, delta,
-                  data.imageData.surfaces, inputResult);
+      menu_update(data.gameStateMenu, data.totalElapsed, delta, data.imageData.surfaces,
+                  inputResult);
       break;
     case FOREST:
-      forest_update(data.gameStateForest, data.totalElapsed, delta,
-                    data.imageData.surfaces, inputResult);
+      forest_update(data.gameStateForest, data.totalElapsed, delta, data.imageData.surfaces,
+                    inputResult);
       break;
     case RESULTS:
-      results_update(data.gameStateResults, data.totalElapsed, delta,
-                     data.imageData.surfaces, inputResult);
+      results_update(data.gameStateResults, data.totalElapsed, delta, data.imageData.surfaces,
+                     inputResult);
       break;
     default:
       break;
@@ -67,23 +67,15 @@ void run_game_frame(GameLoopData &data) {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   switch (data.gameMode) {
     case MENU:
-      menu_draw(data.context.font,
-                data.context.textShaderProgram,
-                data.context.textVAO,
+      menu_draw(data.context.font, data.context.textShaderProgram, data.context.textVAO,
                 data.context.textVBO);
       break;
     case FOREST:
-      forest_draw(data.gameStateForest,
-                  data.imageData.textures,
-                  data.context,
-                  data.context.forestShaderProgram,
-                  data.context.forestVAO,
-                  data.context.forestVBO);
+      forest_draw(data.gameStateForest, data.imageData.textures, data.context,
+                  data.context.forestShaderProgram, data.context.forestVAO, data.context.forestVBO);
       break;
     case RESULTS:
-      results_draw(data.context.font,
-                   data.context.textShaderProgram,
-                   data.context.textVAO,
+      results_draw(data.context.font, data.context.textShaderProgram, data.context.textVAO,
                    data.context.textVBO);
       break;
     default:

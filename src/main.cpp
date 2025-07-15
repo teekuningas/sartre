@@ -8,17 +8,17 @@
 #include <cstring>  // for strcmp
 #include <iostream>
 
+#include "constants.h"  // textVertexShaderSource, forestVertexShaderSource, …
 #include "engine.h"     // initEngine, shutdownEngine
 #include "game.h"       // run_game_frame
-#include "resources.h"  // getResourcePath()
-#include "constants.h"  // textVertexShaderSource, forestVertexShaderSource, …
 #include "graphics.h"   // createProgram, createShaderBuffers, textVertex/fragmentSource
+#include "resources.h"  // getResourcePath()
 #include "utils.h"      // create_textures, create_surfaces, free_*
 
 // ------------------------------------------------------------------------
 // full loop: init once, per‐frame run_game_frame(), then cleanup+exit
 void main_loop_iteration(GameLoopData* pdata) {
-  auto &data = *pdata;
+  auto& data = *pdata;
 
   if (data.shouldExit) {
     if (data.initialized) {
@@ -31,31 +31,24 @@ void main_loop_iteration(GameLoopData* pdata) {
 
   if (!data.initialized) {
     // 1) compile & link shaders & make VAOs/VBOs
-    createProgram(textVertexShaderSource,
-                  textFragmentShaderSource,
-                  data.context.textShaderProgram);
-    createShaderBuffers(data.context.textVAO,
-                        data.context.textVBO);
+    createProgram(textVertexShaderSource, textFragmentShaderSource, data.context.textShaderProgram);
+    createShaderBuffers(data.context.textVAO, data.context.textVBO);
 
-    createProgram(forestVertexShaderSource,
-                  forestFragmentShaderSource,
+    createProgram(forestVertexShaderSource, forestFragmentShaderSource,
                   data.context.forestShaderProgram);
-    createShaderBuffers(data.context.forestVAO,
-                        data.context.forestVBO);
+    createShaderBuffers(data.context.forestVAO, data.context.forestVBO);
 
     // 2) once‐only GL setup & load textures/surfaces
     WindowParams wp = compute_window_params(data.fullscreen);
-    glViewport((wp.windowWidth - wp.viewportSize) / 2,
-               (wp.windowHeight - wp.viewportSize) / 2,
-               wp.viewportSize,
-               wp.viewportSize);
+    glViewport((wp.windowWidth - wp.viewportSize) / 2, (wp.windowHeight - wp.viewportSize) / 2,
+               wp.viewportSize, wp.viewportSize);
 
     create_textures(data.imageData.textures, data.dataPath);
     create_surfaces(data.imageData.surfaces, data.dataPath);
 
-    data.gameMode    = MENU;
-    data.lastTick    = SDL_GetTicks();
-    data.totalElapsed= 0;
+    data.gameMode = MENU;
+    data.lastTick = SDL_GetTicks();
+    data.totalElapsed = 0;
     data.initialized = true;
   }
 
@@ -84,9 +77,8 @@ int main(int argc, char** argv) {
   }
 
 #ifdef __EMSCRIPTEN__
-  emscripten_set_main_loop_arg(
-    [](void* d) { main_loop_iteration(static_cast<GameLoopData*>(d)); },
-    &data, 0, true);
+  emscripten_set_main_loop_arg([](void* d) { main_loop_iteration(static_cast<GameLoopData*>(d)); },
+                               &data, 0, true);
 #else
   while (!data.shouldExit) {
     main_loop_iteration(&data);

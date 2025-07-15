@@ -10,8 +10,7 @@ static const char* textVertexShaderSource =
     "void main() {\n"
     "    gl_Position = projection * vec4(position, 0.0, 1.0);\n"
     "    fragTexCoord = texCoord;\n"
-    "}\n"
-;
+    "}\n";
 
 static const char* textFragmentShaderSource =
     "#version 100\n"
@@ -22,8 +21,7 @@ static const char* textFragmentShaderSource =
     "void main() {\n"
     "    vec4 sampled = texture2D(textTexture, fragTexCoord);\n"
     "    gl_FragColor = textColor * sampled;\n"
-    "}\n"
-;
+    "}\n";
 
 static const char* forestVertexShaderSource =
     "#version 100\n"
@@ -35,8 +33,7 @@ static const char* forestVertexShaderSource =
     "void main() {\n"
     "    gl_Position = projection * model * vec4(position, 0.0, 1.0);\n"
     "    fragTexCoord = texCoord;\n"
-    "}\n"
-;
+    "}\n";
 
 static const char* forestFragmentShaderSource =
     "#version 100\n"
@@ -47,8 +44,7 @@ static const char* forestFragmentShaderSource =
     "    vec4 texColor = texture2D(ourTexture, fragTexCoord);\n"
     "    if (texColor.a <= 0.1) discard;\n"
     "    gl_FragColor = texColor;\n"
-    "}\n"
-;
+    "}\n";
 
 const int MAP_WIDTH = 2048;
 const int MAP_HEIGHT = 2048;
