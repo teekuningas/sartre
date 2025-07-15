@@ -111,7 +111,6 @@ bool initEngine(RenderContext& context, const std::string& dataPath, bool fullsc
   }
   context.font = font;
 
-  // Music
   if (SDL_Init(SDL_INIT_AUDIO) < 0) {
     printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
     return false;
