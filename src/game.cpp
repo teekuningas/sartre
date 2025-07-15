@@ -1,7 +1,8 @@
 #include "game.h"
+
 #include "constants.h"
+#include "engine.h"  // <— pull in shutdownEngine()
 #include "graphics.h"
-#include "engine.h"        // <— pull in shutdownEngine()
 #include "resources.h"
 #include "utils.h"
 
@@ -129,7 +130,6 @@ void main_loop_iteration(GameLoopData &data) {
     default:
       break;
   }
-
 }
 
 void handle_events(GameMode &gameMode, bool fullscreen, InputResult &inputResult) {
@@ -198,7 +198,7 @@ void forest_init(GameStateForest &gameStateForest) {
   sartre.width = SARTRE_WIDTH;
   sartre.height = SARTRE_HEIGHT;
   sartre.x = 0.0;
-  sartre.y = sartre.height / 2 + MAA_KORKEUS;
+  sartre.y = sartre.height / 2 + EARTH_HEIGHT;
   sartre.animIdx = 0;
   sartre.animSize = 2;
   sartre.jump = 0;
@@ -409,7 +409,8 @@ void forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float 
   int sartreYPixels = (int)(sartre.y - sartre.height / 2 + commonExtra);
   int predictedYPixels = (int)(predictedY - sartre.height / 2 + commonExtra - padding);
 
-  if (sartre.y >= sartre.height / 2 + MAA_KORKEUS && predictedY < sartre.height / 2 + MAA_KORKEUS) {
+  if (sartre.y >= sartre.height / 2 + EARTH_HEIGHT &&
+      predictedY < sartre.height / 2 + EARTH_HEIGHT) {
     // We hit the ground, so set vertical speed to zero.
     sartre.jump = 0;
     sartre.vy = 0;
