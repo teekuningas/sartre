@@ -4,28 +4,28 @@
 #include <GL/glew.h>
 #include <SDL.h>
 #include <SDL_ttf.h>
+
 #include <string>
 
 #include "types.h"
 
 // Compile a shader (vertex or fragment) from source.
-GLuint loadShader(GLenum type, const std::string &source);
+GLuint loadShader(GLenum type, const std::string& source);
 
 // Link a vertex + fragment shader into a program.
-void createProgram(const std::string &vertexSource, const std::string &fragmentSource,
-                   GLuint &shaderProgram);
+void createProgram(const std::string& vertexSource, const std::string& fragmentSource,
+                   GLuint& shaderProgram);
 
 // Build a VAO/VBO for dynamic quads (pos + texcoord).
-void createShaderBuffers(GLuint &VAO, GLuint &VBO);
+void createShaderBuffers(GLuint& VAO, GLuint& VBO);
 
 // Build a 4×4 column-major translation matrix (tx,ty,tz).
-void createTranslationMatrix(float tx, float ty, float tz, float *matrix);
+void createTranslationMatrix(float tx, float ty, float tz, float* matrix);
 
 // Build a 4×4 column-major orthographic projection.
 void createOrthographicMatrix(float left, float right, float bottom, float top, float nearPlane,
-                              float farPlane, float *matrix);
+                              float farPlane, float* matrix);
 
-// -- from utils.h
 // surface‐formatter
 SDL_Surface* format_sdl_surface(SDL_Surface* surface);
 
@@ -36,13 +36,7 @@ void free_textures(Textures& textures);
 void free_surfaces(Surfaces& surfaces);
 
 // text rendering
-void renderText(TTF_Font* font,
-                const std::string& text,
-                SDL_Color color,
-                GLuint shader,
-                GLuint VAO,
-                GLuint VBO,
-                float x,
-                float y);
+void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint shader, GLuint VAO,
+                GLuint VBO, float x, float y);
 
 #endif  // GRAPHICS_H

@@ -1,11 +1,10 @@
 #include "graphics.h"
 
+#include <SDL_image.h>
+
+#include <cstring>
 #include <iostream>
 #include <vector>
-#include <SDL_image.h>
-#include <cstring>
-
-// --- begin pasted from utils.cpp ---
 
 SDL_Surface* format_sdl_surface(SDL_Surface* surface) {
   if (!surface) {
@@ -239,8 +238,6 @@ void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint
 
   glDisable(GL_BLEND);
 }
-
-// --- end pasted from utils.cpp ---
 
 GLuint loadShader(GLenum type, const std::string& source) {
   GLuint shader = glCreateShader(type);
