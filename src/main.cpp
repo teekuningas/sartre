@@ -9,6 +9,7 @@
 #include "engine.h"     // initEngine, shutdownEngine
 #include "game.h"       // run_game_frame
 #include "resources.h"  // getResourcePath()
+#include "constants.h"  // textVertexShaderSource, forestVertexShaderSource, …
 #include "graphics.h"   // createProgram, createShaderBuffers, textVertex/fragmentSource
 #include "utils.h"      // create_textures, create_surfaces, free_*
 
