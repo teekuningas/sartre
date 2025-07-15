@@ -3,7 +3,6 @@
 #include <iostream>
 #include <vector>
 
-// —— Shader utilities ——
 GLuint loadShader(GLenum type, const std::string& source) {
   GLuint shader = glCreateShader(type);
   const char* src = source.c_str();
@@ -61,7 +60,6 @@ void createShaderBuffers(GLuint& VAO, GLuint& VBO) {
   glBindVertexArray(0);
 }
 
-// —— Matrix utilities ——
 void createOrthographicMatrix(float left, float right, float bottom, float top, float nearPlane,
                               float farPlane, float* m) {
   std::fill(m, m + 16, 0.0f);

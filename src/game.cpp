@@ -4,16 +4,12 @@
 #include "graphics.h"
 #include "utils.h"
 
-// ------------------------------------------------------------------------
-// A single frame of game logic (no engine init or shutdown here!)
 void run_game_frame(GameLoopData &data) {
-  // 1) accumulate delta‐time
   Uint32 now = SDL_GetTicks();
   float delta = (now - data.lastTick) / 1000.0f;
   data.totalElapsed += (now - data.lastTick);
   data.lastTick = now;
 
-  // 2) update current state
   InputResult inputResult{false, data.gameMode};
   switch (data.gameMode) {
     case MENU:

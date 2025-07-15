@@ -16,7 +16,6 @@
 #include "utils.h"      // create_textures, create_surfaces, free_*
 
 // ------------------------------------------------------------------------
-// full loop: init once, per‐frame run_game_frame(), then cleanup+exit
 void main_loop_iteration(GameLoopData* pdata) {
   auto& data = *pdata;
 
@@ -71,7 +70,6 @@ int main(int argc, char** argv) {
   // fetch resources directory once
   data.dataPath = getResourcePath();
 
-  // initialize SDL, GL, TTF, Mixer, window, font, music...
   if (!initEngine(data.context, data.dataPath, data.fullscreen)) {
     return 1;
   }

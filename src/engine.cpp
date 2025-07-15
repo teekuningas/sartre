@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <iostream>
 
-// move compute_window_params here from utils.cpp:
 WindowParams compute_window_params(bool fullscreen) {
   SDL_DisplayMode DM;
   SDL_GetCurrentDisplayMode(0, &DM);
