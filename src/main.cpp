@@ -66,6 +66,23 @@ void handle_events(GameMode &gameMode, bool fullscreen, InputResult &inputResult
   }
 }
 
+void init_game_object(GameObject &obj, GameObjectType type) {
+  obj.width = 128;
+  obj.height = 128;
+  obj.x = (GLfloat)((rand() % (KARTTA_LEVEYS - (int)obj.width)) - (KARTTA_LEVEYS / 2) +
+                    (int)(obj.width / 2));
+  obj.y = (GLfloat)((rand() % (KARTTA_KORKEUS - (int)obj.height - (KARTTA_KORKEUS / 4))) +
+                    (KARTTA_KORKEUS / 8) + (int)(obj.height / 2));
+  obj.vx =
+      ((((GLfloat)(rand() % 1000)) / 1000.0f) * 1.5f + 0.5f) * 0.3f * (rand() % 2 == 0 ? 1 : -1);
+  obj.ymid = obj.y;
+  obj.amplitude = 200;
+  obj.frequency = 1.5;
+  obj.phase = (((GLfloat)(rand() % 1000)) / 1000.0f) * 3.141 * 2;
+  obj.collected = false;
+  obj.type = type;
+}
+
 void forest_init(GameStateForest &gameStateForest) {
   Sartre &sartre = gameStateForest.sartre;
   sartre.width = 256;
@@ -76,28 +93,16 @@ void forest_init(GameStateForest &gameStateForest) {
   sartre.animSize = 2;
   sartre.jump = 0;
 
-  size_t numObjects = 5;
-  gameStateForest.pages.resize(numObjects);
-  gameStateForest.collectedPages = 0;       // Initialize collected pages
-  gameStateForest.totalPages = numObjects;  // Initialize total pages
+  gameStateForest.objects.resize(8);
+  gameStateForest.pages_collected = 0;
+  gameStateForest.nausea_hits = 0;
 
-  for (auto &obj : gameStateForest.pages) {
-    obj.width = 128;
-    obj.height = 128;
+  for (int i = 0; i < 3; ++i) {
+    init_game_object(gameStateForest.objects[i], PAGE);
+  }
 
-    obj.x = (GLfloat)((rand() % (KARTTA_LEVEYS - (int)obj.width)) - (KARTTA_LEVEYS / 2) +
-                      (int)(obj.width / 2));
-    obj.y = (GLfloat)((rand() % (KARTTA_KORKEUS - (int)obj.height - (KARTTA_KORKEUS / 4))) +
-                      (KARTTA_KORKEUS / 8) + (int)(obj.height / 2));
-
-    obj.vx = 0.3;
-
-    obj.ymid = obj.y;
-    obj.amplitude = 200;
-    obj.frequency = 1.5;
-    obj.phase = (((GLfloat)(rand() % 1000)) / 1000.0f) * 3.141 * 2;
-
-    obj.collected = false;  // Initialize as not collected
+  for (int i = 3; i < 8; ++i) {
+    init_game_object(gameStateForest.objects[i], (rand() % 2 == 0) ? CHESTNUT : PIPE);
   }
 }
 
@@ -144,13 +149,23 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(sartreVertices), sartreVertices);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
-  for (auto &obj : gameStateForest.pages) {
-    // Skip drawing if collected
+  for (auto &obj : gameStateForest.objects) {
     if (obj.collected) {
       continue;
     }
 
-    GLuint objTexture = textures.forestPage;
+    GLuint objTexture;
+    switch (obj.type) {
+      case PAGE:
+        objTexture = textures.forestPage;
+        break;
+      case CHESTNUT:
+        objTexture = textures.forestChestnut;
+        break;
+      case PIPE:
+        objTexture = textures.forestPipe;
+        break;
+    }
 
     // Bind object texture
     glBindTexture(GL_TEXTURE_2D, objTexture);
@@ -203,11 +218,59 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   glUniformMatrix4fv(textProjectionLoc, 1, GL_FALSE, textOrthoMatrix);
 
   // Prepare text and color
-  std::string pageText = "Pages: " + std::to_string(gameStateForest.collectedPages) + " / " +
-                         std::to_string(gameStateForest.totalPages);
+  std::string pageText = "Pages: " + std::to_string(gameStateForest.pages_collected);
+  std::string nauseaText = "Nausea: " + std::to_string(gameStateForest.nausea_hits);
   SDL_Color white = {255, 255, 255, 255};
   renderText(context.font, pageText.c_str(), white, context.textShaderProgram, context.textVAO,
              context.textVBO, 50.0f, KARTTA_KORKEUS - 50.0f);  // Position near top-left
+  renderText(context.font, nauseaText.c_str(), white, context.textShaderProgram, context.textVAO,
+             context.textVBO, 50.0f, KARTTA_KORKEUS - 100.0f);  // Position near top-left
+}
+
+void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameStateForest,
+                        Uint32 totalElapsed) {
+  if (!obj.collected) {
+    // Change position for sinelike trajectory
+    obj.x = obj.x + obj.vx;
+    obj.y =
+        obj.ymid + obj.amplitude * sin(obj.frequency * ((float)totalElapsed / 1000 + obj.phase));
+
+    // If goes outside the window, come out from the other direction
+    if ((obj.x > KARTTA_LEVEYS / 2 + obj.width) && (obj.vx > 0)) {
+      obj.x = -(obj.width / 2) - KARTTA_LEVEYS / 2;
+    } else if ((obj.x < -KARTTA_LEVEYS / 2 - obj.width) && (obj.vx < 0)) {
+      obj.x = KARTTA_LEVEYS / 2 + obj.width / 2;
+    }
+
+    // Check for collision with Sartre (AABB collision detection)
+    bool collisionX = sartre.x + sartre.width / 2 >= obj.x - obj.width / 2 &&
+                      obj.x + obj.width / 2 >= sartre.x - sartre.width / 2;
+    bool collisionY = sartre.y + sartre.height / 2 >= obj.y - obj.height / 2 &&
+                      obj.y + obj.height / 2 >= sartre.y - sartre.height / 2;
+
+    if (collisionX && collisionY) {
+      obj.collected = true;
+      if (obj.type == PAGE) {
+        gameStateForest.pages_collected++;
+      } else {
+        gameStateForest.nausea_hits++;
+      }
+
+      // Respawn the object at a new random location
+      obj.x = (GLfloat)((rand() % (KARTTA_LEVEYS - (int)obj.width)) - (KARTTA_LEVEYS / 2) +
+                        (int)(obj.width / 2));
+      obj.y = (GLfloat)((rand() % (KARTTA_KORKEUS - (int)obj.height - (KARTTA_KORKEUS / 4))) +
+                        (KARTTA_KORKEUS / 8) + (int)(obj.height / 2));
+      obj.vx = ((((GLfloat)(rand() % 1000)) / 1000.0f) * 1.5f + 0.5f) * 0.3f *
+               (rand() % 2 == 0 ? 1 : -1);
+      obj.ymid = obj.y;
+      obj.phase = (((GLfloat)(rand() % 1000)) / 1000.0f) * 3.141 * 2;
+      if (obj.type != PAGE) {
+        obj.type = (rand() % 2 == 0) ? CHESTNUT : PIPE;
+      }
+      obj.collected = false;
+    }
+  }
 }
 
 void forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float deltaTime,
@@ -216,34 +279,8 @@ void forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float 
 
   const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
-  // Update page objects
-  for (auto &obj : gameStateForest.pages) {
-    // Only update and check collision for visible pages
-    if (!obj.collected) {
-      // Change position for sinelike trajectory
-      obj.x = obj.x + obj.vx;
-      obj.y =
-          obj.ymid + obj.amplitude * sin(obj.frequency * ((float)totalElapsed / 1000 + obj.phase));
-
-      // If goes outside the window, come out from the other direction
-      if ((obj.x > KARTTA_LEVEYS / 2 + obj.width) && (obj.vx > 0)) {
-        obj.x = -(obj.width / 2) - KARTTA_LEVEYS / 2;
-      } else if ((obj.x < -KARTTA_LEVEYS / 2 - obj.width) && (obj.vx < 0)) {
-        obj.x = KARTTA_LEVEYS / 2 + obj.width / 2;
-      }
-
-      // Check for collision with Sartre (AABB collision detection)
-      bool collisionX = sartre.x + sartre.width / 2 >= obj.x - obj.width / 2 &&
-                        obj.x + obj.width / 2 >= sartre.x - sartre.width / 2;
-      bool collisionY = sartre.y + sartre.height / 2 >= obj.y - obj.height / 2 &&
-                        obj.y + obj.height / 2 >= sartre.y - sartre.height / 2;
-
-      if (collisionX && collisionY) {
-        obj.collected = true;
-        gameStateForest.collectedPages++;
-        // Optional: Add sound effect or visual feedback here
-      }
-    }
+  for (auto &obj : gameStateForest.objects) {
+    update_game_object(obj, sartre, gameStateForest, totalElapsed);
   }
 
   // Update sartre animation
@@ -294,7 +331,7 @@ void forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float 
   }
 
   // Transition to RESULTS state if all pages have been collected.
-  if (gameStateForest.collectedPages == gameStateForest.totalPages) {
+  if (gameStateForest.nausea_hits >= 3) {
     inputResult.transition = true;
     inputResult.transitionTo = RESULTS;
   }

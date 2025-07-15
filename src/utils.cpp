@@ -106,6 +106,46 @@ void create_textures(Textures& textures, std::string dataPath) {
   SDL_FreeSurface(formattedPageSurface);
   SDL_FreeSurface(forestPageImage);
 
+  // Chestnut
+  SDL_Surface* forestChestnutImage;
+  forestChestnutImage = IMG_Load((dataPath + "images/objects/chestnut.png").c_str());
+  if (!forestChestnutImage) {
+    printf("Error loading image: %s\n", SDL_GetError());
+    exit(1);
+  }
+  glGenTextures(1, &textures.forestChestnut);
+  SDL_Surface* formattedChestnutSurface = format_sdl_surface(forestChestnutImage);
+  if (!formattedChestnutSurface) {
+    exit(1);
+  }
+  glBindTexture(GL_TEXTURE_2D, textures.forestChestnut);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedChestnutSurface->w, formattedChestnutSurface->h,
+               0, GL_RGBA, GL_UNSIGNED_BYTE, formattedChestnutSurface->pixels);
+  SDL_FreeSurface(formattedChestnutSurface);
+  SDL_FreeSurface(forestChestnutImage);
+
+  // Pipe
+  SDL_Surface* forestPipeImage;
+  forestPipeImage = IMG_Load((dataPath + "images/objects/pipe.png").c_str());
+  if (!forestPipeImage) {
+    printf("Error loading image: %s\n", SDL_GetError());
+    exit(1);
+  }
+  glGenTextures(1, &textures.forestPipe);
+  SDL_Surface* formattedPipeSurface = format_sdl_surface(forestPipeImage);
+  if (!formattedPipeSurface) {
+    exit(1);
+  }
+  glBindTexture(GL_TEXTURE_2D, textures.forestPipe);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedPipeSurface->w, formattedPipeSurface->h, 0,
+               GL_RGBA, GL_UNSIGNED_BYTE, formattedPipeSurface->pixels);
+  SDL_FreeSurface(formattedPipeSurface);
+  SDL_FreeSurface(forestPipeImage);
+
   // Background
   SDL_Surface* forestTaustaImage;
   forestTaustaImage = IMG_Load((dataPath + "images/lehto.png").c_str());
@@ -142,6 +182,8 @@ void free_textures(Textures& textures) {
     glDeleteTextures(1, &textures.forestSartre[a]);
   }
   glDeleteTextures(1, &textures.forestPage);
+  glDeleteTextures(1, &textures.forestChestnut);
+  glDeleteTextures(1, &textures.forestPipe);
   glDeleteTextures(1, &textures.forestTausta[0]);
 }
 

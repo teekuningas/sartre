@@ -11,7 +11,9 @@
 
 enum GameMode { MENU, FOREST, RESULTS, EXIT };
 
-struct PageObject {
+enum GameObjectType { PAGE, CHESTNUT, PIPE };
+
+struct GameObject {
   GLfloat x;
   GLfloat y;
   GLfloat vx;
@@ -21,7 +23,8 @@ struct PageObject {
   GLfloat phase;
   GLfloat amplitude;
   GLfloat frequency;
-  bool collected;  // Added flag
+  bool collected;
+  GameObjectType type;
 };
 
 struct Sartre {
@@ -37,9 +40,9 @@ struct Sartre {
 
 struct GameStateForest {
   Sartre sartre;
-  std::vector<PageObject> pages;
-  int collectedPages;
-  int totalPages;
+  std::vector<GameObject> objects;
+  int pages_collected;
+  int nausea_hits;
 };
 
 struct GameStateMenu {};
@@ -54,6 +57,8 @@ struct InputResult {
 struct Textures {
   GLuint forestSartre[2];
   GLuint forestPage;
+  GLuint forestChestnut;
+  GLuint forestPipe;
   GLuint forestTausta[1];
 };
 
