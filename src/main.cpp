@@ -92,6 +92,7 @@ void forest_init(GameStateForest &gameStateForest) {
   sartre.animIdx = 0;
   sartre.animSize = 2;
   sartre.jump = 0;
+  sartre.vy = 0.0f;
 
   gameStateForest.objects.resize(TOTAL_GAME_OBJECTS);
   gameStateForest.pages_collected = 0;
