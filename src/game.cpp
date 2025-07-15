@@ -1,6 +1,7 @@
 #include "game.h"
 #include "constants.h"
 #include "graphics.h"
+#include "engine.h"        // <— pull in shutdownEngine()
 #include "resources.h"
 #include "utils.h"
 

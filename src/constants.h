@@ -58,6 +58,11 @@ const int MAA_KORKEUS = 50;
 const int SARTRE_WIDTH = 256;
 const int SARTRE_HEIGHT = 256;
 
+//—— Sartre movement & physics ——
+const float SARTRE_VX             = 300.0f;  // horizontal speed in px/sec
+const float SARTRE_JUMP_VELOCITY  = 600.0f;  // initial jump velocity in px/sec
+const float SARTRE_G              = 980.0f;  // gravity accel in px/sec^2
+
 const int GAME_OBJECT_WIDTH = 128;
 const int GAME_OBJECT_HEIGHT = 128;
 const float GAME_OBJECT_AMPLITUDE = 200.0f;
