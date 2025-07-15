@@ -1,4 +1,4 @@
-#include "render_context.h"
+#include "engine.h"
 
 #include <GL/glew.h>
 #include <SDL.h>
@@ -6,11 +6,23 @@
 #include <SDL_mixer.h>
 #include <SDL_ttf.h>
 
+#include <algorithm>
 #include <iostream>
 
-#include "utils.h"
+// move compute_window_params here from utils.cpp:
+WindowParams compute_window_params(bool fullscreen) {
+  SDL_DisplayMode DM;
+  SDL_GetCurrentDisplayMode(0, &DM);
+  int screenW = DM.w, screenH = DM.h;
+  int vp = fullscreen ? std::min(screenW, screenH) : (std::min(screenW, screenH) * 3 / 4);
+  WindowParams wp;
+  wp.viewportSize = vp;
+  wp.windowWidth = fullscreen ? screenW : vp;
+  wp.windowHeight = fullscreen ? screenH : vp;
+  return wp;
+}
 
-void cleanup_render_context(RenderContext& context) {
+void shutdownEngine(RenderContext& context) {
   if (context.backgroundMusic) {
     Mix_FreeMusic(context.backgroundMusic);
   }
@@ -39,8 +51,7 @@ void cleanup_render_context(RenderContext& context) {
   SDL_Quit();
 }
 
-bool initialize_render_context(RenderContext& context, const std::string& dataPath,
-                               bool fullscreen) {
+bool initEngine(RenderContext& context, const std::string& dataPath, bool fullscreen) {
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
     printf("Error: SDL_Init: %s\n", SDL_GetError());
     return false;
@@ -52,9 +63,9 @@ bool initialize_render_context(RenderContext& context, const std::string& dataPa
 
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
-  WindowParams windowParams = compute_window_params(fullscreen);
-  int windowWidth = windowParams.windowWidth;
-  int windowHeight = windowParams.windowHeight;
+  WindowParams wp = compute_window_params(fullscreen);
+  int windowWidth = wp.windowWidth;
+  int windowHeight = wp.windowHeight;
 
   Uint32 windowFlags = SDL_WINDOW_OPENGL;
   if (fullscreen) {

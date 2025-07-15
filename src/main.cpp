@@ -6,7 +6,8 @@
 #include <SDL_ttf.h>
 
 #include <cstring>
-#include <string>  // Required for std::to_string
+#include <iostream>
+#include <string>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/html5.h>
@@ -15,8 +16,8 @@
 #include <GL/glew.h>
 
 #include "constants.h"
+#include "engine.h"
 #include "graphics.h"
-#include "render_context.h"
 #include "resources.h"
 #include "types.h"
 #include "utils.h"
@@ -391,14 +392,14 @@ void main_loop_iteration() {
       free_textures(gameLoopData.imageData.textures);
       free_surfaces(gameLoopData.imageData.surfaces);
     }
-    cleanup_render_context(gameLoopData.context);
+    shutdownEngine(gameLoopData.context);
     exit(0);
   }
 
   if (!gameLoopData.initialized) {
     std::string dataPath = getResourcePath();
 
-    if (!initialize_render_context(gameLoopData.context, dataPath, gameLoopData.fullscreen)) {
+    if (!initEngine(gameLoopData.context, dataPath, gameLoopData.fullscreen)) {
       gameLoopData.shouldExit = true;
       return;
     }

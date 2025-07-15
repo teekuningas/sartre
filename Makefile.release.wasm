@@ -4,7 +4,7 @@ SRCDIR = ./src
 OUTDIR = ./obj_wasm
 
 # Source files
-OBJ = main.cpp shader_utils.cpp matrix.cpp resources.cpp render_context.cpp utils.cpp
+OBJ = main.cpp graphics.cpp resources.cpp engine.cpp utils.cpp
 
 all: $(OUTDIR)/main.html
 

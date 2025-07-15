@@ -9,37 +9,6 @@
 #include <cstring>
 #include <vector>
 
-WindowParams compute_window_params(bool fullscreen) {
-  WindowParams windowParams;
-  SDL_DisplayMode DM;
-  SDL_GetCurrentDisplayMode(0, &DM);
-
-  int screenWidth = DM.w;
-  int screenHeight = DM.h;
-
-  // Pick smaller of the screen dimensions for viewport size.
-  int viewportSize;
-  if (fullscreen) {
-    viewportSize = std::min(screenWidth, screenHeight);
-  } else {
-    // Include some extra space in windowed mode
-    viewportSize = (std::min(screenWidth, screenHeight) / 4) * 3;
-  }
-  int windowWidth;
-  int windowHeight;
-  if (fullscreen) {
-    windowWidth = screenWidth;
-    windowHeight = screenHeight;
-  } else {
-    windowWidth = viewportSize;
-    windowHeight = viewportSize;
-  }
-  windowParams.windowWidth = windowWidth;
-  windowParams.windowHeight = windowHeight;
-  windowParams.viewportSize = viewportSize;
-  return windowParams;
-}
-
 SDL_Surface* format_sdl_surface(SDL_Surface* surface) {
   if (!surface) {
     printf("Error: SDL surface null.\n");

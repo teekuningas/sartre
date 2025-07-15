@@ -1,7 +1,7 @@
 #include "graphics.h"
+
 #include <iostream>
 #include <vector>
-#include <algorithm>
 
 // —— Shader utilities ——
 GLuint loadShader(GLenum type, const std::string& source) {
@@ -24,10 +24,9 @@ GLuint loadShader(GLenum type, const std::string& source) {
   return shader;
 }
 
-void createProgram(const std::string& vertexSource,
-                   const std::string& fragmentSource,
+void createProgram(const std::string& vertexSource, const std::string& fragmentSource,
                    GLuint& shaderProgram) {
-  GLuint vs = loadShader(GL_VERTEX_SHADER,   vertexSource);
+  GLuint vs = loadShader(GL_VERTEX_SHADER, vertexSource);
   GLuint fs = loadShader(GL_FRAGMENT_SHADER, fragmentSource);
 
   GLuint prog = glCreateProgram();
@@ -53,32 +52,30 @@ void createShaderBuffers(GLuint& VAO, GLuint& VBO) {
   glGenBuffers(1, &VBO);
   glBindVertexArray(VAO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(float)*16, nullptr, GL_DYNAMIC_DRAW);
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), (void*)0);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 16, nullptr, GL_DYNAMIC_DRAW);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), (void*)(2*sizeof(float)));
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
   glEnableVertexAttribArray(1);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 }
 
 // —— Matrix utilities ——
-void createOrthographicMatrix(float left, float right,
-                              float bottom, float top,
-                              float nearPlane, float farPlane,
-                              float* m) {
-  std::fill(m, m+16, 0.0f);
-  m[0]  = 2.0f / (right-left);
-  m[5]  = 2.0f / (top-bottom);
-  m[10] = -2.0f / (farPlane-nearPlane);
-  m[12] = -(right+left)/(right-left);
-  m[13] = -(top+bottom)/(top-bottom);
-  m[14] = -(farPlane+nearPlane)/(farPlane-nearPlane);
+void createOrthographicMatrix(float left, float right, float bottom, float top, float nearPlane,
+                              float farPlane, float* m) {
+  std::fill(m, m + 16, 0.0f);
+  m[0] = 2.0f / (right - left);
+  m[5] = 2.0f / (top - bottom);
+  m[10] = -2.0f / (farPlane - nearPlane);
+  m[12] = -(right + left) / (right - left);
+  m[13] = -(top + bottom) / (top - bottom);
+  m[14] = -(farPlane + nearPlane) / (farPlane - nearPlane);
   m[15] = 1.0f;
 }
 
 void createTranslationMatrix(float tx, float ty, float tz, float* m) {
-  std::fill(m, m+16, 0.0f);
+  std::fill(m, m + 16, 0.0f);
   m[0] = m[5] = m[10] = 1.0f;
   m[12] = tx;
   m[13] = ty;
