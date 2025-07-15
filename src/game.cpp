@@ -1,21 +1,7 @@
 #include "game.h"
-
-#include <GL/glew.h>
-#include <SDL.h>
-#include <SDL_image.h>
-#include <SDL_mixer.h>
-#include <SDL_ttf.h>
-
-#include <algorithm>
-#include <cstring>
-#include <iostream>
-#include <string>
-
 #include "constants.h"
-#include "engine.h"
 #include "graphics.h"
 #include "resources.h"
-#include "types.h"
 #include "utils.h"
 
 GameLoopData gameLoopData;
@@ -36,13 +22,6 @@ void main_loop_iteration(GameLoopData &data) {
   }
 
   if (!data.initialized) {
-    std::string dataPath = getResourcePath();
-
-    if (!initEngine(data.context, dataPath, data.fullscreen)) {
-      data.shouldExit = true;
-      return;
-    }
-
     // Compile shader program and create VAO and VBO for text rendering
     createProgram(textVertexShaderSource, textFragmentShaderSource, data.context.textShaderProgram);
     if (!data.context.textShaderProgram) {
@@ -60,13 +39,8 @@ void main_loop_iteration(GameLoopData &data) {
     }
     createShaderBuffers(data.context.forestVAO, data.context.forestVBO);
 
-    WindowParams windowParams = compute_window_params(data.fullscreen);
-    glViewport((windowParams.windowWidth - windowParams.viewportSize) / 2,
-               (windowParams.windowHeight - windowParams.viewportSize) / 2,
-               windowParams.viewportSize, windowParams.viewportSize);
-
-    create_textures(data.imageData.textures, dataPath);
-    create_surfaces(data.imageData.surfaces, dataPath);
+    create_textures(data.imageData.textures, data.dataPath);
+    create_surfaces(data.imageData.surfaces, data.dataPath);
 
     data.gameMode = MENU;
     data.lastTick = SDL_GetTicks();
@@ -155,10 +129,6 @@ void main_loop_iteration(GameLoopData &data) {
       break;
   }
 
-  SDL_GL_SwapWindow(data.context.window);
-#ifndef __EMSCRIPTEN__
-  SDL_Delay(1);
-#endif
 }
 
 void handle_events(GameMode &gameMode, bool fullscreen, InputResult &inputResult) {

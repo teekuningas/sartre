@@ -1,10 +1,6 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include <GL/glew.h>
-#include <SDL.h>
-#include <SDL_ttf.h>
-
 #include "types.h"
 
 struct GameLoopData;

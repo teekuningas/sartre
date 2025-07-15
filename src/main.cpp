@@ -9,6 +9,7 @@
 #include "engine.h"  // initEngine, shutdownEngine
 #include "game.h"    // main_loop_iteration
 #include "types.h"   // only for GameLoopData in main()
+#include "resources.h" // getResourcePath()
 
 int main(int argc, char** argv) {
   srand(time(NULL));
@@ -18,16 +19,29 @@ int main(int argc, char** argv) {
   }
 
   GameLoopData data{};
-  data.fullscreen = (argc > 1 && std::strcmp(argv[1], "--fullscreen") == 0);
-  data.initialized = data.shouldExit = false;
+  data.fullscreen  = (argc > 1 && std::strcmp(argv[1], "--fullscreen") == 0);
+  data.shouldExit  = false;
+  data.initialized = false;
+
+  // fetch resources directory once
+  data.dataPath = getResourcePath();
+
+  // initialize SDL, GL, TTF, Mixer, window, font, music...
+  if (!initEngine(data.context, data.dataPath, data.fullscreen)) {
+    return 1;
+  }
 
 #ifdef __EMSCRIPTEN__
-  emscripten_set_main_loop_arg([](void* d) { main_loop_iteration(*static_cast<GameLoopData*>(d)); },
-                               &data, 0, 0);
+  emscripten_set_main_loop_arg(
+      [](void* d) { main_loop_iteration(*static_cast<GameLoopData*>(d)); },
+      &data, 0, true);
 #else
-  while (true) {
+  while (!data.shouldExit) {
     main_loop_iteration(data);
   }
 #endif
+
+  // clean up everything
+  shutdownEngine(data.context);
   return 0;
 }
