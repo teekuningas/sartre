@@ -16,7 +16,7 @@ void menu_init(GameStateMenu& state);
 void menu_update(GameStateMenu& state,
                  Uint32 totalElapsed,
                  float  deltaTime,
-                 const Surfaces& surfaces,
+                 Surfaces& surfaces,
                  InputResult& result);
 void menu_draw(TTF_Font* font,
                GLuint shaderProgram,
@@ -28,10 +28,10 @@ void forest_init(GameStateForest& state);
 void forest_update(GameStateForest& state,
                    Uint32 totalElapsed,
                    float  deltaTime,
-                   const Surfaces& surfaces,
+                   Surfaces& surfaces,
                    InputResult& result);
-void forest_draw(const GameStateForest& state,
-                 const Textures& textures,
+void forest_draw(GameStateForest& state,
+                 Textures& textures,
                  RenderContext& context,
                  GLuint shaderProgram,
                  GLuint VAO,
@@ -42,7 +42,7 @@ void results_init(GameStateResults& state);
 void results_update(GameStateResults& state,
                     Uint32 totalElapsed,
                     float  deltaTime,
-                    const Surfaces& surfaces,
+                    Surfaces& surfaces,
                     InputResult& result);
 void results_draw(TTF_Font* font,
                   GLuint shaderProgram,
