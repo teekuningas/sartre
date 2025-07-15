@@ -16,16 +16,16 @@ main: $(OBJ)
 
 .PHONY: run
 run:
-	nix run --override-input nixpkgs nixpkgs/nixos-23.05 --impure github:guibou/nixGL -- ./main
+	nix run --override-input nixpkgs nixpkgs/nixos-unstable --impure github:guibou/nixGL#nixGLIntel -- ./main
 
 .PHONY: run
 run_fullscreen:
-	nix run --override-input nixpkgs nixpkgs/nixos-23.05 --impure github:guibou/nixGL -- ./main --fullscreen
+	nix run --override-input nixpkgs nixpkgs/nixos-unstable --impure github:guibou/nixGL -- ./main --fullscreen
 
 
 .PHONY: smoketest
 smoketest:
-	nix run --override-input nixpkgs nixpkgs/nixos-23.05 --impure github:guibou/nixGL -- ./main --smoke
+	nix run --override-input nixpkgs nixpkgs/nixos-unstable --impure github:guibou/nixGL -- ./main --smoke
 
 .PHONY: shell
 shell:
