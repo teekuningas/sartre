@@ -26,10 +26,31 @@
     </div>
 
     <script type='text/javascript'>
-        // Function to detect mobile devices
+        // Function to detect true mobile (phone/tablet) and touch-only devices
         function isMobileDevice() {
-            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-            return /android|ipad|iphone|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+          // 1) Modern Client Hints (Chrome 89+, Edge, etc.)
+          if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
+            return navigator.userAgentData.mobile;
+          }
+
+          // 2) UA‐string sniffing for true phones & tablets
+          const ua = (navigator.userAgent || "").toLowerCase();
+          // android.*mobile catches Android phones but not Chrome on Windows
+          if (/android.*mobile/.test(ua) ||
+              /iphone|ipod/.test(ua) ||
+              /windows phone|webos|blackberry|bb10|opera mini/.test(ua) ||
+              /ipad/.test(ua)  // iPadOS in desktop-mode may lie, but we still block it
+             ) {
+            return true;
+          }
+
+          // 3) CSS pointer media‐query for coarse pointers (most phones/tablets)
+          if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) {
+            return true;
+          }
+
+          // 4) Fallback: assume desktop
+          return false;
         }
 
         // Check if it's a mobile device and display message
