@@ -67,8 +67,8 @@ void handle_events(GameMode &gameMode, bool fullscreen, InputResult &inputResult
 }
 
 void init_game_object(GameObject &obj, GameObjectType type) {
-  obj.width = 128;
-  obj.height = 128;
+  obj.width = GAME_OBJECT_WIDTH;
+  obj.height = GAME_OBJECT_HEIGHT;
   obj.x = (GLfloat)((rand() % (KARTTA_LEVEYS - (int)obj.width)) - (KARTTA_LEVEYS / 2) +
                     (int)(obj.width / 2));
   obj.y = (GLfloat)((rand() % (KARTTA_KORKEUS - (int)obj.height - (KARTTA_KORKEUS / 4))) +
@@ -76,8 +76,8 @@ void init_game_object(GameObject &obj, GameObjectType type) {
   obj.vx =
       ((((GLfloat)(rand() % 1000)) / 1000.0f) * 1.5f + 0.5f) * 0.3f * (rand() % 2 == 0 ? 1 : -1);
   obj.ymid = obj.y;
-  obj.amplitude = 200;
-  obj.frequency = 1.5;
+  obj.amplitude = GAME_OBJECT_AMPLITUDE;
+  obj.frequency = GAME_OBJECT_FREQUENCY;
   obj.phase = (((GLfloat)(rand() % 1000)) / 1000.0f) * 3.141 * 2;
   obj.collected = false;
   obj.type = type;
@@ -85,25 +85,41 @@ void init_game_object(GameObject &obj, GameObjectType type) {
 
 void forest_init(GameStateForest &gameStateForest) {
   Sartre &sartre = gameStateForest.sartre;
-  sartre.width = 256;
-  sartre.height = 256;
+  sartre.width = SARTRE_WIDTH;
+  sartre.height = SARTRE_HEIGHT;
   sartre.x = 0.0;
   sartre.y = sartre.height / 2 + MAA_KORKEUS;
   sartre.animIdx = 0;
   sartre.animSize = 2;
   sartre.jump = 0;
 
-  gameStateForest.objects.resize(8);
+  gameStateForest.objects.resize(TOTAL_GAME_OBJECTS);
   gameStateForest.pages_collected = 0;
   gameStateForest.nausea_hits = 0;
 
-  for (int i = 0; i < 3; ++i) {
+  for (int i = 0; i < NUM_PAGES; ++i) {
     init_game_object(gameStateForest.objects[i], PAGE);
   }
 
-  for (int i = 3; i < 8; ++i) {
+  for (int i = NUM_PAGES; i < TOTAL_GAME_OBJECTS; ++i) {
     init_game_object(gameStateForest.objects[i], (rand() % 2 == 0) ? CHESTNUT : PIPE);
   }
+}
+
+void draw_textured_quad(float x, float y, float width, float height, GLuint texture,
+                        GLuint modelLoc, GLuint VBO) {
+  glBindTexture(GL_TEXTURE_2D, texture);
+
+  float translationMatrix[16];
+  createTranslationMatrix(x, y, 0.1f, translationMatrix);
+  glUniformMatrix4fv(modelLoc, 1, GL_FALSE, translationMatrix);
+
+  float vertices[] = {-width / 2, height / 2,  0.01f,     -0.99f,      width / 2, height / 2,
+                      0.99f,      -0.99f,      width / 2, -height / 2, 0.99f,     0.01f,
+                      -width / 2, -height / 2, 0.01f,     0.01f};
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+  glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
 
 void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderContext &context,
@@ -128,26 +144,10 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   // Draw the Sartre character
   Sartre &sartre = gameStateForest.sartre;
   GLuint sartreTexture = textures.forestSartre[sartre.animIdx];
-  glBindTexture(GL_TEXTURE_2D, sartreTexture);
-
-  // Specify the texture uniform
   GLint ourTextureLoc = glGetUniformLocation(shaderProgram, "ourTexture");
   glUniform1i(ourTextureLoc, 0);
-
-  // Set model matrix for Sartre
-  float translationMatrix[16];
-  createTranslationMatrix(sartre.x, sartre.y, 0.1f, translationMatrix);
   GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
-  glUniformMatrix4fv(modelLoc, 1, GL_FALSE, translationMatrix);
-
-  // Define and draw the quad vertices for Sartre
-  float sartreVertices[] = {-sartre.width / 2, sartre.height / 2,  0.01f, -0.99f,
-                            sartre.width / 2,  sartre.height / 2,  0.99f, -0.99f,
-                            sartre.width / 2,  -sartre.height / 2, 0.99f, 0.01f,
-                            -sartre.width / 2, -sartre.height / 2, 0.01f, 0.01f};
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(sartreVertices), sartreVertices);
-  glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+  draw_textured_quad(sartre.x, sartre.y, sartre.width, sartre.height, sartreTexture, modelLoc, VBO);
 
   for (auto &obj : gameStateForest.objects) {
     if (obj.collected) {
@@ -166,24 +166,11 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
         objTexture = textures.forestPipe;
         break;
     }
-
-    // Bind object texture
-    glBindTexture(GL_TEXTURE_2D, objTexture);
-
-    // Set model matrix for the GameObject
-    createTranslationMatrix(obj.x, obj.y, 0.1f, translationMatrix);  // Adjust depth if needed
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, translationMatrix);
-
-    // Define and draw the quad vertices for the Page
-    float objectVertices[] = {-obj.width / 2, obj.height / 2,  0.01f, -0.99f,
-                              obj.width / 2,  obj.height / 2,  0.99f, -0.99f,
-                              obj.width / 2,  -obj.height / 2, 0.99f, 0.01f,
-                              -obj.width / 2, -obj.height / 2, 0.01f, 0.01f};
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(objectVertices), objectVertices);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    draw_textured_quad(obj.x, obj.y, obj.width, obj.height, objTexture, modelLoc, VBO);
   }
 
   // Draw the Background
+  float translationMatrix[16];
   createTranslationMatrix(0.0f, 0.0f, 0.0f, translationMatrix);
   glUniformMatrix4fv(modelLoc, 1, GL_FALSE, translationMatrix);
 

@@ -59,3 +59,15 @@ const float HAHMO_G = 4000.0f;
 const float HAHMO_HYPPYNOPEUS = 2100.0f;
 
 #endif
+
+const int SARTRE_WIDTH = 256;
+const int SARTRE_HEIGHT = 256;
+
+const int GAME_OBJECT_WIDTH = 128;
+const int GAME_OBJECT_HEIGHT = 128;
+const float GAME_OBJECT_AMPLITUDE = 200.0f;
+const float GAME_OBJECT_FREQUENCY = 1.5f;
+
+const int NUM_PAGES = 3;
+const int NUM_NAUSEOUS_OBJECTS = 5;
+const int TOTAL_GAME_OBJECTS = NUM_PAGES + NUM_NAUSEOUS_OBJECTS;
