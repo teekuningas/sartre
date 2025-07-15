@@ -25,7 +25,7 @@ SDL_Surface* format_sdl_surface(SDL_Surface* surface) {
   return formattedSurface;
 }
 
-void create_textures(Textures& textures, const std::string dataPath) {
+void create_textures(Textures& textures, const std::string& dataPath) {
   // Sartre
   SDL_Surface* forestSartreImage[2];
   forestSartreImage[0] = IMG_Load((dataPath + "images/sartre.png").c_str());
@@ -134,7 +134,7 @@ void create_textures(Textures& textures, const std::string dataPath) {
   SDL_FreeSurface(forestTaustaImage);
 }
 
-void create_surfaces(Surfaces& surfaces, const std::string dataPath) {
+void create_surfaces(Surfaces& surfaces, const std::string& dataPath) {
   // Load collision map
   surfaces.forestCollisionMap =
       format_sdl_surface(IMG_Load((dataPath + "images/lehto_platforms.png").c_str()));
