@@ -1,7 +1,6 @@
 #ifndef ENGINE_H
 #define ENGINE_H
 
-// engine.h – wraps SDL, GL‐context, font & music setup/teardown
 #include <string>
 
 #include "types.h"

@@ -15,7 +15,7 @@
 
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
-#include <limits.h>          // for PATH_MAX
+#include <limits.h>  // for PATH_MAX
 #endif
 
 static std::string getResourcePath() {
