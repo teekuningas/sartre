@@ -21,6 +21,24 @@
 </head>
 <body>
 
+    <div id="mobile-unsupported-message" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: black; color: white; font-family: sans-serif; font-size: 24px; text-align: center; padding-top: 20%;">
+        <p>This game is not supported on mobile devices. Please open it on a desktop computer (Linux, macOS, or Windows).</p>
+    </div>
+
+    <script type='text/javascript'>
+        // Function to detect mobile devices
+        function isMobileDevice() {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            return /android|ipad|iphone|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+        }
+
+        // Check if it's a mobile device and display message
+        if (isMobileDevice()) {
+            document.getElementById('canvas').style.display = 'none';
+            document.getElementById('mobile-unsupported-message').style.display = 'block';
+        }
+    </script>
+
     <!-- Create the canvas that the C++ code will draw into -->
     <canvas id="canvas" oncontextmenu="event.preventDefault()" width="2048" height="2048"></canvas>
 
