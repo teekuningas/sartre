@@ -7,9 +7,58 @@
 #include <iostream>
 
 #include "engine.h"     // initEngine, shutdownEngine
-#include "game.h"       // main_loop_iteration
+#include "game.h"       // run_game_frame
 #include "resources.h"  // getResourcePath()
-#include "types.h"      // only for GameLoopData in main()
+#include "graphics.h"   // createProgram, createShaderBuffers, textVertex/fragmentSource
+#include "utils.h"      // create_textures, create_surfaces, free_*
+
+// ------------------------------------------------------------------------
+// full loop: init once, per‐frame run_game_frame(), then cleanup+exit
+void main_loop_iteration(GameLoopData* pdata) {
+  auto &data = *pdata;
+
+  if (data.shouldExit) {
+    if (data.initialized) {
+      free_textures(data.imageData.textures);
+      free_surfaces(data.imageData.surfaces);
+    }
+    shutdownEngine(data.context);
+    exit(0);
+  }
+
+  if (!data.initialized) {
+    // 1) compile & link shaders & make VAOs/VBOs
+    createProgram(textVertexShaderSource,
+                  textFragmentShaderSource,
+                  data.context.textShaderProgram);
+    createShaderBuffers(data.context.textVAO,
+                        data.context.textVBO);
+
+    createProgram(forestVertexShaderSource,
+                  forestFragmentShaderSource,
+                  data.context.forestShaderProgram);
+    createShaderBuffers(data.context.forestVAO,
+                        data.context.forestVBO);
+
+    // 2) once‐only GL setup & load textures/surfaces
+    WindowParams wp = compute_window_params(data.fullscreen);
+    glViewport((wp.windowWidth - wp.viewportSize) / 2,
+               (wp.windowHeight - wp.viewportSize) / 2,
+               wp.viewportSize,
+               wp.viewportSize);
+
+    create_textures(data.imageData.textures, data.dataPath);
+    create_surfaces(data.imageData.surfaces, data.dataPath);
+
+    data.gameMode    = MENU;
+    data.lastTick    = SDL_GetTicks();
+    data.totalElapsed= 0;
+    data.initialized = true;
+  }
+
+  // 3) one frame of update & draw
+  run_game_frame(data);
+}
 
 int main(int argc, char** argv) {
   srand(time(NULL));
@@ -32,11 +81,12 @@ int main(int argc, char** argv) {
   }
 
 #ifdef __EMSCRIPTEN__
-  emscripten_set_main_loop_arg([](void* d) { main_loop_iteration(*static_cast<GameLoopData*>(d)); },
-                               &data, 0, true);
+  emscripten_set_main_loop_arg(
+    [](void* d) { main_loop_iteration(static_cast<GameLoopData*>(d)); },
+    &data, 0, true);
 #else
   while (!data.shouldExit) {
-    main_loop_iteration(data);
+    main_loop_iteration(&data);
   }
 #endif
 

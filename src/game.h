@@ -5,8 +5,8 @@
 
 struct GameLoopData;
 
-// Drives one frame: update, event‐handling, draw & exit logic.
-void main_loop_iteration(GameLoopData& data);
+ // Called once per tick to do update, event‐handling, draw & state switches.
+ void run_game_frame(GameLoopData& data);
 
 // --- Menu state ---
 void menu_init(GameStateMenu& state);

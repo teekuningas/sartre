@@ -1,95 +1,41 @@
 #include "game.h"
 
 #include "constants.h"
-#include "engine.h"  // <— pull in shutdownEngine()
 #include "graphics.h"
-#include "resources.h"
 #include "utils.h"
 
-GameLoopData gameLoopData;
+// ------------------------------------------------------------------------
+// A single frame of game logic (no engine init or shutdown here!)
+void run_game_frame(GameLoopData &data) {
+  // 1) accumulate delta‐time
+  Uint32 now = SDL_GetTicks();
+  float delta = (now - data.lastTick) / 1000.0f;
+  data.totalElapsed += (now - data.lastTick);
+  data.lastTick = now;
 
-void main_loop_iteration(GameLoopData &data) {
-  /* Initialization and cleanup are kept within the loop function
-   * for the sake of webgl context which would not be
-   * automatically active here if initialized outside.
-   */
-
-  if (data.shouldExit) {
-    if (data.initialized) {
-      free_textures(data.imageData.textures);
-      free_surfaces(data.imageData.surfaces);
-    }
-    shutdownEngine(data.context);
-    exit(0);
-  }
-
-  if (!data.initialized) {
-    // Compile shader program and create VAO and VBO for text rendering
-    createProgram(textVertexShaderSource, textFragmentShaderSource, data.context.textShaderProgram);
-    if (!data.context.textShaderProgram) {
-      data.shouldExit = true;
-      return;
-    }
-    createShaderBuffers(data.context.textVAO, data.context.textVBO);
-
-    // Compile shader program and create VAO and VBO for forest rendering
-    createProgram(forestVertexShaderSource, forestFragmentShaderSource,
-                  data.context.forestShaderProgram);
-    if (!data.context.forestShaderProgram) {
-      data.shouldExit = true;
-      return;
-    }
-    createShaderBuffers(data.context.forestVAO, data.context.forestVBO);
-
-    // ——— set GL viewport once on init ———
-    WindowParams wp = compute_window_params(data.fullscreen);
-    glViewport((wp.windowWidth - wp.viewportSize) / 2, (wp.windowHeight - wp.viewportSize) / 2,
-               wp.viewportSize, wp.viewportSize);
-
-    create_textures(data.imageData.textures, data.dataPath);
-    create_surfaces(data.imageData.surfaces, data.dataPath);
-
-    data.gameMode = MENU;
-    data.lastTick = SDL_GetTicks();
-    data.totalElapsed = 0;
-
-    // Do not come here anymore
-    data.initialized = true;
-  }
-
-  // --- Main Loop Logic ---
-
-  InputResult inputResult;
-  inputResult.transition = false;  // Initialize for this frame
-
-  // Calculate delta time
-  data.currentTick = SDL_GetTicks();
-  float deltaTime = (data.currentTick - data.lastTick) / 1000.0f;
-  data.totalElapsed += data.currentTick - data.lastTick;
-  data.lastTick = data.currentTick;
-
-  // 1. Update current game state (can potentially set inputResult.transition)
+  // 2) update current state
+  InputResult inputResult{false, data.gameMode};
   switch (data.gameMode) {
     case MENU:
-      menu_update(data.gameStateMenu, data.totalElapsed, deltaTime, data.imageData.surfaces,
-                  inputResult);
+      menu_update(data.gameStateMenu, data.totalElapsed, delta,
+                  data.imageData.surfaces, inputResult);
       break;
     case FOREST:
-      forest_update(data.gameStateForest, data.totalElapsed, deltaTime, data.imageData.surfaces,
-                    inputResult);
+      forest_update(data.gameStateForest, data.totalElapsed, delta,
+                    data.imageData.surfaces, inputResult);
       break;
     case RESULTS:
-      results_update(data.gameStateResults, data.totalElapsed, deltaTime, data.imageData.surfaces,
-                     inputResult);
+      results_update(data.gameStateResults, data.totalElapsed, delta,
+                     data.imageData.surfaces, inputResult);
       break;
     default:
       break;
   }
 
-  // 2. Handle user events (can also set inputResult.transition)
+  // 3) handle SDL events
   handle_events(data.gameMode, data.fullscreen, inputResult);
 
-  // 3. Check if a transition is requested (either by update or events)
+  // 4) handle transitions
   if (inputResult.transition) {
     if (inputResult.transitionTo == EXIT) {
       data.shouldExit = true;
@@ -114,29 +60,37 @@ void main_loop_iteration(GameLoopData &data) {
       results_init(data.gameStateResults);
     }
     data.gameMode = inputResult.transitionTo;
-    return;
+    return;  // do not draw this frame if you just transitioned
   }
 
-  // 4. Draw the current state
+  // 5) draw
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   switch (data.gameMode) {
     case MENU:
-      menu_draw(data.context.font, data.context.textShaderProgram, data.context.textVAO,
+      menu_draw(data.context.font,
+                data.context.textShaderProgram,
+                data.context.textVAO,
                 data.context.textVBO);
       break;
     case FOREST:
-      forest_draw(data.gameStateForest, data.imageData.textures, data.context,
-                  data.context.forestShaderProgram, data.context.forestVAO, data.context.forestVBO);
+      forest_draw(data.gameStateForest,
+                  data.imageData.textures,
+                  data.context,
+                  data.context.forestShaderProgram,
+                  data.context.forestVAO,
+                  data.context.forestVBO);
       break;
     case RESULTS:
-      results_draw(data.context.font, data.context.textShaderProgram, data.context.textVAO,
+      results_draw(data.context.font,
+                   data.context.textShaderProgram,
+                   data.context.textVAO,
                    data.context.textVBO);
       break;
     default:
       break;
   }
 
-  // ——— present the rendered frame ———
+  // 6) present
   SDL_GL_SwapWindow(data.context.window);
 #ifndef __EMSCRIPTEN__
   SDL_Delay(1);
