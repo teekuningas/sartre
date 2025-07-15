@@ -11,9 +11,8 @@
 #include "constants.h"  // textVertexShaderSource, forestVertexShaderSource, …
 #include "engine.h"     // initEngine, shutdownEngine
 #include "game.h"       // run_game_frame
-#include "graphics.h"   // createProgram, createShaderBuffers, textVertex/fragmentSource
+#include "graphics.h"   // now carries all of those routines
 #include "resources.h"  // getResourcePath()
-#include "utils.h"      // create_textures, create_surfaces, free_*
 
 // ------------------------------------------------------------------------
 void main_loop_iteration(GameLoopData* pdata) {

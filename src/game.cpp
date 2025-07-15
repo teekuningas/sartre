@@ -1,8 +1,20 @@
 #include "game.h"
 
 #include "constants.h"
-#include "graphics.h"
-#include "utils.h"
+#include "graphics.h"    // now provides format_sdl_surface, create_textures, renderText, etc.
+
+// A minimal in‐file helper, used by forest_update for collision‐map lookups:
+static bool isPixelBlack(SDL_Surface* surface, int x, int y) {
+  const Uint8 threshold = 50;
+  if (x < 0 || x >= surface->w || y < 0 || y >= surface->h) {
+    return false;
+  }
+  Uint32 offset = y * surface->pitch + x * 4;
+  Uint8* pixel = static_cast<Uint8*>(surface->pixels) + offset;
+  return pixel[0] < threshold &&
+         pixel[1] < threshold &&
+         pixel[2] < threshold;
+}
 
 void run_game_frame(GameLoopData &data) {
   Uint32 now = SDL_GetTicks();
