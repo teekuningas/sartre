@@ -15,10 +15,9 @@
 #include <GL/glew.h>
 
 #include "constants.h"
-#include "matrix.h"
+#include "graphics.h"
 #include "render_context.h"
 #include "resources.h"
-#include "shader_utils.h"
 #include "types.h"
 #include "utils.h"
 
