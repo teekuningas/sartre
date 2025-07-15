@@ -52,16 +52,16 @@ const char* forestFragmentShaderSource =
 
 const int MAP_WIDTH = 2048;
 const int MAP_HEIGHT = 2048;
-const int MAA_KORKEUS = 50;
+const int EARTH_HEIGHT = 50;
 
 // ---- game constants ----
 const int SARTRE_WIDTH = 256;
 const int SARTRE_HEIGHT = 256;
 
-//—— Sartre movement & physics ——
-const float SARTRE_VX             = 300.0f;  // horizontal speed in px/sec
-const float SARTRE_JUMP_VELOCITY  = 600.0f;  // initial jump velocity in px/sec
-const float SARTRE_G              = 980.0f;  // gravity accel in px/sec^2
+// —— Sartre movement & physics ——
+const float SARTRE_VX = 800.0f;
+const float SARTRE_G = 4000.0f;
+const float SARTRE_JUMP_VELOCITY = 2100.0f;
 
 const int GAME_OBJECT_WIDTH = 128;
 const int GAME_OBJECT_HEIGHT = 128;

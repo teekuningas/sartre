@@ -6,10 +6,10 @@
 #include <cstring>  // for strcmp
 #include <iostream>
 
-#include "engine.h"  // initEngine, shutdownEngine
-#include "game.h"    // main_loop_iteration
-#include "types.h"   // only for GameLoopData in main()
-#include "resources.h" // getResourcePath()
+#include "engine.h"     // initEngine, shutdownEngine
+#include "game.h"       // main_loop_iteration
+#include "resources.h"  // getResourcePath()
+#include "types.h"      // only for GameLoopData in main()
 
 int main(int argc, char** argv) {
   srand(time(NULL));
@@ -19,8 +19,8 @@ int main(int argc, char** argv) {
   }
 
   GameLoopData data{};
-  data.fullscreen  = (argc > 1 && std::strcmp(argv[1], "--fullscreen") == 0);
-  data.shouldExit  = false;
+  data.fullscreen = (argc > 1 && std::strcmp(argv[1], "--fullscreen") == 0);
+  data.shouldExit = false;
   data.initialized = false;
 
   // fetch resources directory once
@@ -32,9 +32,8 @@ int main(int argc, char** argv) {
   }
 
 #ifdef __EMSCRIPTEN__
-  emscripten_set_main_loop_arg(
-      [](void* d) { main_loop_iteration(*static_cast<GameLoopData*>(d)); },
-      &data, 0, true);
+  emscripten_set_main_loop_arg([](void* d) { main_loop_iteration(*static_cast<GameLoopData*>(d)); },
+                               &data, 0, true);
 #else
   while (!data.shouldExit) {
     main_loop_iteration(data);

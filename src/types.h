@@ -7,8 +7,8 @@
 #include <SDL_mixer.h>
 #include <SDL_ttf.h>
 
+#include <string>
 #include <vector>
-#include <string>      // << add
 
 enum GameMode { MENU, FOREST, RESULTS, EXIT };
 
@@ -105,7 +105,7 @@ struct GameLoopData {
   bool fullscreen;
   bool shouldExit;
   bool initialized;
-  std::string dataPath;  // << add
+  std::string dataPath;
 };
 
 #endif

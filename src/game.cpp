@@ -43,12 +43,8 @@ void main_loop_iteration(GameLoopData &data) {
 
     // ——— set GL viewport once on init ———
     WindowParams wp = compute_window_params(data.fullscreen);
-    glViewport(
-      (wp.windowWidth  - wp.viewportSize) / 2,
-      (wp.windowHeight - wp.viewportSize) / 2,
-      wp.viewportSize,
-      wp.viewportSize
-    );
+    glViewport((wp.windowWidth - wp.viewportSize) / 2, (wp.windowHeight - wp.viewportSize) / 2,
+               wp.viewportSize, wp.viewportSize);
 
     create_textures(data.imageData.textures, data.dataPath);
     create_surfaces(data.imageData.surfaces, data.dataPath);
