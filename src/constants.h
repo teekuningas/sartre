@@ -50,13 +50,13 @@ const char* forestFragmentShaderSource =
     "    gl_FragColor = texColor;\n"
     "}\n";
 
-const int KARTTA_LEVEYS = 2048;
-const int KARTTA_KORKEUS = 2048;
+const int MAP_WIDTH = 2048;
+const int MAP_HEIGHT = 2048;
 const int MAA_KORKEUS = 50;
 
-const float HAHMO_VX = 800.0f;
-const float HAHMO_G = 4000.0f;
-const float HAHMO_HYPPYNOPEUS = 2100.0f;
+const float SARTRE_VX = 800.0f;
+const float SARTRE_G = 4000.0f;
+const float SARTRE_JUMP_VELOCITY = 2100.0f;
 
 #endif
 

@@ -69,10 +69,10 @@ void handle_events(GameMode &gameMode, bool fullscreen, InputResult &inputResult
 void init_game_object(GameObject &obj, GameObjectType type) {
   obj.width = GAME_OBJECT_WIDTH;
   obj.height = GAME_OBJECT_HEIGHT;
-  obj.x = (GLfloat)((rand() % (KARTTA_LEVEYS - (int)obj.width)) - (KARTTA_LEVEYS / 2) +
-                    (int)(obj.width / 2));
-  obj.y = (GLfloat)((rand() % (KARTTA_KORKEUS - (int)obj.height - (KARTTA_KORKEUS / 4))) +
-                    (KARTTA_KORKEUS / 8) + (int)(obj.height / 2));
+  obj.x =
+      (GLfloat)((rand() % (MAP_WIDTH - (int)obj.width)) - (MAP_WIDTH / 2) + (int)(obj.width / 2));
+  obj.y = (GLfloat)((rand() % (MAP_HEIGHT - (int)obj.height - (MAP_HEIGHT / 4))) +
+                    (MAP_HEIGHT / 8) + (int)(obj.height / 2));
   obj.vx =
       ((((GLfloat)(rand() % 1000)) / 1000.0f) * 1.5f + 0.5f) * 0.3f * (rand() % 2 == 0 ? 1 : -1);
   obj.ymid = obj.y;
@@ -129,8 +129,8 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
 
   // Set up the orthographic projection
   float orthoMatrix[16];
-  createOrthographicMatrix(-KARTTA_LEVEYS / 2, KARTTA_LEVEYS / 2, 0.0f, KARTTA_KORKEUS, -100.0f,
-                           100.0f, orthoMatrix);
+  createOrthographicMatrix(-MAP_WIDTH / 2, MAP_WIDTH / 2, 0.0f, MAP_HEIGHT, -100.0f, 100.0f,
+                           orthoMatrix);
   GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
   glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, orthoMatrix);
 
@@ -175,10 +175,9 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   glUniformMatrix4fv(modelLoc, 1, GL_FALSE, translationMatrix);
 
   glBindTexture(GL_TEXTURE_2D, textures.forestTausta[0]);
-  float backgroundVertices[] = {-KARTTA_LEVEYS / 2, KARTTA_KORKEUS, 0.0f, -1.0f,
-                                KARTTA_LEVEYS / 2,  KARTTA_KORKEUS, 1.0f, -1.0f,
-                                KARTTA_LEVEYS / 2,  0.0f,           1.0f, 0.0f,
-                                -KARTTA_LEVEYS / 2, 0.0f,           0.0f, 0.0f};
+  float backgroundVertices[] = {
+      -MAP_WIDTH / 2, MAP_HEIGHT, 0.0f, -1.0f, MAP_WIDTH / 2,  MAP_HEIGHT, 1.0f, -1.0f,
+      MAP_WIDTH / 2,  0.0f,       1.0f, 0.0f,  -MAP_WIDTH / 2, 0.0f,       0.0f, 0.0f};
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(backgroundVertices), backgroundVertices);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
@@ -195,7 +194,7 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   float textOrthoMatrix[16];
   // Using screen pixel coordinates for simplicity, assuming KARTTA dimensions match viewport
   // roughly
-  createOrthographicMatrix(0.0f, KARTTA_LEVEYS, 0.0f, KARTTA_KORKEUS, -1.0f, 1.0f, textOrthoMatrix);
+  createOrthographicMatrix(0.0f, MAP_WIDTH, 0.0f, MAP_HEIGHT, -1.0f, 1.0f, textOrthoMatrix);
 
   // Use the text shader program
   glUseProgram(context.textShaderProgram);
@@ -205,13 +204,13 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   glUniformMatrix4fv(textProjectionLoc, 1, GL_FALSE, textOrthoMatrix);
 
   // Prepare text and color
-  std::string pageText = "Pages: " + std::to_string(gameStateForest.pages_collected);
-  std::string nauseaText = "Nausea: " + std::to_string(gameStateForest.nausea_hits);
+  std::string pageText = "SIVUJA: " + std::to_string(gameStateForest.pages_collected);
+  std::string nauseaText = "INHOA: " + std::to_string(gameStateForest.nausea_hits);
   SDL_Color white = {255, 255, 255, 255};
   renderText(context.font, pageText.c_str(), white, context.textShaderProgram, context.textVAO,
-             context.textVBO, 50.0f, KARTTA_KORKEUS - 50.0f);  // Position near top-left
+             context.textVBO, 50.0f, MAP_HEIGHT - 50.0f);  // Position near top-left
   renderText(context.font, nauseaText.c_str(), white, context.textShaderProgram, context.textVAO,
-             context.textVBO, 50.0f, KARTTA_KORKEUS - 100.0f);  // Position near top-left
+             context.textVBO, 50.0f, MAP_HEIGHT - 100.0f);  // Position near top-left
 }
 
 void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameStateForest,
@@ -223,10 +222,10 @@ void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameSt
         obj.ymid + obj.amplitude * sin(obj.frequency * ((float)totalElapsed / 1000 + obj.phase));
 
     // If goes outside the window, come out from the other direction
-    if ((obj.x > KARTTA_LEVEYS / 2 + obj.width) && (obj.vx > 0)) {
-      obj.x = -(obj.width / 2) - KARTTA_LEVEYS / 2;
-    } else if ((obj.x < -KARTTA_LEVEYS / 2 - obj.width) && (obj.vx < 0)) {
-      obj.x = KARTTA_LEVEYS / 2 + obj.width / 2;
+    if ((obj.x > MAP_WIDTH / 2 + obj.width) && (obj.vx > 0)) {
+      obj.x = -(obj.width / 2) - MAP_WIDTH / 2;
+    } else if ((obj.x < -MAP_WIDTH / 2 - obj.width) && (obj.vx < 0)) {
+      obj.x = MAP_WIDTH / 2 + obj.width / 2;
     }
 
     // Check for collision with Sartre (AABB collision detection)
@@ -244,10 +243,10 @@ void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameSt
       }
 
       // Respawn the object at a new random location
-      obj.x = (GLfloat)((rand() % (KARTTA_LEVEYS - (int)obj.width)) - (KARTTA_LEVEYS / 2) +
+      obj.x = (GLfloat)((rand() % (MAP_WIDTH - (int)obj.width)) - (MAP_WIDTH / 2) +
                         (int)(obj.width / 2));
-      obj.y = (GLfloat)((rand() % (KARTTA_KORKEUS - (int)obj.height - (KARTTA_KORKEUS / 4))) +
-                        (KARTTA_KORKEUS / 8) + (int)(obj.height / 2));
+      obj.y = (GLfloat)((rand() % (MAP_HEIGHT - (int)obj.height - (MAP_HEIGHT / 4))) +
+                        (MAP_HEIGHT / 8) + (int)(obj.height / 2));
       obj.vx = ((((GLfloat)(rand() % 1000)) / 1000.0f) * 1.5f + 0.5f) * 0.3f *
                (rand() % 2 == 0 ? 1 : -1);
       obj.ymid = obj.y;
@@ -275,25 +274,25 @@ void forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float 
 
   // Update location and velocity based on
   if (keystate[SDL_SCANCODE_RIGHT]) {
-    if (sartre.x < KARTTA_LEVEYS / 2 - sartre.width / 2) {
-      sartre.x = sartre.x + deltaTime * HAHMO_VX;
+    if (sartre.x < MAP_WIDTH / 2 - sartre.width / 2) {
+      sartre.x = sartre.x + deltaTime * SARTRE_VX;
     }
   }
 
   if (keystate[SDL_SCANCODE_LEFT]) {
-    if (sartre.x > -KARTTA_LEVEYS / 2 + sartre.width / 2) {
-      sartre.x = sartre.x - deltaTime * HAHMO_VX;
+    if (sartre.x > -MAP_WIDTH / 2 + sartre.width / 2) {
+      sartre.x = sartre.x - deltaTime * SARTRE_VX;
     }
   }
 
   if (sartre.jump == 0 && keystate[SDL_SCANCODE_UP]) {
     sartre.jump = 1;
-    sartre.vy = HAHMO_HYPPYNOPEUS;
+    sartre.vy = SARTRE_JUMP_VELOCITY;
   }
 
   // Handle intricacies related to falling down
   GLfloat predictedY = sartre.y + deltaTime * sartre.vy;
-  int sartreXPixels = (int)(sartre.x + KARTTA_LEVEYS / 2);
+  int sartreXPixels = (int)(sartre.x + MAP_WIDTH / 2);
   int commonExtra = sartre.height / 8;
   int padding = 2;  // if the platform is not exactly exactly straight
   int sartreYPixels = (int)(sartre.y - sartre.height / 2 + commonExtra);
@@ -305,16 +304,16 @@ void forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float 
     sartre.vy = 0;
   } else if (predictedY < sartre.y &&
              !isPixelBlack(surfaces.forestCollisionMap, sartreXPixels,
-                           KARTTA_KORKEUS - sartreYPixels) &&
+                           MAP_HEIGHT - sartreYPixels) &&
              isPixelBlack(surfaces.forestCollisionMap, sartreXPixels,
-                          KARTTA_KORKEUS - predictedYPixels)) {
+                          MAP_HEIGHT - predictedYPixels)) {
     // We hit a non-ground surface, like a treetop.
     sartre.jump = 0;
     sartre.vy = 0;
   } else {
     // We just fall.
     sartre.y = predictedY;
-    sartre.vy = sartre.vy - deltaTime * HAHMO_G;
+    sartre.vy = sartre.vy - deltaTime * SARTRE_G;
   }
 
   // Transition to RESULTS state if all pages have been collected.
@@ -329,7 +328,7 @@ void results_init(GameStateResults &gameStateResults) {}
 void results_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint VBO) {
   // Set up the orthographic projection for the text rendering
   float orthoMatrix[16];
-  createOrthographicMatrix(0.0f, KARTTA_LEVEYS, 0.0f, KARTTA_KORKEUS, -1.0f, 1.0f, orthoMatrix);
+  createOrthographicMatrix(0.0f, MAP_WIDTH, 0.0f, MAP_HEIGHT, -1.0f, 1.0f, orthoMatrix);
 
   // Use the text shader program
   glUseProgram(textShaderProgram);
@@ -353,7 +352,7 @@ void menu_init(GameStateMenu &gameStateMenu) {}
 void menu_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint VBO) {
   // Set up the orthographic projection for the text rendering
   float orthoMatrix[16];
-  createOrthographicMatrix(0.0f, KARTTA_LEVEYS, 0.0f, KARTTA_KORKEUS, -1.0f, 1.0f, orthoMatrix);
+  createOrthographicMatrix(0.0f, MAP_WIDTH, 0.0f, MAP_HEIGHT, -1.0f, 1.0f, orthoMatrix);
 
   // Use the text shader program
   glUseProgram(textShaderProgram);
