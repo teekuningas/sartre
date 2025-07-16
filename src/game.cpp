@@ -387,12 +387,12 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, textOrtho);
   SDL_Color white = {255, 255, 255, 255};
   renderText(context.font,
-             std::string("SIVUJA: ") + std::to_string(gameStateForest.pages_collected), white,
+             std::string("Kirjoitettuja sivuja: ") + std::to_string(gameStateForest.pages_collected), white,
              context.textShaderProgram, context.textVAO, context.textVBO, 50.0f,
              MAP_HEIGHT - 50.0f);
-  renderText(context.font, std::string("INHOA: ") + std::to_string(gameStateForest.nausea_hits),
-             white, context.textShaderProgram, context.textVAO, context.textVBO, 50.0f,
-             MAP_HEIGHT - 100.0f);
+  // renderText(context.font, std::string("INHOA: ") + std::to_string(gameStateForest.nausea_hits),
+  //            white, context.textShaderProgram, context.textVAO, context.textVBO, 50.0f,
+  //            MAP_HEIGHT - 100.0f);
 }
 
 static void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameStateForest,
