@@ -477,6 +477,12 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
   glUniform1i(context.forestLocOurTexture, 0);
   glUniform1f(context.forestLocNausea, state.success ? 0.0f : 1.0f);
   glUniform1f(context.forestLocTime, totalElapsed / 1000.0f);
+  // reset model to identity so our full‐screen quad really spans 0..MAP_HEIGHT
+  {
+    float identityModel[16];
+    createTranslationMatrix(0.0f, 0.0f, 0.0f, identityModel);
+    glUniformMatrix4fv(context.forestLocModel, 1, GL_FALSE, identityModel);
+  }
   glBindVertexArray(context.forestVAO);
   glBindTexture(GL_TEXTURE_2D, textures.forestTausta[0]);
   float bgVerts[] = {-MAP_WIDTH / 2, MAP_HEIGHT, 0.0f,          -1.0f, MAP_WIDTH / 2, MAP_HEIGHT,
