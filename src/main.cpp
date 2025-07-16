@@ -56,12 +56,30 @@ void main_loop_iteration(GameLoopData* pdata) {
 
   if (!data.initialized) {
     // 1) compile & link shaders & make VAOs/VBOs
-    createProgram(textVertexShaderSource, textFragmentShaderSource, data.context.textShaderProgram);
-    createShaderBuffers(data.context.textVAO, data.context.textVBO);
 
     createProgram(forestVertexShaderSource, forestFragmentShaderSource,
                   data.context.forestShaderProgram);
+    // cache forest‐shader uniforms
+    data.context.forestLocProjection =
+        glGetUniformLocation(data.context.forestShaderProgram, "projection");
+    data.context.forestLocModel      =
+        glGetUniformLocation(data.context.forestShaderProgram, "model");
+    data.context.forestLocOurTexture =
+        glGetUniformLocation(data.context.forestShaderProgram, "ourTexture");
+    data.context.forestLocNausea     =
+        glGetUniformLocation(data.context.forestShaderProgram, "u_nausea");
+    data.context.forestLocTime       =
+        glGetUniformLocation(data.context.forestShaderProgram, "u_time");
     createShaderBuffers(data.context.forestVAO, data.context.forestVBO);
+
+    createProgram(textVertexShaderSource, textFragmentShaderSource, data.context.textShaderProgram);
+    data.context.textLocProjection =
+        glGetUniformLocation(data.context.textShaderProgram, "projection");
+    data.context.textLocTextTexture =
+        glGetUniformLocation(data.context.textShaderProgram, "textTexture");
+    data.context.textLocTextColor =
+        glGetUniformLocation(data.context.textShaderProgram, "textColor");
+    createShaderBuffers(data.context.textVAO, data.context.textVBO);
 
     // 2) once‐only GL setup & load textures/surfaces
     WindowParams wp = compute_window_params(data.fullscreen);

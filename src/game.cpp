@@ -303,38 +303,36 @@ void draw_textured_quad(float x, float y, float width, float height, GLuint text
 
 void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderContext &context,
                  GLuint shaderProgram, GLuint VAO, GLuint VBO) {
-  // Use the shader program
-  glUseProgram(shaderProgram);
-
-  // feed the shader with current nausea fraction and the time in seconds
-  float nauseaLevel = float(gameStateForest.nausea_hits)
-                    / float(NUM_NAUSEA_LIMIT);
-  GLint locN = glGetUniformLocation(shaderProgram, "u_nausea");
-  glUniform1f(locN, nauseaLevel);
-  GLint locT = glGetUniformLocation(shaderProgram, "u_time");
-  glUniform1f(locT, SDL_GetTicks() * 0.001f);
+  // Use the forest shader program
+  glUseProgram(context.forestShaderProgram);
 
   // Set up the orthographic projection
   float orthoMatrix[16];
   createOrthographicMatrix(-MAP_WIDTH / 2, MAP_WIDTH / 2, 0.0f, MAP_HEIGHT, -100.0f, 100.0f,
                            orthoMatrix);
-  GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
-  glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, orthoMatrix);
+
+  // 1) upload projection & model only via cached locations
+  glUniformMatrix4fv(context.forestLocProjection, 1, GL_FALSE, orthoMatrix);
+  // model will be set per‐quad in draw_textured_quad
+
+  // 2) texture unit & nausea/time
+  glUniform1i (context.forestLocOurTexture, 0);
+  float nauseaLevel = float(gameStateForest.nausea_hits)
+                    / float(NUM_NAUSEA_LIMIT);
+  glUniform1f (context.forestLocNausea, nauseaLevel);
+  glUniform1f (context.forestLocTime,   SDL_GetTicks() * 0.001f);
 
   // Enable depth test
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LEQUAL);
 
   // Bind the VAO
-  glBindVertexArray(VAO);
+  glBindVertexArray(context.forestVAO);
 
   // Draw the Sartre character
   Sartre &sartre = gameStateForest.sartre;
   GLuint sartreTexture = textures.forestSartre[sartre.animIdx];
-  GLint ourTextureLoc = glGetUniformLocation(shaderProgram, "ourTexture");
-  glUniform1i(ourTextureLoc, 0);
-  GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
-  draw_textured_quad(sartre.x, sartre.y, sartre.width, sartre.height, sartreTexture, modelLoc, VBO);
+  draw_textured_quad(sartre.x, sartre.y, sartre.width, sartre.height, sartreTexture, context.forestLocModel, context.forestVBO);
 
   for (auto &obj : gameStateForest.objects) {
     if (obj.collected) {
@@ -353,18 +351,19 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
         objTexture = textures.forestPipe;
         break;
     }
-    draw_textured_quad(obj.x, obj.y, obj.width, obj.height, objTexture, modelLoc, VBO);
+    draw_textured_quad(obj.x, obj.y, obj.width, obj.height, objTexture, context.forestLocModel, context.forestVBO);
   }
 
   // Draw the Background
   float translationMatrix[16];
   createTranslationMatrix(0.0f, 0.0f, 0.0f, translationMatrix);
-  glUniformMatrix4fv(modelLoc, 1, GL_FALSE, translationMatrix);
+  glUniformMatrix4fv(context.forestLocModel, 1, GL_FALSE, translationMatrix);
 
   glBindTexture(GL_TEXTURE_2D, textures.forestTausta[0]);
   float backgroundVertices[] = {
       -MAP_WIDTH / 2, MAP_HEIGHT, 0.0f, -1.0f, MAP_WIDTH / 2,  MAP_HEIGHT, 1.0f, -1.0f,
       MAP_WIDTH / 2,  0.0f,       1.0f, 0.0f,  -MAP_WIDTH / 2, 0.0f,       0.0f, 0.0f};
+  glBindBuffer(GL_ARRAY_BUFFER, context.forestVBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(backgroundVertices), backgroundVertices);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
@@ -375,29 +374,69 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   // Disable depth test not to distract others
   glDisable(GL_DEPTH_TEST);
 
-  // --- Render Page Count Text ---
+  // --- Render Page Count Text and Nausea Text using cached textures ---
 
   // Set up the orthographic projection for the text rendering (top-left corner)
   float textOrthoMatrix[16];
-  // Using screen pixel coordinates for simplicity, assuming KARTTA dimensions match viewport
-  // roughly
   createOrthographicMatrix(0.0f, MAP_WIDTH, 0.0f, MAP_HEIGHT, -1.0f, 1.0f, textOrthoMatrix);
 
   // Use the text shader program
   glUseProgram(context.textShaderProgram);
 
-  // Pass the projection matrix to the text shader
-  GLuint textProjectionLoc = glGetUniformLocation(context.textShaderProgram, "projection");
-  glUniformMatrix4fv(textProjectionLoc, 1, GL_FALSE, textOrthoMatrix);
+  // Pass the projection matrix to the text shader (using cached location)
+  glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, textOrthoMatrix);
 
-  // Prepare text and color
-  std::string pageText = "SIVUJA: " + std::to_string(gameStateForest.pages_collected);
-  std::string nauseaText = "INHOA: " + std::to_string(gameStateForest.nausea_hits);
-  SDL_Color white = {255, 255, 255, 255};
-  renderText(context.font, pageText.c_str(), white, context.textShaderProgram, context.textVAO,
-             context.textVBO, 50.0f, MAP_HEIGHT - 50.0f);  // Position near top-left
-  renderText(context.font, nauseaText.c_str(), white, context.textShaderProgram, context.textVAO,
-             context.textVBO, 50.0f, MAP_HEIGHT - 100.0f);  // Position near top-left
+  // Helper lambda to update/upload text texture if value changed, then draw
+  auto uploadIfChanged = [&](int currentValue,
+                             int& lastValue,
+                             GLuint& tex,
+                             int& outW, int& outH,
+                             const std::string& prefix,
+                             float x, float y)
+  {
+    if (currentValue != lastValue) {
+      // 1) regen SDL surface once
+      std::string txt = prefix + std::to_string(currentValue);
+      SDL_Surface* surf = TTF_RenderUTF8_Blended(
+          context.font, txt.c_str(), SDL_Color{255,255,255,255});
+      // assume 32bit RGBA; get its w/h
+      outW = surf->w; outH = surf->h;
+
+      // 2) create or update GL texture
+      if (!tex) {
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      } else {
+        glBindTexture(GL_TEXTURE_2D, tex);
+      }
+      glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, outW, outH, 0,
+                   GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels);
+      SDL_FreeSurface(surf);
+      lastValue = currentValue;
+    }
+
+    // 3) draw it as a quad (reuse your draw_textured_quad):
+    glUniform1i(context.textLocTextTexture, 0);
+    draw_textured_quad(x, y, float(outW), float(outH),
+                       tex, context.textLocProjection, context.textVBO);
+  };
+
+  uploadIfChanged(gameStateForest.pages_collected,
+                  context.lastPagesRendered,
+                  context.textTexturePages,
+                  context.textW_pages,
+                  context.textH_pages,
+                  "SIVUJA: ", 50.0f, MAP_HEIGHT - 50.0f);
+
+  uploadIfChanged(gameStateForest.nausea_hits,
+                  context.lastNauseaRendered,
+                  context.textTextureNausea,
+                  context.textW_nausea,
+                  context.textH_nausea,
+                  "INHOA: ", 50.0f, MAP_HEIGHT - 100.0f);
 }
 
 static void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameStateForest,

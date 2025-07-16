@@ -82,10 +82,31 @@ struct RenderContext {
 
   GLuint forestVAO;
   GLuint forestVBO;
-  GLuint forestShaderProgram;
+
+  // ---- forest shader (cached)
+  GLuint  forestShaderProgram;
+  GLint   forestLocProjection;
+  GLint   forestLocModel;
+  GLint   forestLocOurTexture;
+  GLint   forestLocNausea;
+  GLint   forestLocTime;
+
   GLuint textVAO;
   GLuint textVBO;
-  GLuint textShaderProgram;
+
+  // ---- text shader (cached)
+  GLuint  textShaderProgram;
+  GLint   textLocProjection;
+  GLint   textLocTextTexture;
+  GLint   textLocTextColor;
+
+  // ---- dynamic text textures (only two)
+  GLuint  textTexturePages   = 0;
+  GLuint  textTextureNausea  = 0;
+  int     lastPagesRendered  = -1;
+  int     lastNauseaRendered = -1;
+  int     textW_pages        = 0, textH_pages = 0;
+  int     textW_nausea       = 0, textH_nausea = 0;
 };
 
 struct WindowParams {
