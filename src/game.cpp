@@ -493,6 +493,27 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
   glBindVertexArray(0);
 
+  // ── DIMMER BACKGROUND ──
+  // reuse text shader to draw a black, alpha = 0.3 full-screen quad
+  glUseProgram(context.textShaderProgram);
+  glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, textOrtho);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  GLint textColorLoc = glGetUniformLocation(context.textShaderProgram, "textColor");
+  glUniform4f(textColorLoc, 0.0f, 0.0f, 0.0f, 0.3f);
+  glBindVertexArray(context.textVAO);
+  float dimQuad[] = {
+      0.0f,      MAP_HEIGHT, 0.0f, 0.0f,
+      MAP_WIDTH, MAP_HEIGHT, 1.0f, 0.0f,
+      MAP_WIDTH, 0.0f,       1.0f, 1.0f,
+      0.0f,      0.0f,       0.0f, 1.0f
+  };
+  glBindBuffer(GL_ARRAY_BUFFER, context.textVBO);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(dimQuad), dimQuad);
+  glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+  glDisable(GL_BLEND);
+  glBindVertexArray(0);
+
   // ensure no leftover depth test
   glDisable(GL_DEPTH_TEST);
 
@@ -530,10 +551,13 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
   createTranslationMatrix(0.0f, MAP_HEIGHT / 4.0f, 0.0f, model);
   glUniformMatrix4fv(context.forestLocModel, 1, GL_FALSE, model);
   glBindTexture(GL_TEXTURE_2D, textures.forestSartre[0]);
-  float quad[] = {-SARTRE_WIDTH / 2, SARTRE_HEIGHT / 2,  0.0f, 0.0f,
-                  SARTRE_WIDTH / 2,  SARTRE_HEIGHT / 2,  1.0f, 0.0f,
-                  SARTRE_WIDTH / 2,  -SARTRE_HEIGHT / 2, 1.0f, 1.0f,
-                  -SARTRE_WIDTH / 2, -SARTRE_HEIGHT / 2, 0.0f, 1.0f};
+  // doubled size:
+  float quad[] = {
+      -SARTRE_WIDTH,  SARTRE_HEIGHT,   0.0f, 0.0f,
+       SARTRE_WIDTH,  SARTRE_HEIGHT,   1.0f, 0.0f,
+       SARTRE_WIDTH, -SARTRE_HEIGHT,   1.0f, 1.0f,
+      -SARTRE_WIDTH, -SARTRE_HEIGHT,   0.0f, 1.0f
+  };
   glBindBuffer(GL_ARRAY_BUFFER, context.forestVBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
