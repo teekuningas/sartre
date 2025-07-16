@@ -195,22 +195,15 @@ void run_game_frame(GameLoopData &data) {
       // letter-box a centered square for the 2D forest
       int side = std::min(winW, winH);
       glViewport((winW - side) / 2, (winH - side) / 2, side, side);
-      forest_draw(data.gameStateForest,
-                  data.imageData.textures,
-                  data.context,
-                  data.context.forestShaderProgram,
-                  data.context.forestVAO,
-                  data.context.forestVBO);
+      forest_draw(data.gameStateForest, data.imageData.textures, data.context,
+                  data.context.forestShaderProgram, data.context.forestVAO, data.context.forestVBO);
       break;
     }
 
     case RESULTS:
       // full-screen for the results screen
       glViewport(0, 0, winW, winH);
-      results_draw(data.context,
-                   data.imageData.textures,
-                   data.totalElapsed,
-                   data.gameStateResults);
+      results_draw(data.context, data.imageData.textures, data.totalElapsed, data.gameStateResults);
       break;
 
     default:
@@ -466,17 +459,11 @@ static void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
 
 void results_init(GameStateResults &gameStateResults) {}
 
-void results_draw(RenderContext& context,
-                  Textures& textures,
-                  Uint32 totalElapsed,
-                  GameStateResults const& state) {
+void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapsed,
+                  GameStateResults const &state) {
   // 0) one orthographic for full-screen quads
   float ortho[16];
-  createOrthographicMatrix(
-      -MAP_WIDTH/2, MAP_WIDTH/2,
-       0.0f,       MAP_HEIGHT,
-      -100.0f,     100.0f,
-      ortho);
+  createOrthographicMatrix(-MAP_WIDTH / 2, MAP_WIDTH / 2, 0.0f, MAP_HEIGHT, -100.0f, 100.0f, ortho);
 
   //
   // 1) Background: forest shader with warp on failure, calm on success
@@ -488,12 +475,9 @@ void results_draw(RenderContext& context,
   glUniform1f(context.forestLocTime, totalElapsed / 1000.0f);
   glBindVertexArray(context.forestVAO);
   glBindTexture(GL_TEXTURE_2D, textures.forestTausta[0]);
-  float bgVerts[] = {
-    -MAP_WIDTH/2, MAP_HEIGHT, 0.0f, -1.0f,
-     MAP_WIDTH/2, MAP_HEIGHT, 1.0f, -1.0f,
-     MAP_WIDTH/2, 0.0f,       1.0f,  0.0f,
-    -MAP_WIDTH/2, 0.0f,       0.0f,  0.0f
-  };
+  float bgVerts[] = {-MAP_WIDTH / 2, MAP_HEIGHT, 0.0f,          -1.0f, MAP_WIDTH / 2, MAP_HEIGHT,
+                     1.0f,           -1.0f,      MAP_WIDTH / 2, 0.0f,  1.0f,          0.0f,
+                     -MAP_WIDTH / 2, 0.0f,       0.0f,          0.0f};
   glBindBuffer(GL_ARRAY_BUFFER, context.forestVBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(bgVerts), bgVerts);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -516,12 +500,8 @@ void results_draw(RenderContext& context,
     glUniform4f(clrLoc, 0.5f, 0.0f, 0.0f, 0.2f);
   }
   glBindVertexArray(context.textVAO);
-  float cover[] = {
-    0.0f,      MAP_HEIGHT, 0.0f, 0.0f,
-    MAP_WIDTH, MAP_HEIGHT, 1.0f, 0.0f,
-    MAP_WIDTH, 0.0f,       1.0f, 1.0f,
-    0.0f,      0.0f,       0.0f, 1.0f
-  };
+  float cover[] = {0.0f,      MAP_HEIGHT, 0.0f, 0.0f, MAP_WIDTH, MAP_HEIGHT, 1.0f, 0.0f,
+                   MAP_WIDTH, 0.0f,       1.0f, 1.0f, 0.0f,      0.0f,       0.0f, 1.0f};
   glBindBuffer(GL_ARRAY_BUFFER, context.textVBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(cover), cover);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -540,12 +520,10 @@ void results_draw(RenderContext& context,
   createTranslationMatrix(0.0f, MAP_HEIGHT / 4.0f, 0.0f, model);
   glUniformMatrix4fv(context.forestLocModel, 1, GL_FALSE, model);
   glBindTexture(GL_TEXTURE_2D, textures.forestSartre[0]);
-  float quad[] = {
-    -SARTRE_WIDTH/2,  SARTRE_HEIGHT/2, 0.0f, 0.0f,
-     SARTRE_WIDTH/2,  SARTRE_HEIGHT/2, 1.0f, 0.0f,
-     SARTRE_WIDTH/2, -SARTRE_HEIGHT/2, 1.0f, 1.0f,
-    -SARTRE_WIDTH/2, -SARTRE_HEIGHT/2, 0.0f, 1.0f
-  };
+  float quad[] = {-SARTRE_WIDTH / 2, SARTRE_HEIGHT / 2,  0.0f, 0.0f,
+                  SARTRE_WIDTH / 2,  SARTRE_HEIGHT / 2,  1.0f, 0.0f,
+                  SARTRE_WIDTH / 2,  -SARTRE_HEIGHT / 2, 1.0f, 1.0f,
+                  -SARTRE_WIDTH / 2, -SARTRE_HEIGHT / 2, 0.0f, 1.0f};
   glBindBuffer(GL_ARRAY_BUFFER, context.forestVBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -556,29 +534,26 @@ void results_draw(RenderContext& context,
   //
   glUseProgram(context.textShaderProgram);
   glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, ortho);
-  SDL_Color white{255,255,255,255};
+  SDL_Color white{255, 255, 255, 255};
 
   // Top summary line with actual page‐count
-  std::string summary = 
-    "Sartre onnistuu kirjoittamaan " + std::to_string(state.pages_collected) +
-    " sivua ennen kuin inhottavat asiat lopulta saavat hänet kiinni.";
-  renderText(context.font, summary, white,
-             context.textShaderProgram, context.textVAO, context.textVBO,
-             200.0f, MAP_HEIGHT - 50.0f, 60);
+  std::string summary = "Sartre onnistuu kirjoittamaan " + std::to_string(state.pages_collected) +
+                        " sivua ennen kuin inhottavat asiat lopulta saavat hänet kiinni.";
+  renderText(context.font, summary, white, context.textShaderProgram, context.textVAO,
+             context.textVBO, 200.0f, MAP_HEIGHT - 50.0f, 60);
 
   // Then the old “success” / “failure” block, tweaked slightly:
   if (state.success) {
     renderText(context.font,
-               "Kaikesta huolimatta kirja tulee valmiiksi. " +
-                 std::to_string(PAGE_GOAL) +
-                 "-sivuinen La Nausée julkaistaan vuonna 1938.",
-               white, context.textShaderProgram, context.textVAO, context.textVBO,
-               300.0f, 1000.0f, 50);
+               "Kaikesta huolimatta kirja tulee valmiiksi. " + std::to_string(PAGE_GOAL) +
+                   "-sivuinen La Nausée julkaistaan vuonna 1938.",
+               white, context.textShaderProgram, context.textVAO, context.textVBO, 300.0f, 1000.0f,
+               50);
   } else {
     renderText(context.font,
                "Sartre saattoi olla olemassa, mutta entäpä kirja? On niin kauhean inhottavaa.",
-               white, context.textShaderProgram, context.textVAO, context.textVBO,
-               300.0f, 1000.0f, 50);
+               white, context.textShaderProgram, context.textVAO, context.textVBO, 300.0f, 1000.0f,
+               50);
   }
 }
 
@@ -587,12 +562,13 @@ void results_update(GameStateResults &gameStateResults, Uint32 totalElapsed, flo
 
 void menu_init(GameStateMenu &gameStateMenu) {}
 
-void menu_draw(RenderContext& context, Textures& textures) {
+void menu_draw(RenderContext &context, Textures &textures) {
   // 1. Draw the forest background using the forest shader (no warp, no nausea)
   glUseProgram(context.forestShaderProgram);
 
   float orthoMatrix[16];
-  createOrthographicMatrix(-MAP_WIDTH / 2, MAP_WIDTH / 2, 0.0f, MAP_HEIGHT, -100.0f, 100.0f, orthoMatrix);
+  createOrthographicMatrix(-MAP_WIDTH / 2, MAP_WIDTH / 2, 0.0f, MAP_HEIGHT, -100.0f, 100.0f,
+                           orthoMatrix);
   glUniformMatrix4fv(context.forestLocProjection, 1, GL_FALSE, orthoMatrix);
 
   // Model matrix: identity (background at origin)
@@ -630,7 +606,7 @@ void menu_draw(RenderContext& context, Textures& textures) {
   glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, textOrtho);
 
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, textures.forestTausta[0]); // still bound, but not sampled
+  glBindTexture(GL_TEXTURE_2D, textures.forestTausta[0]);  // still bound, but not sampled
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -639,12 +615,8 @@ void menu_draw(RenderContext& context, Textures& textures) {
   GLint textColorLoc = glGetUniformLocation(context.textShaderProgram, "textColor");
   glUniform4f(textColorLoc, 0.0f, 0.0f, 0.0f, 0.7f);
 
-  float blackQuadVerts[] = {
-      0.0f,      MAP_HEIGHT, 0.0f, 0.0f,
-      MAP_WIDTH, MAP_HEIGHT, 1.0f, 0.0f,
-      MAP_WIDTH, 0.0f,       1.0f, 1.0f,
-      0.0f,      0.0f,       0.0f, 1.0f
-  };
+  float blackQuadVerts[] = {0.0f,      MAP_HEIGHT, 0.0f, 0.0f, MAP_WIDTH, MAP_HEIGHT, 1.0f, 0.0f,
+                            MAP_WIDTH, 0.0f,       1.0f, 1.0f, 0.0f,      0.0f,       0.0f, 1.0f};
   glBindVertexArray(context.textVAO);
   glBindBuffer(GL_ARRAY_BUFFER, context.textVBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(blackQuadVerts), blackQuadVerts);
@@ -659,9 +631,11 @@ void menu_draw(RenderContext& context, Textures& textures) {
       "Jean-Paul Sartre istuu metsän keskellä, lehtien kahistessa ympärillään, "
       "ja kirjoittaa kirjaansa, kun äkkiä metsän syvyyksistä alkaa hiipiä "
       "häiritseviä varjoja..";
-  renderText(context.font, intro, white, context.textShaderProgram, context.textVAO, context.textVBO, 300.0f, 1300.0f, 40);
+  renderText(context.font, intro, white, context.textShaderProgram, context.textVAO,
+             context.textVBO, 300.0f, 1300.0f, 40);
 
-  renderText(context.font, "Jatka näpsäyttämällä entteriä", white, context.textShaderProgram, context.textVAO, context.textVBO, 600.0f, 500.0f, 0);
+  renderText(context.font, "Jatka näpsäyttämällä entteriä", white, context.textShaderProgram,
+             context.textVAO, context.textVBO, 600.0f, 500.0f, 0);
 }
 
 void menu_update(GameStateMenu &gameStateMenu, Uint32 totalElapsed, float deltaTime,
