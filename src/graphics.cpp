@@ -200,6 +200,15 @@ void renderText(RenderContext& context,
 
   // 5) draw that quad
   glUseProgram(shader);
+  // — set textColor uniform from SDL_Color (r,g,b,a in [0..255])
+  {
+    GLfloat fr = color.r / 255.0f;
+    GLfloat fg = color.g / 255.0f;
+    GLfloat fb = color.b / 255.0f;
+    GLfloat fa = color.a / 255.0f;
+    GLint loc = glGetUniformLocation(shader, "textColor");
+    glUniform4f(loc, fr, fg, fb, fa);
+  }
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, e.texture);
   float verts[16] = {
