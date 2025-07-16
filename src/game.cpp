@@ -380,75 +380,22 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   // Disable depth test not to distract others
   glDisable(GL_DEPTH_TEST);
 
-  // --- Render Page Count Text and Nausea Text using cached textures ---
-
-  // Set up the orthographic projection for the text rendering (top-left corner)
-  float textOrthoMatrix[16];
-  createOrthographicMatrix(0.0f, MAP_WIDTH, 0.0f, MAP_HEIGHT, -1.0f, 1.0f, textOrthoMatrix);
-
-  // Use the text shader program
+  // --- Render Page Count Text and Nausea Text (using our standard text pipeline) ---
+  float textOrtho[16];
+  createOrthographicMatrix(0.0f, MAP_WIDTH, 0.0f, MAP_HEIGHT, -1.0f, 1.0f, textOrtho);
   glUseProgram(context.textShaderProgram);
-
-  // Pass the projection matrix to the text shader (using cached location)
-  glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, textOrthoMatrix);
-
-  // make sure we draw our forest text in white:
-  glUniform4f(context.textLocTextColor, 1.0f, 1.0f, 1.0f, 1.0f);
-  // bind the sampler to texture unit 0 (you do this per-quad below as well,
-  // but it’s safe / slightly more efficient to do it once here)
-  glUniform1i(context.textLocTextTexture, 0);
-
-  // Helper lambda to update/upload text texture if value changed, then draw
-  auto uploadIfChanged = [&](int currentValue,
-                             int& lastValue,
-                             GLuint& tex,
-                             int& outW, int& outH,
-                             const std::string& prefix,
-                             float x, float y)
-  {
-    if (currentValue != lastValue) {
-      // 1) regen SDL surface once
-      std::string txt = prefix + std::to_string(currentValue);
-      SDL_Surface* surf = TTF_RenderUTF8_Blended(
-          context.font, txt.c_str(), SDL_Color{255,255,255,255});
-      // assume 32bit RGBA; get its w/h
-      outW = surf->w; outH = surf->h;
-
-      // 2) create or update GL texture
-      if (!tex) {
-        glGenTextures(1, &tex);
-        glBindTexture(GL_TEXTURE_2D, tex);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      } else {
-        glBindTexture(GL_TEXTURE_2D, tex);
-      }
-      glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, outW, outH, 0,
-                   GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels);
-      SDL_FreeSurface(surf);
-      lastValue = currentValue;
-    }
-
-    // 3) draw it as a quad (reuse your draw_textured_quad):
-    glUniform1i(context.textLocTextTexture, 0);
-    draw_textured_quad(x, y, float(outW), float(outH),
-                       tex, context.textLocProjection, context.textVBO);
-  };
-
-  uploadIfChanged(gameStateForest.pages_collected,
-                  context.lastPagesRendered,
-                  context.textTexturePages,
-                  context.textW_pages,
-                  context.textH_pages,
-                  "SIVUJA: ", 50.0f, MAP_HEIGHT - 50.0f);
-
-  uploadIfChanged(gameStateForest.nausea_hits,
-                  context.lastNauseaRendered,
-                  context.textTextureNausea,
-                  context.textW_nausea,
-                  context.textH_nausea,
-                  "INHOA: ", 50.0f, MAP_HEIGHT - 100.0f);
+  glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, textOrtho);
+  SDL_Color white = {255,255,255,255};
+  renderText(context.font,
+             std::string("SIVUJA: ") + std::to_string(gameStateForest.pages_collected),
+             white,
+             context.textShaderProgram, context.textVAO, context.textVBO,
+             50.0f, MAP_HEIGHT - 50.0f);
+  renderText(context.font,
+             std::string("INHOA: ") + std::to_string(gameStateForest.nausea_hits),
+             white,
+             context.textShaderProgram, context.textVAO, context.textVBO,
+             50.0f, MAP_HEIGHT - 100.0f);
 }
 
 static void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameStateForest,
