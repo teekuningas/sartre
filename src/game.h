@@ -14,15 +14,10 @@ void menu_update(GameStateMenu& state, Uint32 totalElapsed, float deltaTime, Sur
                  InputResult& result);
 void menu_draw(TTF_Font* font, GLuint shaderProgram, GLuint VAO, GLuint VBO);
 
- // --- Forest state ---
+// --- Forest state ---
 void forest_init(GameStateForest& state);
-void forest_update(
-    GameStateForest& state,
-    RenderContext& context,
-    Uint32 totalElapsed,
-    float   deltaTime,
-    Surfaces&      surfaces,
-    InputResult&  result);
+void forest_update(GameStateForest& state, RenderContext& context, Uint32 totalElapsed,
+                   float deltaTime, Surfaces& surfaces, InputResult& result);
 void forest_draw(GameStateForest& state, Textures& textures, RenderContext& context,
                  GLuint shaderProgram, GLuint VAO, GLuint VBO);
 

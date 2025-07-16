@@ -24,7 +24,7 @@ struct GameObject {
   GLfloat amplitude;
   GLfloat frequency;
   bool collected;
-  Uint32 collectedAt;      // <— time when we picked it up, used to delay respawn
+  Uint32 collectedAt;  // <— time when we picked it up, used to delay respawn
   GameObjectType type;
 };
 
@@ -77,8 +77,8 @@ struct RenderContext {
   SDL_GLContext glContext = nullptr;
   TTF_Font* font = nullptr;
   Mix_Music* backgroundMusic = nullptr;
-  Mix_Chunk* scribbleSound  = nullptr;
-  Mix_Chunk* nauseaSound      = nullptr;
+  Mix_Chunk* scribbleSound = nullptr;
+  Mix_Chunk* nauseaSound = nullptr;
 
   GLuint forestVAO;
   GLuint forestVBO;

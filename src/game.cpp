@@ -1,39 +1,29 @@
 #include "game.h"
 
-#include <cmath>       // for fabs()
+#include <cmath>  // for fabs()
 
 // --- AABB overlap test with optional extra margin on both axes ---
-static bool aabbOverlap(GLfloat x1, GLfloat y1, GLfloat w1, GLfloat h1,
-                        GLfloat x2, GLfloat y2, GLfloat w2, GLfloat h2,
-                        float extra = 0.0f)
-{
+static bool aabbOverlap(GLfloat x1, GLfloat y1, GLfloat w1, GLfloat h1, GLfloat x2, GLfloat y2,
+                        GLfloat w2, GLfloat h2, float extra = 0.0f) {
   float halfX = w1 * 0.5f + w2 * 0.5f + extra;
   float halfY = h1 * 0.5f + h2 * 0.5f + extra;
   return fabs(x1 - x2) < halfX && fabs(y1 - y2) < halfY;
 }
 
 #include "constants.h"
-#include "graphics.h"
 #include "engine.h"
+#include "graphics.h"
 
 // collision-map helper (forward-declare so forest_update can call it)
-static bool isPixelBlack(SDL_Surface* surface, int x, int y);
+static bool isPixelBlack(SDL_Surface *surface, int x, int y);
 
 // forward‐declared so forest_update can see it
-static void update_game_object(GameObject &obj,
-                               Sartre &sartre,
-                               GameStateForest &gameStateForest,
-                               RenderContext &context,
-                               Uint32 totalElapsed);
+static void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameStateForest,
+                               RenderContext &context, Uint32 totalElapsed);
 
- // --- update loop for the FOREST state ---
-void forest_update(GameStateForest&   gameStateForest,
-                   RenderContext&      context,
-                   Uint32              totalElapsed,
-                   float               deltaTime,
-                   Surfaces&           surfaces,
-                   InputResult&        inputResult)
-{
+// --- update loop for the FOREST state ---
+void forest_update(GameStateForest &gameStateForest, RenderContext &context, Uint32 totalElapsed,
+                   float deltaTime, Surfaces &surfaces, InputResult &inputResult) {
   // 1) tick all objects (they may play SFX on collision):
   Sartre &sartre = gameStateForest.sartre;
   for (auto &obj : gameStateForest.objects) {
@@ -44,51 +34,44 @@ void forest_update(GameStateForest&   gameStateForest,
   sartre.animIdx = (totalElapsed % 1000) / (1000 / sartre.animSize);
 
   // 3) read keyboard for left/right/jump
-  const Uint8* keystate = SDL_GetKeyboardState(NULL);
-  if (keystate[SDL_SCANCODE_RIGHT] &&
-      sartre.x < MAP_WIDTH/2 - sartre.width/2)
-  {
+  const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+  if (keystate[SDL_SCANCODE_RIGHT] && sartre.x < MAP_WIDTH / 2 - sartre.width / 2) {
     sartre.x += deltaTime * SARTRE_VX;
   }
-  if (keystate[SDL_SCANCODE_LEFT] &&
-      sartre.x > -MAP_WIDTH/2 + sartre.width/2)
-  {
+  if (keystate[SDL_SCANCODE_LEFT] && sartre.x > -MAP_WIDTH / 2 + sartre.width / 2) {
     sartre.x -= deltaTime * SARTRE_VX;
   }
   if (!sartre.jump && keystate[SDL_SCANCODE_UP]) {
     sartre.jump = true;
-    sartre.vy   = SARTRE_JUMP_VELOCITY;
+    sartre.vy = SARTRE_JUMP_VELOCITY;
   }
 
   // 4) gravity & platform collision
   float predictedY = sartre.y + deltaTime * sartre.vy;
-  int px    = int(sartre.x + MAP_WIDTH/2);
-  int py    = int(sartre.y - sartre.height/2 + sartre.height/8);
-  int pyp   = int(predictedY - sartre.height/2 + sartre.height/8 - 2);
+  int px = int(sartre.x + MAP_WIDTH / 2);
+  int py = int(sartre.y - sartre.height / 2 + sartre.height / 8);
+  int pyp = int(predictedY - sartre.height / 2 + sartre.height / 8 - 2);
 
   // hit the ground?
-  if (sartre.y >= sartre.height/2 + EARTH_HEIGHT &&
-      predictedY < sartre.height/2 + EARTH_HEIGHT)
-  {
+  if (sartre.y >= sartre.height / 2 + EARTH_HEIGHT &&
+      predictedY < sartre.height / 2 + EARTH_HEIGHT) {
     sartre.jump = false;
-    sartre.vy   = 0;
+    sartre.vy = 0;
   }
   // hit a platform from above?
   else if (predictedY < sartre.y &&
            !isPixelBlack(surfaces.forestCollisionMap, px, MAP_HEIGHT - py) &&
-            isPixelBlack(surfaces.forestCollisionMap, px, MAP_HEIGHT - pyp))
-  {
+           isPixelBlack(surfaces.forestCollisionMap, px, MAP_HEIGHT - pyp)) {
     sartre.jump = false;
-    sartre.vy   = 0;
-  }
-  else {
-    sartre.y  = predictedY;
+    sartre.vy = 0;
+  } else {
+    sartre.y = predictedY;
     sartre.vy = sartre.vy - deltaTime * SARTRE_G;
   }
 
   // 5) end‐of‐frame: transition if too many nasty collisions
   if (gameStateForest.nausea_hits >= NUM_NAUSEA_LIMIT) {
-    inputResult.transition   = true;
+    inputResult.transition = true;
     inputResult.transitionTo = RESULTS;
   }
 }
@@ -106,11 +89,8 @@ static bool isPixelBlack(SDL_Surface *surface, int x, int y) {
 
 //
 // now takes currentElapsed (in ms) so we can align the sine‐wave
-static void spawn_object_avoiding_sartre(GameObject &obj,
-                                         Sartre const &sartre,
-                                         GameObjectType type,
-                                         Uint32 currentElapsed)
-{
+static void spawn_object_avoiding_sartre(GameObject &obj, Sartre const &sartre, GameObjectType type,
+                                         Uint32 currentElapsed) {
   obj.type = type;
   // we’ll keep trying random x|ymid|phase until the *actual* first‐frame y
   // (ymid + A·sin(ω*(t+phase))) does not overlap Sartre.
@@ -118,29 +98,25 @@ static void spawn_object_avoiding_sartre(GameObject &obj,
   float candX, candYmid, candVx, candPhase, candY;
   do {
     // 1) pick a midpoint
-    candX    = (GLfloat)((rand() % (MAP_WIDTH - (int)obj.width))
-                         - (MAP_WIDTH/2) + obj.width/2);
-    candYmid = (GLfloat)((rand() % (MAP_HEIGHT - (int)obj.height - (MAP_HEIGHT/4)))
-                         + (MAP_HEIGHT/8) + obj.height/2);
+    candX = (GLfloat)((rand() % (MAP_WIDTH - (int)obj.width)) - (MAP_WIDTH / 2) + obj.width / 2);
+    candYmid = (GLfloat)((rand() % (MAP_HEIGHT - (int)obj.height - (MAP_HEIGHT / 4))) +
+                         (MAP_HEIGHT / 8) + obj.height / 2);
     // 2) pick speed & sine phase
-    candVx   = ((((float)(rand() % 1000))/1000.0f)*1.5f + 0.5f)
-               * 0.3f * (rand()%2 ? 1.0f : -1.0f);
-    candPhase = (((float)(rand() % 1000))/1000.0f) * 2.0f * 3.14159265f;
+    candVx =
+        ((((float)(rand() % 1000)) / 1000.0f) * 1.5f + 0.5f) * 0.3f * (rand() % 2 ? 1.0f : -1.0f);
+    candPhase = (((float)(rand() % 1000)) / 1000.0f) * 2.0f * 3.14159265f;
     // 3) compute where it *will* actually draw on this frame
-    candY = candYmid
-            + obj.amplitude
-            * sinf(obj.frequency * (currentElapsed/1000.0f + candPhase));
-  } while (aabbOverlap(candX, candY, obj.width, obj.height,
-                       sartre.x, sartre.y, sartre.width, sartre.height,
-                       spawnMargin));
+    candY = candYmid + obj.amplitude * sinf(obj.frequency * (currentElapsed / 1000.0f + candPhase));
+  } while (aabbOverlap(candX, candY, obj.width, obj.height, sartre.x, sartre.y, sartre.width,
+                       sartre.height, spawnMargin));
   // now commit
-  obj.x     = candX;
-  obj.ymid  = candYmid;
-  obj.vx    = candVx;
+  obj.x = candX;
+  obj.ymid = candYmid;
+  obj.vx = candVx;
   obj.phase = candPhase;
-  obj.y     = candY;
-  obj.collected   = false;
-  obj.collectedAt = 0; 
+  obj.y = candY;
+  obj.collected = false;
+  obj.collectedAt = 0;
 }
 
 void run_game_frame(GameLoopData &data) {
@@ -156,12 +132,8 @@ void run_game_frame(GameLoopData &data) {
                   inputResult);
       break;
     case FOREST:
-      forest_update(data.gameStateForest,
-                    data.context,
-                    data.totalElapsed,
-                    delta,
-                    data.imageData.surfaces,
-                    inputResult);
+      forest_update(data.gameStateForest, data.context, data.totalElapsed, delta,
+                    data.imageData.surfaces, inputResult);
       break;
     case RESULTS:
       results_update(data.gameStateResults, data.totalElapsed, delta, data.imageData.surfaces,
@@ -302,17 +274,13 @@ void forest_init(GameStateForest &gameStateForest) {
 
   for (int i = 0; i < NUM_PAGES; ++i) {
     init_game_object(gameStateForest.objects[i], PAGE);
-    spawn_object_avoiding_sartre(gameStateForest.objects[i],
-                                 gameStateForest.sartre,
-                                 PAGE,
+    spawn_object_avoiding_sartre(gameStateForest.objects[i], gameStateForest.sartre, PAGE,
                                  /* currentElapsed = */ 0u);
   }
   for (int i = NUM_PAGES; i < TOTAL_GAME_OBJECTS; ++i) {
     GameObjectType t = (rand() % 2 == 0) ? CHESTNUT : PIPE;
     init_game_object(gameStateForest.objects[i], t);
-    spawn_object_avoiding_sartre(gameStateForest.objects[i],
-                                 gameStateForest.sartre,
-                                 t,
+    spawn_object_avoiding_sartre(gameStateForest.objects[i], gameStateForest.sartre, t,
                                  /* currentElapsed = */ 0u);
   }
 }
@@ -424,19 +392,13 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
              context.textVBO, 50.0f, MAP_HEIGHT - 100.0f);  // Position near top-left
 }
 
-static void update_game_object(GameObject &obj,
-                        Sartre &sartre,
-                        GameStateForest &gameStateForest,
-                        RenderContext& context,
-                        Uint32 totalElapsed)
-{
+static void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameStateForest,
+                               RenderContext &context, Uint32 totalElapsed) {
   // if it's already collected, wait 1 second then respawn:
   if (obj.collected) {
     if (totalElapsed - obj.collectedAt >= 1000) {
       // choose a new type for non-page objects
-      GameObjectType newType =
-          (obj.type == PAGE ? PAGE
-                            : ((rand() % 2 == 0) ? CHESTNUT : PIPE));
+      GameObjectType newType = (obj.type == PAGE ? PAGE : ((rand() % 2 == 0) ? CHESTNUT : PIPE));
       // align new spawn with the wave at this exact time
       spawn_object_avoiding_sartre(obj, sartre, newType, totalElapsed);
     }
@@ -445,22 +407,20 @@ static void update_game_object(GameObject &obj,
 
   // 1) move along the sine-wave trajectory
   obj.x += obj.vx;
-  obj.y = obj.ymid + obj.amplitude *
-          sinf(obj.frequency * (totalElapsed/1000.0f + obj.phase));
+  obj.y = obj.ymid + obj.amplitude * sinf(obj.frequency * (totalElapsed / 1000.0f + obj.phase));
 
   // 2) wrap‐around logic …
-  if (obj.x > MAP_WIDTH/2 + obj.width && obj.vx > 0)
-    obj.x = -MAP_WIDTH/2 - obj.width/2;
-  else if (obj.x < -MAP_WIDTH/2 - obj.width && obj.vx < 0)
-    obj.x =  MAP_WIDTH/2 + obj.width/2;
+  if (obj.x > MAP_WIDTH / 2 + obj.width && obj.vx > 0)
+    obj.x = -MAP_WIDTH / 2 - obj.width / 2;
+  else if (obj.x < -MAP_WIDTH / 2 - obj.width && obj.vx < 0)
+    obj.x = MAP_WIDTH / 2 + obj.width / 2;
 
   // 3) collision test
   // unified AABB test, no extra margin now that we’re detecting real collisions
-  if (aabbOverlap(obj.x, obj.y, obj.width, obj.height,
-                  sartre.x, sartre.y, sartre.width, sartre.height))
-  {
-    obj.collected    = true;
-    obj.collectedAt  = totalElapsed;    // start 1 second timer
+  if (aabbOverlap(obj.x, obj.y, obj.width, obj.height, sartre.x, sartre.y, sartre.width,
+                  sartre.height)) {
+    obj.collected = true;
+    obj.collectedAt = totalElapsed;  // start 1 second timer
 
     // ── play the appropriate collision sound
     if (obj.type == PAGE) {
@@ -477,7 +437,6 @@ static void update_game_object(GameObject &obj,
   }
 }
 
-
 void results_init(GameStateResults &gameStateResults) {}
 
 void results_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint VBO) {
@@ -493,8 +452,8 @@ void results_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint V
   glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, orthoMatrix);
 
   SDL_Color white = {255, 255, 255, 255};
-  renderText(font, "Ei ole filosofilla aina helppoa!", white, textShaderProgram, VAO, VBO,
-             300.0f, 1000.0f);
+  renderText(font, "Ei ole filosofilla aina helppoa!", white, textShaderProgram, VAO, VBO, 300.0f,
+             1000.0f);
   renderText(font, "Jatka näpsäyttämällä entteriä", white, textShaderProgram, VAO, VBO, 600.0f,
              500.0f);
 }
