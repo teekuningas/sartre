@@ -84,7 +84,11 @@ void run_game_frame(GameLoopData &data) {
                   inputResult);
       break;
     case FOREST:
-      forest_update(data.context, data.totalElapsed, delta, data.imageData.surfaces,
+      forest_update(data.gameStateForest,
+                    data.context,
+                    data.totalElapsed,
+                    delta,
+                    data.imageData.surfaces,
                     inputResult);
       break;
     case RESULTS:
