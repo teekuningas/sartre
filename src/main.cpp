@@ -62,14 +62,12 @@ void main_loop_iteration(GameLoopData* pdata) {
     // cache forest‐shader uniforms
     data.context.forestLocProjection =
         glGetUniformLocation(data.context.forestShaderProgram, "projection");
-    data.context.forestLocModel      =
-        glGetUniformLocation(data.context.forestShaderProgram, "model");
+    data.context.forestLocModel = glGetUniformLocation(data.context.forestShaderProgram, "model");
     data.context.forestLocOurTexture =
         glGetUniformLocation(data.context.forestShaderProgram, "ourTexture");
-    data.context.forestLocNausea     =
+    data.context.forestLocNausea =
         glGetUniformLocation(data.context.forestShaderProgram, "u_nausea");
-    data.context.forestLocTime       =
-        glGetUniformLocation(data.context.forestShaderProgram, "u_time");
+    data.context.forestLocTime = glGetUniformLocation(data.context.forestShaderProgram, "u_time");
     createShaderBuffers(data.context.forestVAO, data.context.forestVBO);
 
     createProgram(textVertexShaderSource, textFragmentShaderSource, data.context.textShaderProgram);

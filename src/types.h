@@ -44,7 +44,7 @@ struct GameStateForest {
   std::vector<GameObject> objects;
   int pages_collected;
   int nausea_hits;
-  float warpTime;            // ← add this
+  float warpTime;  // ← add this
 };
 
 struct GameStateMenu {};
@@ -85,19 +85,19 @@ struct RenderContext {
   GLuint forestVBO;
 
   // ---- forest shader (cached)
-  GLuint  forestShaderProgram;
-  GLint   forestLocProjection;
-  GLint   forestLocModel;
-  GLint   forestLocOurTexture;
-  GLint   forestLocNausea;
-  GLint   forestLocTime;
+  GLuint forestShaderProgram;
+  GLint forestLocProjection;
+  GLint forestLocModel;
+  GLint forestLocOurTexture;
+  GLint forestLocNausea;
+  GLint forestLocTime;
 
   GLuint textVAO;
   GLuint textVBO;
 
   // ---- text shader (cached)
-  GLuint  textShaderProgram;
-  GLint   textLocProjection;
+  GLuint textShaderProgram;
+  GLint textLocProjection;
 };
 
 struct WindowParams {

@@ -24,10 +24,9 @@ static void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
 // --- update loop for the FOREST state ---
 void forest_update(GameStateForest &gameStateForest, RenderContext &context, Uint32 totalElapsed,
                    float deltaTime, Surfaces &surfaces, InputResult &inputResult) {
-  // advance our warp‐phase at 3 radians/sec, keep it in [0,2π)
-  gameStateForest.warpTime += deltaTime * 3.0f;
-  if (gameStateForest.warpTime >= 6.28318530718f)
-    gameStateForest.warpTime -= 6.28318530718f;
+  // advance our warp‐phase at 2 radians/sec, keep it in [0,2π)
+  gameStateForest.warpTime += deltaTime * 2.0f;
+  if (gameStateForest.warpTime >= 6.28318530718f) gameStateForest.warpTime -= 6.28318530718f;
 
   // 1) tick all objects (they may play SFX on collision):
   Sartre &sartre = gameStateForest.sartre;
@@ -275,8 +274,8 @@ void forest_init(GameStateForest &gameStateForest) {
 
   gameStateForest.objects.resize(TOTAL_GAME_OBJECTS);
   gameStateForest.pages_collected = 0;
-  gameStateForest.nausea_hits    = 0;
-  gameStateForest.warpTime      = 0.0f;    // ← init here
+  gameStateForest.nausea_hits = 0;
+  gameStateForest.warpTime = 0.0f;  // ← init here
 
   for (int i = 0; i < NUM_PAGES; ++i) {
     init_game_object(gameStateForest.objects[i], PAGE);
@@ -322,11 +321,10 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   // model will be set per‐quad in draw_textured_quad
 
   // 2) texture unit & nausea/time
-  glUniform1i (context.forestLocOurTexture, 0);
-  float nauseaLevel = float(gameStateForest.nausea_hits)
-                    / float(NUM_NAUSEA_LIMIT);
-  glUniform1f (context.forestLocNausea, nauseaLevel);
-  glUniform1f (context.forestLocTime,   gameStateForest.warpTime);
+  glUniform1i(context.forestLocOurTexture, 0);
+  float nauseaLevel = float(gameStateForest.nausea_hits) / float(NUM_NAUSEA_LIMIT);
+  glUniform1f(context.forestLocNausea, nauseaLevel);
+  glUniform1f(context.forestLocTime, gameStateForest.warpTime);
 
   // Enable depth test
   glEnable(GL_DEPTH_TEST);
@@ -338,7 +336,8 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   // Draw the Sartre character
   Sartre &sartre = gameStateForest.sartre;
   GLuint sartreTexture = textures.forestSartre[sartre.animIdx];
-  draw_textured_quad(sartre.x, sartre.y, sartre.width, sartre.height, sartreTexture, context.forestLocModel, context.forestVBO);
+  draw_textured_quad(sartre.x, sartre.y, sartre.width, sartre.height, sartreTexture,
+                     context.forestLocModel, context.forestVBO);
 
   for (auto &obj : gameStateForest.objects) {
     if (obj.collected) {
@@ -357,7 +356,8 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
         objTexture = textures.forestPipe;
         break;
     }
-    draw_textured_quad(obj.x, obj.y, obj.width, obj.height, objTexture, context.forestLocModel, context.forestVBO);
+    draw_textured_quad(obj.x, obj.y, obj.width, obj.height, objTexture, context.forestLocModel,
+                       context.forestVBO);
   }
 
   // Draw the Background
@@ -385,17 +385,14 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   createOrthographicMatrix(0.0f, MAP_WIDTH, 0.0f, MAP_HEIGHT, -1.0f, 1.0f, textOrtho);
   glUseProgram(context.textShaderProgram);
   glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, textOrtho);
-  SDL_Color white = {255,255,255,255};
+  SDL_Color white = {255, 255, 255, 255};
   renderText(context.font,
-             std::string("SIVUJA: ") + std::to_string(gameStateForest.pages_collected),
-             white,
-             context.textShaderProgram, context.textVAO, context.textVBO,
-             50.0f, MAP_HEIGHT - 50.0f);
-  renderText(context.font,
-             std::string("INHOA: ") + std::to_string(gameStateForest.nausea_hits),
-             white,
-             context.textShaderProgram, context.textVAO, context.textVBO,
-             50.0f, MAP_HEIGHT - 100.0f);
+             std::string("SIVUJA: ") + std::to_string(gameStateForest.pages_collected), white,
+             context.textShaderProgram, context.textVAO, context.textVBO, 50.0f,
+             MAP_HEIGHT - 50.0f);
+  renderText(context.font, std::string("INHOA: ") + std::to_string(gameStateForest.nausea_hits),
+             white, context.textShaderProgram, context.textVAO, context.textVBO, 50.0f,
+             MAP_HEIGHT - 100.0f);
 }
 
 static void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameStateForest,
