@@ -551,11 +551,8 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
     glBindTexture(GL_TEXTURE_2D, textures.forestSartre[0]);
     // doubled‐size quad
     float quad[] = {
-      -SARTRE_WIDTH,  SARTRE_HEIGHT,  0.0f, 0.0f,
-       SARTRE_WIDTH,  SARTRE_HEIGHT,  1.0f, 0.0f,
-       SARTRE_WIDTH, -SARTRE_HEIGHT,  1.0f, 1.0f,
-      -SARTRE_WIDTH, -SARTRE_HEIGHT,  0.0f, 1.0f
-    };
+        -SARTRE_WIDTH, SARTRE_HEIGHT,  0.0f, 0.0f, SARTRE_WIDTH,  SARTRE_HEIGHT,  1.0f, 0.0f,
+        SARTRE_WIDTH,  -SARTRE_HEIGHT, 1.0f, 1.0f, -SARTRE_WIDTH, -SARTRE_HEIGHT, 0.0f, 1.0f};
     glBindBuffer(GL_ARRAY_BUFFER, context.forestVBO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
