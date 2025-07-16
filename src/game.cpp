@@ -407,10 +407,7 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
       context.font,
       std::string("Kirjoitettuja sivuja: ") + std::to_string(gameStateForest.pages_collected),
       white, context.textShaderProgram, context.textVAO, context.textVBO, 50.0f,
-      MAP_HEIGHT - 50.0f);
-  // renderText(context, context.font, std::string("INHOA: ") + std::to_string(gameStateForest.nausea_hits),
-  //            white, context.textShaderProgram, context.textVAO, context.textVBO, 50.0f,
-  //            MAP_HEIGHT - 100.0f);
+      MAP_HEIGHT - 50.0f, 0);
 }
 
 static void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameStateForest,
@@ -573,22 +570,14 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
   if (!state.success) {
     renderText(context,
                context.font, summary, white, context.textShaderProgram, context.textVAO,
-               context.textVBO, 200.0f, MAP_HEIGHT - 200.0f, 60);
-  }
-
-  if (state.success) {
+               context.textVBO, 200.0f, MAP_HEIGHT - 500.0f, 30);
+  } else {
     renderText(context,
                context.font,
                "Kaikista maailman inhottavista asioista huolimatta kirja tulee valmiiksi. "
                "251-sivuinen La Nausée julkaistaan vuonna 1938.",
                white, context.textShaderProgram, context.textVAO, context.textVBO, 300.0f,
-               MAP_HEIGHT - 500.0f, 50);
-  } else {
-    renderText(context,
-               context.font,
-               "Sartre saattoi olla olemassa, mutta entäpä kirja? On niin kauhean inhottavaa.",
-               white, context.textShaderProgram, context.textVAO, context.textVBO, 300.0f, 1000.0f,
-               50);
+               MAP_HEIGHT - 500.0f, 30);
   }
 }
 
@@ -667,7 +656,7 @@ void menu_draw(RenderContext &context, Textures &textures) {
       "ja kirjoittaa kirjaansa, kun äkkiä metsän syvyyksistä alkaa hiipiä "
       "häiritseviä varjoja..";
   renderText(context, context.font, intro, white, context.textShaderProgram, context.textVAO,
-             context.textVBO, 300.0f, 1300.0f, 40);
+             context.textVBO, 300.0f, 1300.0f, 30);
 
   renderText(context, context.font, "Jatka näpsäyttämällä entteriä", white, context.textShaderProgram,
              context.textVAO, context.textVBO, 600.0f, 500.0f, 0);
