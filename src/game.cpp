@@ -23,7 +23,7 @@ static void update_game_object(GameObject &obj,
                                RenderContext &context,
                                Uint32 totalElapsed);
 
-// --- update loop for the FOREST state ---
+ // --- update loop for the FOREST state ---
 void forest_update(GameStateForest&   gameStateForest,
                    RenderContext&      context,
                    Uint32              totalElapsed,
@@ -31,13 +31,62 @@ void forest_update(GameStateForest&   gameStateForest,
                    Surfaces&           surfaces,
                    InputResult&        inputResult)
 {
-  // For now we only need to tick objects (which will play SFX on collision).
+  // 1) tick all objects (they may play SFX on collision):
+  Sartre &sartre = gameStateForest.sartre;
   for (auto &obj : gameStateForest.objects) {
-    update_game_object(obj,
-                       gameStateForest.sartre,
-                       gameStateForest,
-                       context,
-                       totalElapsed);
+    update_game_object(obj, sartre, gameStateForest, context, totalElapsed);
+  }
+
+  // 2) advance Sartre’s animation
+  sartre.animIdx = (totalElapsed % 1000) / (1000 / sartre.animSize);
+
+  // 3) read keyboard for left/right/jump
+  const Uint8* keystate = SDL_GetKeyboardState(NULL);
+  if (keystate[SDL_SCANCODE_RIGHT] &&
+      sartre.x < MAP_WIDTH/2 - sartre.width/2)
+  {
+    sartre.x += deltaTime * SARTRE_VX;
+  }
+  if (keystate[SDL_SCANCODE_LEFT] &&
+      sartre.x > -MAP_WIDTH/2 + sartre.width/2)
+  {
+    sartre.x -= deltaTime * SARTRE_VX;
+  }
+  if (!sartre.jump && keystate[SDL_SCANCODE_UP]) {
+    sartre.jump = true;
+    sartre.vy   = SARTRE_JUMP_VELOCITY;
+  }
+
+  // 4) gravity & platform collision
+  float predictedY = sartre.y + deltaTime * sartre.vy;
+  int px    = int(sartre.x + MAP_WIDTH/2);
+  int py    = int(sartre.y - sartre.height/2 + sartre.height/8);
+  int pyp   = int(predictedY - sartre.height/2 + sartre.height/8 - 2);
+
+  // hit the ground?
+  if (sartre.y >= sartre.height/2 + EARTH_HEIGHT &&
+      predictedY < sartre.height/2 + EARTH_HEIGHT)
+  {
+    sartre.jump = false;
+    sartre.vy   = 0;
+  }
+  // hit a platform from above?
+  else if (predictedY < sartre.y &&
+           !isPixelBlack(surfaces.forestCollisionMap, px, MAP_HEIGHT - py) &&
+            isPixelBlack(surfaces.forestCollisionMap, px, MAP_HEIGHT - pyp))
+  {
+    sartre.jump = false;
+    sartre.vy   = 0;
+  }
+  else {
+    sartre.y  = predictedY;
+    sartre.vy = sartre.vy - deltaTime * SARTRE_G;
+  }
+
+  // 5) end‐of‐frame: transition if too many nasty collisions
+  if (gameStateForest.nausea_hits >= NUM_NAUSEOUS_OBJECTS) {
+    inputResult.transition   = true;
+    inputResult.transitionTo = RESULTS;
   }
 }
 
