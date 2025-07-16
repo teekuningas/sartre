@@ -180,20 +180,39 @@ void run_game_frame(GameLoopData &data) {
   }
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  // Re-set the GL viewport each mode so MENU/RESULTS fill the window
+  int winW, winH;
+  SDL_GetWindowSize(data.context.window, &winW, &winH);
   switch (data.gameMode) {
     case MENU:
+      // full-screen for the menu
+      glViewport(0, 0, winW, winH);
       menu_draw(data.context, data.imageData.textures);
       break;
-    case FOREST:
-      forest_draw(data.gameStateForest, data.imageData.textures, data.context,
-                  data.context.forestShaderProgram, data.context.forestVAO, data.context.forestVBO);
+
+    case FOREST: {
+      // letter-box a centered square for the 2D forest
+      int side = std::min(winW, winH);
+      glViewport((winW - side) / 2, (winH - side) / 2, side, side);
+      forest_draw(data.gameStateForest,
+                  data.imageData.textures,
+                  data.context,
+                  data.context.forestShaderProgram,
+                  data.context.forestVAO,
+                  data.context.forestVBO);
       break;
+    }
+
     case RESULTS:
+      // full-screen for the results screen
+      glViewport(0, 0, winW, winH);
       results_draw(data.context,
                    data.imageData.textures,
                    data.totalElapsed,
                    data.gameStateResults);
       break;
+
     default:
       break;
   }
