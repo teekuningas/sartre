@@ -160,28 +160,37 @@ void free_surfaces(Surfaces& surfaces) { SDL_FreeSurface(surfaces.forestCollisio
 
 void renderText(RenderContext& context, TTF_Font* font, const std::string& text, SDL_Color color,
                 GLuint shader, GLuint VAO, GLuint VBO, float x, float y, int wrapChars) {
-  // 1) build a cache key
+  // 0) if wrapping requested, split into words & lines, then recurse without wrapping
+  if (wrapChars > 0) {
+    std::istringstream iss(text);
+    std::string word, line;
+    std::vector<std::string> lines;
+    while (iss >> word) {
+      if (!line.empty() && line.size() + 1 + word.size() > (size_t)wrapChars) {
+        lines.push_back(line);
+        line = word;
+      } else {
+        if (!line.empty()) line += ' ';
+        line += word;
+      }
+    }
+    if (!line.empty()) lines.push_back(line);
+    int lineSkip = TTF_FontLineSkip(font);
+    for (size_t i = 0; i < lines.size(); ++i) {
+      // each line is treated as wrapChars==0
+      renderText(context, font, lines[i], color, shader, VAO, VBO,
+                 x, y - i * lineSkip, 0);
+    }
+    return;
+  }
+
+  // 1) build a cache key (now wrapChars==0)
   std::string key = text + "#" + std::to_string(wrapChars);
   auto it = context.textCache.find(key);
   RenderContext::TextCacheEntry e;
   if (it == context.textCache.end()) {
-    // 2) create an SDL_Surface (wrapped or not)
-    SDL_Surface* surf = nullptr;
-    if (wrapChars > 0) {
-      // convert wrapChars (characters) into a pixel width
-      int minx, maxx, miny, maxy, advance;
-      int cw;
-      if (TTF_GlyphMetrics(font, 'M', &minx, &maxx, &miny, &maxy, &advance) == 0) {
-        cw = advance;
-      } else {
-        // fallback to roughly half the font height
-        cw = TTF_FontHeight(font) / 2;
-      }
-      Uint32 wrapPixels = Uint32(wrapChars) * Uint32(cw);
-      surf = TTF_RenderUTF8_Blended_Wrapped(font, text.c_str(), color, wrapPixels);
-    } else {
-      surf = TTF_RenderUTF8_Blended(font, text.c_str(), color);
-    }
+    // 2) create an SDL_Surface with no wrapping
+    SDL_Surface* surf = TTF_RenderUTF8_Blended(font, text.c_str(), color);
     if (!surf) {
       printf("TTF error: %s\n", TTF_GetError());
       return;
