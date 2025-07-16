@@ -464,12 +464,12 @@ void results_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint V
     renderText(font,
                "Kirja siis tulee valmiiksi. 251-sivuinen Inho (La Nausée) julkaistaan vuonna 1938.",
                white, textShaderProgram, VAO, VBO,
-               300.0f, 1000.0f);
+               300.0f, 1000.0f, 40);
   } else {
     renderText(font,
                "Sartre saattoi olla olemassa, mutta entäpä kirja? On niin kauhean inhottavaa.",
                white, textShaderProgram, VAO, VBO,
-               300.0f, 1000.0f);
+               300.0f, 1000.0f, 40);
   }
 }
 

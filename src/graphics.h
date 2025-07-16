@@ -34,6 +34,6 @@ void free_textures(Textures& textures);
 void free_surfaces(Surfaces& surfaces);
 
 void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint shader, GLuint VAO,
-                GLuint VBO, float x, float y);
+                GLuint VBO, float x, float y, int wrapChars = 0);
 
 #endif  // GRAPHICS_H
