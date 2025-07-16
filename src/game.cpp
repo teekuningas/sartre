@@ -325,9 +325,10 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
              context.textVBO, 50.0f, MAP_HEIGHT - 100.0f);  // Position near top-left
 }
 
-void update_game_object(GameObject &obj,
+static void update_game_object(GameObject &obj,
                         Sartre &sartre,
                         GameStateForest &gameStateForest,
+                        RenderContext& context,
                         Uint32 totalElapsed)
 {
   // if it's already collected, wait 1 second then respawn:
@@ -360,6 +361,14 @@ void update_game_object(GameObject &obj,
   {
     obj.collected    = true;
     obj.collectedAt  = totalElapsed;    // start 1 second timer
+
+    // ── play the appropriate collision sound
+    if (obj.type == PAGE) {
+      Mix_PlayChannel(-1, context.scribbleSound, 0);
+    } else {
+      Mix_PlayChannel(-1, context.bellSound, 0);
+    }
+
     if (obj.type == PAGE) {
       gameStateForest.pages_collected++;
     } else {
