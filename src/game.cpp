@@ -557,7 +557,7 @@ void results_draw(RenderContext& context,
                300.0f, 1000.0f, 50);
   } else {
     renderText(context.font,
-               "On niin kauhean inhottavaa, että tämä kirja jää keskeneräiseksi.",
+               "Sartre saattoi olla olemassa, mutta entäpä kirja? On niin kauhean inhottavaa.",
                white, context.textShaderProgram, context.textVAO, context.textVBO,
                300.0f, 1000.0f, 50);
   }
