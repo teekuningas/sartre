@@ -33,14 +33,7 @@ void create_surfaces(Surfaces& surfaces, const std::string& dataPath);
 void free_textures(Textures& textures);
 void free_surfaces(Surfaces& surfaces);
 
-void renderText(RenderContext& context,
-                TTF_Font* font,
-                const std::string& text,
-                SDL_Color color,
-                GLuint shader,
-                GLuint VAO,
-                GLuint VBO,
-                float x, float y,
-                int wrapChars = 0);
+void renderText(RenderContext& context, TTF_Font* font, const std::string& text, SDL_Color color,
+                GLuint shader, GLuint VAO, GLuint VBO, float x, float y, int wrapChars = 0);
 
 #endif  // GRAPHICS_H

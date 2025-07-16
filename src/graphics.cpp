@@ -1,5 +1,4 @@
 #include "graphics.h"
-#include "types.h"
 
 #include <SDL_image.h>
 
@@ -7,6 +6,8 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+
+#include "types.h"
 
 SDL_Surface* format_sdl_surface(SDL_Surface* surface) {
   if (!surface) {
@@ -157,17 +158,8 @@ void free_textures(Textures& textures) {
 
 void free_surfaces(Surfaces& surfaces) { SDL_FreeSurface(surfaces.forestCollisionMap); }
 
-void renderText(RenderContext& context,
-                TTF_Font* font,
-                const std::string& text,
-                SDL_Color color,
-                GLuint shader,
-                GLuint VAO,
-                GLuint VBO,
-                float x,
-                float y,
-                int wrapChars)
-{
+void renderText(RenderContext& context, TTF_Font* font, const std::string& text, SDL_Color color,
+                GLuint shader, GLuint VAO, GLuint VBO, float x, float y, int wrapChars) {
   // 1) build a cache key
   std::string key = text + "#" + std::to_string(wrapChars);
   auto it = context.textCache.find(key);
@@ -190,21 +182,27 @@ void renderText(RenderContext& context,
     } else {
       surf = TTF_RenderUTF8_Blended(font, text.c_str(), color);
     }
-    if (!surf) { printf("TTF error: %s\n", TTF_GetError()); return; }
+    if (!surf) {
+      printf("TTF error: %s\n", TTF_GetError());
+      return;
+    }
     // 3) convert to RGBA32
     SDL_Surface* fmt = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_RGBA32, 0);
     SDL_FreeSurface(surf);
-    if (!fmt) { printf("Surface‐format error\n"); return; }
+    if (!fmt) {
+      printf("Surface‐format error\n");
+      return;
+    }
     // 4) upload once
     GLuint tex;
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, fmt->w, fmt->h, 0, GL_RGBA,
-                 GL_UNSIGNED_BYTE, fmt->pixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, fmt->w, fmt->h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 fmt->pixels);
     glBindTexture(GL_TEXTURE_2D, 0);
-    e = { tex, fmt->w, fmt->h };
+    e = {tex, fmt->w, fmt->h};
     context.textCache.emplace(key, e);
     SDL_FreeSurface(fmt);
   } else {
@@ -224,12 +222,8 @@ void renderText(RenderContext& context,
   }
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, e.texture);
-  float verts[16] = {
-    x,           y,            0.0f, 0.0f,
-    x+e.w,       y,            1.0f, 0.0f,
-    x+e.w,       y-e.h,        1.0f, 1.0f,
-    x,           y-e.h,        0.0f, 1.0f
-  };
+  float verts[16] = {x,       y,       0.0f, 0.0f, x + e.w, y,       1.0f, 0.0f,
+                     x + e.w, y - e.h, 1.0f, 1.0f, x,       y - e.h, 0.0f, 1.0f};
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glBindVertexArray(VAO);

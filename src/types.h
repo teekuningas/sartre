@@ -7,8 +7,8 @@
 #include <SDL_ttf.h>
 
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 enum GameMode { MENU, FOREST, RESULTS, EXIT };
 
@@ -105,7 +105,7 @@ struct RenderContext {
 
   struct TextCacheEntry {
     GLuint texture;
-    int    w, h;
+    int w, h;
   };
   std::unordered_map<std::string, TextCacheEntry> textCache;
 };

@@ -403,11 +403,10 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, textOrtho);
   SDL_Color white = {255, 255, 255, 255};
   renderText(
-      context,
-      context.font,
+      context, context.font,
       std::string("Kirjoitettuja sivuja: ") + std::to_string(gameStateForest.pages_collected),
-      white, context.textShaderProgram, context.textVAO, context.textVBO, 50.0f,
-      MAP_HEIGHT - 50.0f, 0);
+      white, context.textShaderProgram, context.textVAO, context.textVBO, 50.0f, MAP_HEIGHT - 50.0f,
+      0);
 }
 
 static void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameStateForest,
@@ -573,12 +572,10 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
   std::string summary = "Sartre onnistuu kirjoittamaan " + std::to_string(state.pages_collected) +
                         " sivua ennen kuin inhottavat asiat lopulta saavat hänet kiinni.";
   if (!state.success) {
-    renderText(context,
-               context.font, summary, white, context.textShaderProgram, context.textVAO,
+    renderText(context, context.font, summary, white, context.textShaderProgram, context.textVAO,
                context.textVBO, 200.0f, MAP_HEIGHT - 500.0f, 30);
   } else {
-    renderText(context,
-               context.font,
+    renderText(context, context.font,
                "Kaikista maailman inhottavista asioista huolimatta kirja tulee valmiiksi. "
                "251-sivuinen La Nausée julkaistaan vuonna 1938.",
                white, context.textShaderProgram, context.textVAO, context.textVBO, 300.0f,
@@ -663,8 +660,8 @@ void menu_draw(RenderContext &context, Textures &textures) {
   renderText(context, context.font, intro, white, context.textShaderProgram, context.textVAO,
              context.textVBO, 300.0f, 1300.0f, 30);
 
-  renderText(context, context.font, "Jatka näpsäyttämällä entteriä", white, context.textShaderProgram,
-             context.textVAO, context.textVBO, 600.0f, 500.0f, 0);
+  renderText(context, context.font, "Jatka näpsäyttämällä entteriä", white,
+             context.textShaderProgram, context.textVAO, context.textVBO, 600.0f, 500.0f, 0);
 }
 
 void menu_update(GameStateMenu &gameStateMenu, Uint32 totalElapsed, float deltaTime,
