@@ -392,6 +392,12 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   // Pass the projection matrix to the text shader (using cached location)
   glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, textOrthoMatrix);
 
+  // make sure we draw our forest text in white:
+  glUniform4f(context.textLocTextColor, 1.0f, 1.0f, 1.0f, 1.0f);
+  // bind the sampler to texture unit 0 (you do this per-quad below as well,
+  // but it’s safe / slightly more efficient to do it once here)
+  glUniform1i(context.textLocTextTexture, 0);
+
   // Helper lambda to update/upload text texture if value changed, then draw
   auto uploadIfChanged = [&](int currentValue,
                              int& lastValue,
