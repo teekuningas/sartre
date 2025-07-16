@@ -104,10 +104,12 @@ static bool isPixelBlack(SDL_Surface *surface, int x, int y) {
   return pixel[0] < threshold && pixel[1] < threshold && pixel[2] < threshold;
 }
 
-// Spawn or respawn obj in a random location that does NOT overlap Sartre.
+//
+// now takes currentElapsed (in ms) so we can align the sine‐wave
 static void spawn_object_avoiding_sartre(GameObject &obj,
                                          Sartre const &sartre,
-                                         GameObjectType type)
+                                         GameObjectType type,
+                                         Uint32 currentElapsed)
 {
   obj.type = type;
   // ensure we clear at least half an object’s-size buffer around Sartre
@@ -126,6 +128,9 @@ static void spawn_object_avoiding_sartre(GameObject &obj,
                * 0.3f * (rand()%2 ? 1.0f : -1.0f);
   obj.ymid  = obj.y;
   obj.phase = (((float)(rand() % 1000))/1000.0f) * 2.0f * 3.14159265f;
+  // compute first‐frame y exactly as our update() will:
+  obj.y = obj.ymid + obj.amplitude
+                   * sinf(obj.frequency * (currentElapsed/1000.0f + obj.phase));
   obj.collected   = false;
   obj.collectedAt = 0; 
 }
@@ -290,13 +295,17 @@ void forest_init(GameStateForest &gameStateForest) {
   for (int i = 0; i < NUM_PAGES; ++i) {
     init_game_object(gameStateForest.objects[i], PAGE);
     spawn_object_avoiding_sartre(gameStateForest.objects[i],
-                                 gameStateForest.sartre, PAGE);
+                                 gameStateForest.sartre,
+                                 PAGE,
+                                 /* currentElapsed = */ 0u);
   }
   for (int i = NUM_PAGES; i < TOTAL_GAME_OBJECTS; ++i) {
     GameObjectType t = (rand() % 2 == 0) ? CHESTNUT : PIPE;
     init_game_object(gameStateForest.objects[i], t);
     spawn_object_avoiding_sartre(gameStateForest.objects[i],
-                                 gameStateForest.sartre, t);
+                                 gameStateForest.sartre,
+                                 t,
+                                 /* currentElapsed = */ 0u);
   }
 }
 
@@ -420,7 +429,8 @@ static void update_game_object(GameObject &obj,
       GameObjectType newType =
           (obj.type == PAGE ? PAGE
                             : ((rand() % 2 == 0) ? CHESTNUT : PIPE));
-      spawn_object_avoiding_sartre(obj, sartre, newType);
+      // align new spawn with the wave at this exact time
+      spawn_object_avoiding_sartre(obj, sartre, newType, totalElapsed);
     }
     return;
   }
