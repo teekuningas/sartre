@@ -24,6 +24,11 @@ static void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
 // --- update loop for the FOREST state ---
 void forest_update(GameStateForest &gameStateForest, RenderContext &context, Uint32 totalElapsed,
                    float deltaTime, Surfaces &surfaces, InputResult &inputResult) {
+  // advance our warp‐phase at 5 radians/sec, keep it in [0,2π)
+  gameStateForest.warpTime += deltaTime * 5.0f;
+  if (gameStateForest.warpTime >= 6.28318530718f)
+    gameStateForest.warpTime -= 6.28318530718f;
+
   // 1) tick all objects (they may play SFX on collision):
   Sartre &sartre = gameStateForest.sartre;
   for (auto &obj : gameStateForest.objects) {
@@ -270,7 +275,8 @@ void forest_init(GameStateForest &gameStateForest) {
 
   gameStateForest.objects.resize(TOTAL_GAME_OBJECTS);
   gameStateForest.pages_collected = 0;
-  gameStateForest.nausea_hits = 0;
+  gameStateForest.nausea_hits    = 0;
+  gameStateForest.warpTime      = 0.0f;    // ← init here
 
   for (int i = 0; i < NUM_PAGES; ++i) {
     init_game_object(gameStateForest.objects[i], PAGE);
@@ -320,7 +326,7 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   float nauseaLevel = float(gameStateForest.nausea_hits)
                     / float(NUM_NAUSEA_LIMIT);
   glUniform1f (context.forestLocNausea, nauseaLevel);
-  glUniform1f (context.forestLocTime,   SDL_GetTicks() * 0.001f);
+  glUniform1f (context.forestLocTime,   gameStateForest.warpTime);
 
   // Enable depth test
   glEnable(GL_DEPTH_TEST);

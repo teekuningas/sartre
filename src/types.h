@@ -44,6 +44,7 @@ struct GameStateForest {
   std::vector<GameObject> objects;
   int pages_collected;
   int nausea_hits;
+  float warpTime;            // ← add this
 };
 
 struct GameStateMenu {};
