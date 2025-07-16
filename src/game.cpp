@@ -16,6 +16,9 @@ static bool aabbOverlap(GLfloat x1, GLfloat y1, GLfloat w1, GLfloat h1,
 #include "graphics.h"  // now provides format_sdl_surface, create_textures, renderText, etc.
 #include "engine.h"   // for the context.scribbleSound / bellSound members
 
+// collision-map helper (forward-declare so forest_update can call it)
+static bool isPixelBlack(SDL_Surface* surface, int x, int y);
+
 // forward‐declared so forest_update can see it
 static void update_game_object(GameObject &obj,
                                Sartre &sartre,
