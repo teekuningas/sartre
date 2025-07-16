@@ -77,9 +77,8 @@ struct RenderContext {
   SDL_GLContext glContext = nullptr;
   TTF_Font* font = nullptr;
   Mix_Music* backgroundMusic = nullptr;
-  // collision SFX
-  Mix_Chunk* scribbleSound  = nullptr;   // for PAGE pickups
-  Mix_Chunk* bellSound      = nullptr;   // for CHESTNUT/PIPE pickups
+  Mix_Chunk* scribbleSound  = nullptr;
+  Mix_Chunk* nauseaSound      = nullptr;
 
   GLuint forestVAO;
   GLuint forestVBO;

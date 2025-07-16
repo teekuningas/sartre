@@ -13,8 +13,8 @@ static bool aabbOverlap(GLfloat x1, GLfloat y1, GLfloat w1, GLfloat h1,
 }
 
 #include "constants.h"
-#include "graphics.h"  // now provides format_sdl_surface, create_textures, renderText, etc.
-#include "engine.h"   // for the context.scribbleSound / bellSound members
+#include "graphics.h"
+#include "engine.h"
 
 // collision-map helper (forward-declare so forest_update can call it)
 static bool isPixelBlack(SDL_Surface* surface, int x, int y);
@@ -87,7 +87,7 @@ void forest_update(GameStateForest&   gameStateForest,
   }
 
   // 5) end‐of‐frame: transition if too many nasty collisions
-  if (gameStateForest.nausea_hits >= NUM_NAUSEOUS_OBJECTS) {
+  if (gameStateForest.nausea_hits >= NUM_NAUSEA_LIMIT) {
     inputResult.transition   = true;
     inputResult.transitionTo = RESULTS;
   }
@@ -448,7 +448,7 @@ static void update_game_object(GameObject &obj,
     if (obj.type == PAGE) {
       Mix_PlayChannel(-1, context.scribbleSound, 0);
     } else {
-      Mix_PlayChannel(-1, context.bellSound, 0);
+      Mix_PlayChannel(-1, context.nauseaSound, 0);
     }
 
     if (obj.type == PAGE) {
