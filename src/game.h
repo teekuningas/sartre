@@ -16,7 +16,7 @@ void menu_draw(TTF_Font* font, GLuint shaderProgram, GLuint VAO, GLuint VBO);
 
 // --- Forest state ---
 void forest_init(GameStateForest& state);
-void forest_update(GameStateForest& state, Uint32 totalElapsed, float deltaTime, Surfaces& surfaces,
+void forest_update(RenderContext& context, Uint32 totalElapsed, float deltaTime, Surfaces& surfaces,
                    InputResult& result);
 void forest_draw(GameStateForest& state, Textures& textures, RenderContext& context,
                  GLuint shaderProgram, GLuint VAO, GLuint VBO);
