@@ -490,16 +490,31 @@ void menu_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint VBO)
 
   SDL_Color white = {255, 255, 255, 255};
 
-  renderText(font, "Jean-Paul Sartre istui metsän keskellä, ", white, textShaderProgram, VAO, VBO,
-             300.0f, 1300.0f);
-  renderText(font, "lehtien kahistessa ympärillään, ja kirjoitti uutta kirjaansa,", white,
-             textShaderProgram, VAO, VBO, 300.0f, 1200.0f);
-  renderText(font, "kun äkkiä metsän syvyyksistä alkoi hiipiä häiritseviä varjoja, ", white,
-             textShaderProgram, VAO, VBO, 300.0f, 1100.0f);
-  renderText(font, "jotka uhkasivat keskeyttää hänen luomisprosessinsa.", white, textShaderProgram,
-             VAO, VBO, 300.0f, 1000.0f);
-  renderText(font, "Jatka näpsäyttämällä entteriä", white, textShaderProgram, VAO, VBO, 600.0f,
-             500.0f);
+  // wrap the entire intro text at ~40 chars per line
+  const std::string intro =
+    "Jean-Paul Sartre istui metsän keskellä, lehtien kahistessa ympärillään, "
+    "ja kirjoitti uutta kirjaansa, kun äkkiä metsän syvyyksistä alkoi hiipiä "
+    "häiritseviä varjoja, jotka uhkasivat keskeyttää hänen luomisprosessinsa.";
+  renderText(font,
+             intro,
+             white,
+             textShaderProgram,
+             VAO,
+             VBO,
+             300.0f,    // x
+             1300.0f,   // y
+             40);       // wrap at 40 chars
+
+  // single‐line “press enter” prompt (no wrap)
+  renderText(font,
+             "Jatka näpsäyttämällä entteriä",
+             white,
+             textShaderProgram,
+             VAO,
+             VBO,
+             600.0f,
+             500.0f,
+             0);        // 0 = no wrapping
 }
 
 void menu_update(GameStateMenu &gameStateMenu, Uint32 totalElapsed, float deltaTime,
