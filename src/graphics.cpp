@@ -158,6 +158,7 @@ void free_surfaces(Surfaces& surfaces) { SDL_FreeSurface(surfaces.forestCollisio
 
 //
 // new helper in graphics.cpp
+// Uses a single static GL texture for all text rendering.
 static void drawTextSurface(SDL_Surface* surface, SDL_Color color, GLuint shader, GLuint VAO,
                             GLuint VBO, float x, float y) {
   // bail if wrong format
@@ -167,11 +168,13 @@ static void drawTextSurface(SDL_Surface* surface, SDL_Color color, GLuint shader
     return;
   }
 
-  // 1) create & bind texture
-  GLuint texture;
-  glGenTextures(1, &texture);
+  // 1) create or reuse a single static texture
+  static GLuint textTexture = 0;
+  if (textTexture == 0) {
+    glGenTextures(1, &textTexture);
+  }
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, texture);
+  glBindTexture(GL_TEXTURE_2D, textTexture);
 
   // 2) upload pixels manually (handles pitch)
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -208,13 +211,12 @@ static void drawTextSurface(SDL_Surface* surface, SDL_Color color, GLuint shader
   glBindVertexArray(VAO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
-  glBindTexture(GL_TEXTURE_2D, texture);
+  glBindTexture(GL_TEXTURE_2D, textTexture);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
   // 7) cleanup
   glBindVertexArray(0);
   glBindTexture(GL_TEXTURE_2D, 0);
-  glDeleteTextures(1, &texture);
   SDL_FreeSurface(surface);
   glDisable(GL_BLEND);
 }
