@@ -4,8 +4,8 @@
 
 #include <cstring>
 #include <iostream>
-#include <vector>
 #include <sstream>
+#include <vector>
 
 SDL_Surface* format_sdl_surface(SDL_Surface* surface) {
   if (!surface) {
@@ -211,7 +211,8 @@ void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint
 
     // Set the texture uniform and text color uniform
     GLint textColorLoc = glGetUniformLocation(shader, "textColor");
-    glUniform4f(textColorLoc, color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
+    glUniform4f(textColorLoc, color.r / 255.0f, color.g / 255.0f, color.b / 255.0f,
+                color.a / 255.0f);
 
     // Define the vertices and texture coordinates for a quad
     float w = static_cast<float>(width);
@@ -291,8 +292,7 @@ void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint
 
     for (int yrow = 0; yrow < height; ++yrow) {
       std::memcpy(&pixels[yrow * width * 4],
-                  static_cast<unsigned char*>(surface->pixels) + yrow * pitch,
-                  width * 4);
+                  static_cast<unsigned char*>(surface->pixels) + yrow * pitch, width * 4);
     }
 
     glTexImage2D(GL_TEXTURE_2D, 0, mode, width, height, 0, mode, GL_UNSIGNED_BYTE, pixels.data());
@@ -303,7 +303,8 @@ void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     GLint textColorLoc = glGetUniformLocation(shader, "textColor");
-    glUniform4f(textColorLoc, color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
+    glUniform4f(textColorLoc, color.r / 255.0f, color.g / 255.0f, color.b / 255.0f,
+                color.a / 255.0f);
 
     float w = static_cast<float>(width);
     float h = static_cast<float>(height);
