@@ -24,8 +24,8 @@ static void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
 // --- update loop for the FOREST state ---
 void forest_update(GameStateForest &gameStateForest, RenderContext &context, Uint32 totalElapsed,
                    float deltaTime, Surfaces &surfaces, InputResult &inputResult) {
-  // advance our warp‐phase at 5 radians/sec, keep it in [0,2π)
-  gameStateForest.warpTime += deltaTime * 5.0f;
+  // advance our warp‐phase at 3 radians/sec, keep it in [0,2π)
+  gameStateForest.warpTime += deltaTime * 3.0f;
   if (gameStateForest.warpTime >= 6.28318530718f)
     gameStateForest.warpTime -= 6.28318530718f;
 

@@ -46,7 +46,7 @@ static const char* forestFragmentShaderSource =
     "    vec2 uv = fragTexCoord;\n"
     "    // warp the UVs more as nausea increases\n"
     "    float wt = u_time;\n"
-    "    uv += (u_nausea * 0.02) * sin(uv.yx * 30.0 + wt);\n"
+    "    uv += (u_nausea * 0.04) * sin(uv.yx * 30.0 + wt);\n"
     "    vec4 col = texture2D(ourTexture, uv);\n"
     "    // desaturate proportionally to nausea\n"
     "    float gray = dot(col.rgb, vec3(0.3,0.59,0.11));\n"
