@@ -172,8 +172,7 @@ void run_game_frame(GameLoopData &data) {
     }
     if (inputResult.transitionTo == RESULTS) {
       data.gameStateResults.pages_collected = data.gameStateForest.pages_collected;
-      data.gameStateResults.success =
-          (data.gameStateResults.pages_collected >= PAGE_GOAL);
+      data.gameStateResults.success = (data.gameStateResults.pages_collected >= PAGE_GOAL);
       results_init(data.gameStateResults);
     }
     data.gameMode = inputResult.transitionTo;
@@ -390,10 +389,11 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   glUseProgram(context.textShaderProgram);
   glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, textOrtho);
   SDL_Color white = {255, 255, 255, 255};
-  renderText(context.font,
-             std::string("Kirjoitettuja sivuja: ") + std::to_string(gameStateForest.pages_collected), white,
-             context.textShaderProgram, context.textVAO, context.textVBO, 50.0f,
-             MAP_HEIGHT - 50.0f);
+  renderText(
+      context.font,
+      std::string("Kirjoitettuja sivuja: ") + std::to_string(gameStateForest.pages_collected),
+      white, context.textShaderProgram, context.textVAO, context.textVBO, 50.0f,
+      MAP_HEIGHT - 50.0f);
   // renderText(context.font, std::string("INHOA: ") + std::to_string(gameStateForest.nausea_hits),
   //            white, context.textShaderProgram, context.textVAO, context.textVBO, 50.0f,
   //            MAP_HEIGHT - 100.0f);
@@ -463,13 +463,11 @@ void results_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint V
   if (state.success) {
     renderText(font,
                "Kirja siis tulee valmiiksi. 251-sivuinen Inho (La Nausée) julkaistaan vuonna 1938.",
-               white, textShaderProgram, VAO, VBO,
-               300.0f, 1000.0f, 40);
+               white, textShaderProgram, VAO, VBO, 300.0f, 1000.0f, 40);
   } else {
     renderText(font,
                "Sartre saattoi olla olemassa, mutta entäpä kirja? On niin kauhean inhottavaa.",
-               white, textShaderProgram, VAO, VBO,
-               300.0f, 1000.0f, 40);
+               white, textShaderProgram, VAO, VBO, 300.0f, 1000.0f, 40);
   }
 }
 
