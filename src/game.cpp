@@ -474,7 +474,12 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
   glUniformMatrix4fv(context.forestLocProjection, 1, GL_FALSE, ortho);
   glUniform1i(context.forestLocOurTexture, 0);
   glUniform1f(context.forestLocNausea, state.success ? 0.0f : 1.0f);
-  glUniform1f(context.forestLocTime, totalElapsed / 1000.0f);
+  // wrap the time in [0,2π) to keep sin() fast & precise
+  {
+    const float TWO_PI = 6.28318530718f;
+    float t = fmodf((totalElapsed / 1000.0f), TWO_PI);
+    glUniform1f(context.forestLocTime, t);
+  }
   // reset model to identity so our full‐screen quad really spans 0..MAP_HEIGHT
   {
     float identityModel[16];
