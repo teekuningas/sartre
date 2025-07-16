@@ -193,25 +193,44 @@ static void drawTextSurface(SDL_Surface* surface, SDL_Color color, GLuint shader
   glBindTexture(GL_TEXTURE_2D, textTexture);
 
   int mode = GL_RGBA;
-  const int pitch = surface->pitch;
-  const int width = surface->w;
+  const int pitch  = surface->pitch;
+  const int width  = surface->w;
   const int height = surface->h;
-  std::vector<unsigned char> pixels(width * height * 4);
+
+  // one static copy buffer – grows only when needed
+  static std::vector<unsigned char> pixels;
+  size_t needed = size_t(width) * size_t(height) * 4;
+  if (pixels.size() < needed) {
+    pixels.resize(needed);
+  }
+  unsigned char* dst = pixels.data();
+  unsigned char* src = static_cast<unsigned char*>(surface->pixels);
+  // SDL_ConvertSurfaceFormat to RGBA32 gives pitch == width*4,
+  // so we can copy row‐by‐row safely:
   for (int row = 0; row < height; ++row) {
-    std::memcpy(&pixels[row * width * 4],
-                static_cast<unsigned char*>(surface->pixels) + row * pitch, width * 4);
+    std::memcpy(dst + size_t(row) * width * 4,
+                src + size_t(row) * pitch,
+                size_t(width) * 4);
   }
 
   // 2) only grow backing storage when one of our strings exceeds prior max
   if (width > g_texWidth || height > g_texHeight) {
-    // grow to the new maximum
     g_texWidth  = std::max(g_texWidth,  width);
     g_texHeight = std::max(g_texHeight, height);
-    glTexImage2D(GL_TEXTURE_2D, 0, mode,
-                 g_texWidth, g_texHeight,
+    glTexImage2D(GL_TEXTURE_2D,
+                 0,            // mip level
+                 mode,         // internal format
+                 g_texWidth,   // new max width
+                 g_texHeight,  // new max height
                  0, mode, GL_UNSIGNED_BYTE, nullptr);
   }
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, mode, GL_UNSIGNED_BYTE, pixels.data());
+  // upload only our sub‐rect
+  glTexSubImage2D(GL_TEXTURE_2D,
+                  0,  // mip
+                  0, 0,
+                  width, height,
+                  mode, GL_UNSIGNED_BYTE,
+                  pixels.data());
 
   // 3) set text color uniform (cache location)
   if (textColorLoc == -1) {
