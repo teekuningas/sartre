@@ -112,25 +112,33 @@ static void spawn_object_avoiding_sartre(GameObject &obj,
                                          Uint32 currentElapsed)
 {
   obj.type = type;
-  // ensure we clear at least half an object’s-size buffer around Sartre
+  // we’ll keep trying random x|ymid|phase until the *actual* first‐frame y
+  // (ymid + A·sin(ω*(t+phase))) does not overlap Sartre.
   const float spawnMargin = obj.width * 0.5f;
+  float candX, candYmid, candVx, candPhase, candY;
   do {
-    obj.x = (GLfloat)((rand() % (MAP_WIDTH - (int)obj.width))
-                      - (MAP_WIDTH/2) + obj.width/2);
-    obj.y = (GLfloat)((rand() % (MAP_HEIGHT - (int)obj.height - (MAP_HEIGHT/4)))
-                      + (MAP_HEIGHT/8) + obj.height/2);
-  } while (aabbOverlap(obj.x, obj.y, obj.width, obj.height,
+    // 1) pick a midpoint
+    candX    = (GLfloat)((rand() % (MAP_WIDTH - (int)obj.width))
+                         - (MAP_WIDTH/2) + obj.width/2);
+    candYmid = (GLfloat)((rand() % (MAP_HEIGHT - (int)obj.height - (MAP_HEIGHT/4)))
+                         + (MAP_HEIGHT/8) + obj.height/2);
+    // 2) pick speed & sine phase
+    candVx   = ((((float)(rand() % 1000))/1000.0f)*1.5f + 0.5f)
+               * 0.3f * (rand()%2 ? 1.0f : -1.0f);
+    candPhase = (((float)(rand() % 1000))/1000.0f) * 2.0f * 3.14159265f;
+    // 3) compute where it *will* actually draw on this frame
+    candY = candYmid
+            + obj.amplitude
+            * sinf(obj.frequency * (currentElapsed/1000.0f + candPhase));
+  } while (aabbOverlap(candX, candY, obj.width, obj.height,
                        sartre.x, sartre.y, sartre.width, sartre.height,
                        spawnMargin));
-
-  // re‐randomize velocity and phase; keep amplitude & frequency
-  obj.vx    = ((((float)(rand() % 1000))/1000.0f)*1.5f + 0.5f)
-               * 0.3f * (rand()%2 ? 1.0f : -1.0f);
-  obj.ymid  = obj.y;
-  obj.phase = (((float)(rand() % 1000))/1000.0f) * 2.0f * 3.14159265f;
-  // compute first‐frame y exactly as our update() will:
-  obj.y = obj.ymid + obj.amplitude
-                   * sinf(obj.frequency * (currentElapsed/1000.0f + obj.phase));
+  // now commit
+  obj.x     = candX;
+  obj.ymid  = candYmid;
+  obj.vx    = candVx;
+  obj.phase = candPhase;
+  obj.y     = candY;
   obj.collected   = false;
   obj.collectedAt = 0; 
 }
