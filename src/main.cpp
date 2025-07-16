@@ -75,10 +75,9 @@ void main_loop_iteration(GameLoopData* pdata) {
     createProgram(textVertexShaderSource, textFragmentShaderSource, data.context.textShaderProgram);
     data.context.textLocProjection =
         glGetUniformLocation(data.context.textShaderProgram, "projection");
-    data.context.textLocTextTexture =
-        glGetUniformLocation(data.context.textShaderProgram, "textTexture");
-    data.context.textLocTextColor =
-        glGetUniformLocation(data.context.textShaderProgram, "textColor");
+    // we render text always on texture unit 0, so fix the sampler here:
+    glUseProgram(data.context.textShaderProgram);
+    glUniform1i(glGetUniformLocation(data.context.textShaderProgram, "textTexture"), 0);
     createShaderBuffers(data.context.textVAO, data.context.textVBO);
 
     // 2) once‐only GL setup & load textures/surfaces

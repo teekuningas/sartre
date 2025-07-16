@@ -174,6 +174,7 @@ void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint
   // Create OpenGL texture and upload data
   GLuint texture;
   glGenTextures(1, &texture);
+  glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, texture);
 
   // Use glPixelStorei to set unpack alignment
