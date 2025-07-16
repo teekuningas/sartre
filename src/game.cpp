@@ -65,7 +65,7 @@ void run_game_frame(GameLoopData &data) {
                   inputResult);
       break;
     case FOREST:
-      forest_update(data.gameStateForest, data.totalElapsed, delta, data.imageData.surfaces,
+      forest_update(data.context, data.totalElapsed, delta, data.imageData.surfaces,
                     inputResult);
       break;
     case RESULTS:
@@ -368,70 +368,6 @@ void update_game_object(GameObject &obj,
   }
 }
 
-void forest_update(GameStateForest &gameStateForest, Uint32 totalElapsed, float deltaTime,
-                   Surfaces &surfaces, InputResult &inputResult) {
-  Sartre &sartre = gameStateForest.sartre;
-
-  const Uint8 *keystate = SDL_GetKeyboardState(NULL);
-
-  for (auto &obj : gameStateForest.objects) {
-    update_game_object(obj, sartre, gameStateForest, totalElapsed);
-  }
-
-  // Update sartre animation
-  sartre.animIdx = (totalElapsed % 1000) / (1000 / sartre.animSize);
-
-  // Update location and velocity based on
-  if (keystate[SDL_SCANCODE_RIGHT]) {
-    if (sartre.x < MAP_WIDTH / 2 - sartre.width / 2) {
-      sartre.x = sartre.x + deltaTime * SARTRE_VX;
-    }
-  }
-
-  if (keystate[SDL_SCANCODE_LEFT]) {
-    if (sartre.x > -MAP_WIDTH / 2 + sartre.width / 2) {
-      sartre.x = sartre.x - deltaTime * SARTRE_VX;
-    }
-  }
-
-  if (sartre.jump == 0 && keystate[SDL_SCANCODE_UP]) {
-    sartre.jump = 1;
-    sartre.vy = SARTRE_JUMP_VELOCITY;
-  }
-
-  // Handle intricacies related to falling down
-  GLfloat predictedY = sartre.y + deltaTime * sartre.vy;
-  int sartreXPixels = (int)(sartre.x + MAP_WIDTH / 2);
-  int commonExtra = sartre.height / 8;
-  int padding = 2;  // if the platform is not exactly exactly straight
-  int sartreYPixels = (int)(sartre.y - sartre.height / 2 + commonExtra);
-  int predictedYPixels = (int)(predictedY - sartre.height / 2 + commonExtra - padding);
-
-  if (sartre.y >= sartre.height / 2 + EARTH_HEIGHT &&
-      predictedY < sartre.height / 2 + EARTH_HEIGHT) {
-    // We hit the ground, so set vertical speed to zero.
-    sartre.jump = 0;
-    sartre.vy = 0;
-  } else if (predictedY < sartre.y &&
-             !isPixelBlack(surfaces.forestCollisionMap, sartreXPixels,
-                           MAP_HEIGHT - sartreYPixels) &&
-             isPixelBlack(surfaces.forestCollisionMap, sartreXPixels,
-                          MAP_HEIGHT - predictedYPixels)) {
-    // We hit a non-ground surface, like a treetop.
-    sartre.jump = 0;
-    sartre.vy = 0;
-  } else {
-    // We just fall.
-    sartre.y = predictedY;
-    sartre.vy = sartre.vy - deltaTime * SARTRE_G;
-  }
-
-  // Transition to RESULTS state if all pages have been collected.
-  if (gameStateForest.nausea_hits >= 3) {
-    inputResult.transition = true;
-    inputResult.transitionTo = RESULTS;
-  }
-}
 
 void results_init(GameStateResults &gameStateResults) {}
 
