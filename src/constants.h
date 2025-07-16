@@ -38,12 +38,20 @@ static const char* forestVertexShaderSource =
 static const char* forestFragmentShaderSource =
     "#version 100\n"
     "precision mediump float;\n"
+    "uniform float u_nausea;      // [0,1], how “nauseated” we are\n"
+    "uniform float u_time;        // sec, used to animate the warp\n"
     "varying vec2 fragTexCoord;\n"
     "uniform sampler2D ourTexture;\n"
     "void main() {\n"
-    "    vec4 texColor = texture2D(ourTexture, fragTexCoord);\n"
-    "    if (texColor.a <= 0.1) discard;\n"
-    "    gl_FragColor = texColor;\n"
+    "    vec2 uv = fragTexCoord;\n"
+    "    // warp the UVs more as nausea increases\n"
+    "    uv += (u_nausea * 0.02) * sin(uv.yx * 30.0 + u_time * 5.0);\n"
+    "    vec4 col = texture2D(ourTexture, uv);\n"
+    "    // desaturate proportionally to nausea\n"
+    "    float gray = dot(col.rgb, vec3(0.3,0.59,0.11));\n"
+    "    col.rgb = mix(col.rgb, vec3(gray), u_nausea);\n"
+    "    if (col.a <= 0.1) discard;\n"
+    "    gl_FragColor = col;\n"
     "}\n";
 
 const int MAP_WIDTH = 2048;

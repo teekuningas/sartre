@@ -306,6 +306,14 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   // Use the shader program
   glUseProgram(shaderProgram);
 
+  // feed the shader with current nausea fraction and the time in seconds
+  float nauseaLevel = float(gameStateForest.nausea_hits)
+                    / float(NUM_NAUSEA_LIMIT);
+  GLint locN = glGetUniformLocation(shaderProgram, "u_nausea");
+  glUniform1f(locN, nauseaLevel);
+  GLint locT = glGetUniformLocation(shaderProgram, "u_time");
+  glUniform1f(locT, SDL_GetTicks() * 0.001f);
+
   // Set up the orthographic projection
   float orthoMatrix[16];
   createOrthographicMatrix(-MAP_WIDTH / 2, MAP_WIDTH / 2, 0.0f, MAP_HEIGHT, -100.0f, 100.0f,
