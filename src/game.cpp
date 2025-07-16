@@ -465,6 +465,10 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
   float ortho[16];
   createOrthographicMatrix(-MAP_WIDTH / 2, MAP_WIDTH / 2, 0.0f, MAP_HEIGHT, -100.0f, 100.0f, ortho);
 
+  // Add a 0..MAP_WIDTH, 0..MAP_HEIGHT ortho for text and overlays
+  float textOrtho[16];
+  createOrthographicMatrix(0.0f, MAP_WIDTH, 0.0f, MAP_HEIGHT, -1.0f, 1.0f, textOrtho);
+
   //
   // 1) Background: forest shader with warp on failure, calm on success
   //
@@ -490,7 +494,7 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
   // 2) Semi‐transparent tint: green overlay if success, red if failure
   //
   glUseProgram(context.textShaderProgram);
-  glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, ortho);
+  glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, textOrtho);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   GLint clrLoc = glGetUniformLocation(context.textShaderProgram, "textColor");
@@ -533,7 +537,7 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
   // 4) Finally render your two result‐texts
   //
   glUseProgram(context.textShaderProgram);
-  glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, ortho);
+  glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, textOrtho);
   SDL_Color white{255, 255, 255, 255};
 
   // Top summary line with actual page‐count
