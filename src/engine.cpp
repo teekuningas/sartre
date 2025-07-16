@@ -28,9 +28,9 @@ void shutdownEngine(RenderContext& context) {
     Mix_FreeChunk(context.scribbleSound);
     context.scribbleSound = nullptr;
   }
-  if (context.bellSound) {
-    Mix_FreeChunk(context.bellSound);
-    context.bellSound = nullptr;
+  if (context.nauseaSound) {
+    Mix_FreeChunk(context.nauseaSound);
+    context.nauseaSound = nullptr;
   }
   Mix_CloseAudio();
   Mix_Quit();
@@ -142,9 +142,9 @@ bool initEngine(RenderContext& context, const std::string& dataPath, bool fullsc
     printf("Error loading scribble.wav: %s\n", Mix_GetError());
     return false;
   }
-  context.bellSound = Mix_LoadWAV((dataPath + "audio/bell.wav").c_str());
-  if (!context.bellSound) {
-    printf("Error loading bell.wav: %s\n", Mix_GetError());
+  context.nauseaSound = Mix_LoadWAV((dataPath + "audio/tom.wav").c_str());
+  if (!context.nauseaSound) {
+    printf("Error loading tom.wav: %s\n", Mix_GetError());
     return false;
   }
 
