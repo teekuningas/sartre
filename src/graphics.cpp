@@ -1,4 +1,5 @@
 #include "graphics.h"
+#include "types.h"
 
 #include <SDL_image.h>
 
@@ -156,154 +157,66 @@ void free_textures(Textures& textures) {
 
 void free_surfaces(Surfaces& surfaces) { SDL_FreeSurface(surfaces.forestCollisionMap); }
 
-//
-// new helper in graphics.cpp
-/*
- * Uses a single static GL texture for all text rendering.
- * - Reallocates storage with glTexImage2D(NULL) if w/h changes.
- * - Otherwise, uses glTexSubImage2D for new pixels.
- * - Caches textColorLoc for efficiency.
- */
-static void drawTextSurface(SDL_Surface* surface, SDL_Color color, GLuint shader, GLuint VAO,
-                            GLuint VBO, float x, float y) {
-  // bail if wrong format
-  if (surface->format->BytesPerPixel != 4) {
-    printf("Unexpected surface format: %d bytes per pixel\n", surface->format->BytesPerPixel);
-    SDL_FreeSurface(surface);
-    return;
-  }
-
-  // 1) create or reuse a single static texture, and track its size
-  static GLuint textTexture = 0;
-  // track the *maximum* size we've ever allocated
-  static int g_texWidth = 0, g_texHeight = 0;
-  static GLint textColorLoc = -1;
-  if (textTexture == 0) {
-    glGenTextures(1, &textTexture);
-    glBindTexture(GL_TEXTURE_2D, textTexture);
-    g_texWidth = 0;
-    g_texHeight = 0;
-    // Set texture params once
+void renderText(RenderContext& context,
+                TTF_Font* font,
+                const std::string& text,
+                SDL_Color color,
+                GLuint shader,
+                GLuint VAO,
+                GLuint VBO,
+                float x,
+                float y,
+                int wrapChars)
+{
+  // 1) build a cache key
+  std::string key = text + "#" + std::to_string(wrapChars);
+  auto it = context.textCache.find(key);
+  RenderContext::TextCacheEntry e;
+  if (it == context.textCache.end()) {
+    // 2) create an SDL_Surface (wrapped or not)
+    SDL_Surface* surf = wrapChars > 0
+      ? TTF_RenderUTF8_Blended_Wrapped(font, text.c_str(), color, wrapChars)
+      : TTF_RenderUTF8_Blended(font, text.c_str(), color);
+    if (!surf) { printf("TTF error: %s\n", TTF_GetError()); return; }
+    // 3) convert to RGBA32
+    SDL_Surface* fmt = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_RGBA32, 0);
+    SDL_FreeSurface(surf);
+    if (!fmt) { printf("Surface‐format error\n"); return; }
+    // 4) upload once
+    GLuint tex;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, fmt->w, fmt->h, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, fmt->pixels);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    e = { tex, fmt->w, fmt->h };
+    context.textCache.emplace(key, e);
+    SDL_FreeSurface(fmt);
+  } else {
+    e = it->second;
   }
+
+  // 5) draw that quad
+  glUseProgram(shader);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, textTexture);
-
-  int mode = GL_RGBA;
-  const int pitch  = surface->pitch;
-  const int width  = surface->w;
-  const int height = surface->h;
-
-  // one static copy buffer – grows only when needed
-  static std::vector<unsigned char> pixels;
-  size_t needed = size_t(width) * size_t(height) * 4;
-  if (pixels.size() < needed) {
-    pixels.resize(needed);
-  }
-  unsigned char* dst = pixels.data();
-  unsigned char* src = static_cast<unsigned char*>(surface->pixels);
-  // SDL_ConvertSurfaceFormat to RGBA32 gives pitch == width*4,
-  // so we can copy row‐by‐row safely:
-  for (int row = 0; row < height; ++row) {
-    std::memcpy(dst + size_t(row) * width * 4,
-                src + size_t(row) * pitch,
-                size_t(width) * 4);
-  }
-
-  // 2) only grow backing storage when one of our strings exceeds prior max
-  if (width > g_texWidth || height > g_texHeight) {
-    g_texWidth  = std::max(g_texWidth,  width);
-    g_texHeight = std::max(g_texHeight, height);
-    glTexImage2D(GL_TEXTURE_2D,
-                 0,            // mip level
-                 mode,         // internal format
-                 g_texWidth,   // new max width
-                 g_texHeight,  // new max height
-                 0, mode, GL_UNSIGNED_BYTE, nullptr);
-  }
-  // upload only our sub‐rect
-  glTexSubImage2D(GL_TEXTURE_2D,
-                  0,  // mip
-                  0, 0,
-                  width, height,
-                  mode, GL_UNSIGNED_BYTE,
-                  pixels.data());
-
-  // 3) set text color uniform (cache location)
-  if (textColorLoc == -1) {
-    textColorLoc = glGetUniformLocation(shader, "textColor");
-  }
-  glUniform4f(textColorLoc, color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
-
-  // 4) build quad vertices – use only the sub‐region [0,width]×[0,height]
-  float uMax = float(width)  / float(g_texWidth);
-  float vMax = float(height) / float(g_texHeight);
-  float verts[] = {
+  glBindTexture(GL_TEXTURE_2D, e.texture);
+  float verts[16] = {
     x,           y,            0.0f, 0.0f,
-    x + width,   y,            uMax, 0.0f,
-    x + width,   y - height,   uMax, vMax,
-    x,           y - height,   0.0f, vMax
+    x+e.w,       y,            1.0f, 0.0f,
+    x+e.w,       y-e.h,        1.0f, 1.0f,
+    x,           y-e.h,        0.0f, 1.0f
   };
-
-  // 5) draw it with alpha blending
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glBindVertexArray(VAO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
-  glBindTexture(GL_TEXTURE_2D, textTexture);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-  // 6) cleanup
   glBindVertexArray(0);
   glBindTexture(GL_TEXTURE_2D, 0);
-  SDL_FreeSurface(surface);
   glDisable(GL_BLEND);
-}
-
-void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint shader, GLuint VAO,
-                GLuint VBO, float x, float y, int wrapChars) {
-  // If wrapChars is 0, just render as before
-  if (wrapChars <= 0) {
-    SDL_Surface* surface = TTF_RenderUTF8_Blended(font, text.c_str(), color);
-    if (!surface) {
-      printf("Failed to render text surface: %s\n", TTF_GetError());
-      return;
-    }
-    drawTextSurface(surface, color, shader, VAO, VBO, x, y);
-    return;
-  }
-
-  // Otherwise, do word-wrapping
-  std::istringstream iss(text);
-  std::string word;
-  std::string line;
-  std::vector<std::string> lines;
-  while (iss >> word) {
-    if (line.length() + word.length() + 1 > (size_t)wrapChars) {
-      lines.push_back(line);
-      line = word;
-    } else {
-      if (!line.empty()) line += " ";
-      line += word;
-    }
-  }
-  if (!line.empty()) lines.push_back(line);
-
-  int lineSkip = TTF_FontLineSkip(font);
-  float curY = y;
-  for (const std::string& l : lines) {
-    SDL_Surface* surface = TTF_RenderUTF8_Blended(font, l.c_str(), color);
-    if (!surface) {
-      printf("Failed to render text surface: %s\n", TTF_GetError());
-    } else {
-      drawTextSurface(surface, color, shader, VAO, VBO, x, curY);
-    }
-    curY -= lineSkip;
-  }
 }
 
 GLuint loadShader(GLenum type, const std::string& source) {

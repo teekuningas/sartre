@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 enum GameMode { MENU, FOREST, RESULTS, EXIT };
 
@@ -101,6 +102,12 @@ struct RenderContext {
   // ---- text shader (cached)
   GLuint textShaderProgram;
   GLint textLocProjection;
+
+  struct TextCacheEntry {
+    GLuint texture;
+    int    w, h;
+  };
+  std::unordered_map<std::string, TextCacheEntry> textCache;
 };
 
 struct WindowParams {

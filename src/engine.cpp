@@ -47,6 +47,12 @@ void shutdownEngine(RenderContext& context) {
   glDeleteProgram(context.forestShaderProgram);
   glDeleteProgram(context.textShaderProgram);
 
+  // Free cached text textures
+  for (auto& kv : context.textCache) {
+    glDeleteTextures(1, &kv.second.texture);
+  }
+  context.textCache.clear();
+
   if (context.glContext) {
     SDL_GL_DeleteContext(context.glContext);
   }
