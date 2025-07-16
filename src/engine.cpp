@@ -135,6 +135,8 @@ bool initEngine(RenderContext& context, const std::string& dataPath, bool fullsc
     return false;
   }
   context.backgroundMusic = backgroundMusic;
+  // lower the music volume to 50%
+  Mix_VolumeMusic(MIX_MAX_VOLUME / 2);
 
   // ── now load our collision‐SFX │ format: 44 100 Hz, s16 stereo
   context.scribbleSound = Mix_LoadWAV((dataPath + "audio/scribble.wav").c_str());
