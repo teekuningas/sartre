@@ -206,6 +206,12 @@ void renderText(RenderContext& context, TTF_Font* font, const std::string& text,
     GLuint tex;
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
+    // restore the old surface-alignment (our pitch is width*4)
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    // WebGL requires NPOT → clamp-to-edge
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    // linear filtering (no mipmaps)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, fmt->w, fmt->h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
