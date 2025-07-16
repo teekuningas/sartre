@@ -178,8 +178,7 @@ void renderText(RenderContext& context, TTF_Font* font, const std::string& text,
     int lineSkip = TTF_FontLineSkip(font);
     for (size_t i = 0; i < lines.size(); ++i) {
       // each line is treated as wrapChars==0
-      renderText(context, font, lines[i], color, shader, VAO, VBO,
-                 x, y - i * lineSkip, 0);
+      renderText(context, font, lines[i], color, shader, VAO, VBO, x, y - i * lineSkip, 0);
     }
     return;
   }

@@ -573,13 +573,13 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
                         " sivua ennen kuin inhottavat asiat lopulta saavat hänet kiinni.";
   if (!state.success) {
     renderText(context, context.font, summary, white, context.textShaderProgram, context.textVAO,
-               context.textVBO, 200.0f, MAP_HEIGHT - 500.0f, 30);
+               context.textVBO, 200.0f, MAP_HEIGHT - 500.0f, 40);
   } else {
     renderText(context, context.font,
                "Kaikista maailman inhottavista asioista huolimatta kirja tulee valmiiksi. "
                "251-sivuinen La Nausée julkaistaan vuonna 1938.",
                white, context.textShaderProgram, context.textVAO, context.textVBO, 300.0f,
-               MAP_HEIGHT - 500.0f, 30);
+               MAP_HEIGHT - 500.0f, 40);
   }
 }
 
@@ -658,7 +658,7 @@ void menu_draw(RenderContext &context, Textures &textures) {
       "ja kirjoittaa kirjaansa, kun äkkiä metsän syvyyksistä alkaa hiipiä "
       "häiritseviä varjoja..";
   renderText(context, context.font, intro, white, context.textShaderProgram, context.textVAO,
-             context.textVBO, 300.0f, 1300.0f, 30);
+             context.textVBO, 300.0f, 1300.0f, 40);
 
   renderText(context, context.font, "Jatka näpsäyttämällä entteriä", white,
              context.textShaderProgram, context.textVAO, context.textVBO, 600.0f, 500.0f, 0);
