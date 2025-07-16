@@ -174,9 +174,22 @@ void renderText(RenderContext& context,
   RenderContext::TextCacheEntry e;
   if (it == context.textCache.end()) {
     // 2) create an SDL_Surface (wrapped or not)
-    SDL_Surface* surf = wrapChars > 0
-      ? TTF_RenderUTF8_Blended_Wrapped(font, text.c_str(), color, wrapChars)
-      : TTF_RenderUTF8_Blended(font, text.c_str(), color);
+    SDL_Surface* surf = nullptr;
+    if (wrapChars > 0) {
+      // convert wrapChars (characters) into a pixel width
+      int minx, maxx, miny, maxy, advance;
+      int cw;
+      if (TTF_GlyphMetrics(font, 'M', &minx, &maxx, &miny, &maxy, &advance) == 0) {
+        cw = advance;
+      } else {
+        // fallback to roughly half the font height
+        cw = TTF_FontHeight(font) / 2;
+      }
+      Uint32 wrapPixels = Uint32(wrapChars) * Uint32(cw);
+      surf = TTF_RenderUTF8_Blended_Wrapped(font, text.c_str(), color, wrapPixels);
+    } else {
+      surf = TTF_RenderUTF8_Blended(font, text.c_str(), color);
+    }
     if (!surf) { printf("TTF error: %s\n", TTF_GetError()); return; }
     // 3) convert to RGBA32
     SDL_Surface* fmt = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_RGBA32, 0);
