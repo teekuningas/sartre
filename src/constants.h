@@ -71,8 +71,8 @@ const float GAME_OBJECT_FREQUENCY = 1.5f;
 
 const int NUM_NAUSEA_LIMIT = 3;
 
-// const int PAGE_GOAL = 251;
-const int PAGE_GOAL = 5;
+const int PAGE_GOAL = 251;
+// const int PAGE_GOAL = 5;
 
 const int NUM_PAGES = 3;
 const int NUM_NAUSEOUS_OBJECTS = 5;

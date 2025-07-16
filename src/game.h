@@ -27,9 +27,7 @@ void forest_draw(GameStateForest& state, Textures& textures, RenderContext& cont
 void results_init(GameStateResults& state);
 void results_update(GameStateResults& state, Uint32 totalElapsed, float deltaTime,
                     Surfaces& surfaces, InputResult& result);
-void results_draw(RenderContext& context,
-                  Textures& textures,
-                  Uint32 totalElapsed,
+void results_draw(RenderContext& context, Textures& textures, Uint32 totalElapsed,
                   GameStateResults const& state);
 
 // --- Input and transitions ---
