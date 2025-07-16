@@ -445,29 +445,119 @@ static void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
 
 void results_init(GameStateResults &gameStateResults) {}
 
-void results_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint VBO,
-                  GameStateResults const &state) {
-  // Set up the orthographic projection for the text rendering
-  float orthoMatrix[16];
-  createOrthographicMatrix(0.0f, MAP_WIDTH, 0.0f, MAP_HEIGHT, -1.0f, 1.0f, orthoMatrix);
+void results_draw(RenderContext& context,
+                  Textures& textures,
+                  Uint32 totalElapsed,
+                  GameStateResults const& state) {
+  // 0) one orthographic for full-screen quads
+  float ortho[16];
+  createOrthographicMatrix(
+      -MAP_WIDTH/2, MAP_WIDTH/2,
+       0.0f,       MAP_HEIGHT,
+      -100.0f,     100.0f,
+      ortho);
 
-  // Use the text shader program
-  glUseProgram(textShaderProgram);
+  //
+  // 1) Background: forest shader with warp on failure, calm on success
+  //
+  glUseProgram(context.forestShaderProgram);
+  glUniformMatrix4fv(context.forestLocProjection, 1, GL_FALSE, ortho);
+  glUniform1i(context.forestLocOurTexture, 0);
+  glUniform1f(context.forestLocNausea, state.success ? 0.0f : 1.0f);
+  glUniform1f(context.forestLocTime, totalElapsed / 1000.0f);
+  glBindVertexArray(context.forestVAO);
+  glBindTexture(GL_TEXTURE_2D, textures.forestTausta[0]);
+  float bgVerts[] = {
+    -MAP_WIDTH/2, MAP_HEIGHT, 0.0f, -1.0f,
+     MAP_WIDTH/2, MAP_HEIGHT, 1.0f, -1.0f,
+     MAP_WIDTH/2, 0.0f,       1.0f,  0.0f,
+    -MAP_WIDTH/2, 0.0f,       0.0f,  0.0f
+  };
+  glBindBuffer(GL_ARRAY_BUFFER, context.forestVBO);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(bgVerts), bgVerts);
+  glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+  glBindVertexArray(0);
 
-  // Pass the projection matrix to the shader
-  GLuint projectionLoc = glGetUniformLocation(textShaderProgram, "projection");
-  glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, orthoMatrix);
+  // ensure no leftover depth test
+  glDisable(GL_DEPTH_TEST);
 
-  SDL_Color white = {255, 255, 255, 255};
+  //
+  // 2) Semi‐transparent tint: green overlay if success, red if failure
+  //
+  glUseProgram(context.textShaderProgram);
+  glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, ortho);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  GLint clrLoc = glGetUniformLocation(context.textShaderProgram, "textColor");
   if (state.success) {
-    renderText(font,
-               "Kaikesta huolimatta kirja tulee valmiiksi. 251-sivuinen La Nausée julkaistaan "
-               "vuonna 1938.",
-               white, textShaderProgram, VAO, VBO, 300.0f, 1000.0f, 50);
+    glUniform4f(clrLoc, 0.0f, 0.5f, 0.0f, 0.2f);
   } else {
-    renderText(font,
-               "Sartre saattoi olla olemassa, mutta entäpä kirja? On niin kauhean inhottavaa.",
-               white, textShaderProgram, VAO, VBO, 300.0f, 1000.0f, 50);
+    glUniform4f(clrLoc, 0.5f, 0.0f, 0.0f, 0.2f);
+  }
+  glBindVertexArray(context.textVAO);
+  float cover[] = {
+    0.0f,      MAP_HEIGHT, 0.0f, 0.0f,
+    MAP_WIDTH, MAP_HEIGHT, 1.0f, 0.0f,
+    MAP_WIDTH, 0.0f,       1.0f, 1.0f,
+    0.0f,      0.0f,       0.0f, 1.0f
+  };
+  glBindBuffer(GL_ARRAY_BUFFER, context.textVBO);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(cover), cover);
+  glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+  glDisable(GL_BLEND);
+  glBindVertexArray(0);
+
+  //
+  // 3) Draw a static Sartre sprite at the bottom‐center
+  //
+  glUseProgram(context.forestShaderProgram);
+  glUniformMatrix4fv(context.forestLocProjection, 1, GL_FALSE, ortho);
+  glUniform1f(context.forestLocNausea, 0.0f);
+  glUniform1f(context.forestLocTime, 0.0f);
+  glBindVertexArray(context.forestVAO);
+  float model[16];
+  createTranslationMatrix(0.0f, MAP_HEIGHT / 4.0f, 0.0f, model);
+  glUniformMatrix4fv(context.forestLocModel, 1, GL_FALSE, model);
+  glBindTexture(GL_TEXTURE_2D, textures.forestSartre[0]);
+  float quad[] = {
+    -SARTRE_WIDTH/2,  SARTRE_HEIGHT/2, 0.0f, 0.0f,
+     SARTRE_WIDTH/2,  SARTRE_HEIGHT/2, 1.0f, 0.0f,
+     SARTRE_WIDTH/2, -SARTRE_HEIGHT/2, 1.0f, 1.0f,
+    -SARTRE_WIDTH/2, -SARTRE_HEIGHT/2, 0.0f, 1.0f
+  };
+  glBindBuffer(GL_ARRAY_BUFFER, context.forestVBO);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad);
+  glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+  glBindVertexArray(0);
+
+  //
+  // 4) Finally render your two result‐texts
+  //
+  glUseProgram(context.textShaderProgram);
+  glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, ortho);
+  SDL_Color white{255,255,255,255};
+
+  // Top summary line with actual page‐count
+  std::string summary = 
+    "Sartre onnistuu kirjoittamaan " + std::to_string(state.pages_collected) +
+    " sivua ennen kuin inhottavat asiat lopulta saavat hänet kiinni.";
+  renderText(context.font, summary, white,
+             context.textShaderProgram, context.textVAO, context.textVBO,
+             200.0f, MAP_HEIGHT - 50.0f, 60);
+
+  // Then the old “success” / “failure” block, tweaked slightly:
+  if (state.success) {
+    renderText(context.font,
+               "Kaikesta huolimatta kirja tulee valmiiksi. " +
+                 std::to_string(PAGE_GOAL) +
+                 "-sivuinen La Nausée julkaistaan vuonna 1938.",
+               white, context.textShaderProgram, context.textVAO, context.textVBO,
+               300.0f, 1000.0f, 50);
+  } else {
+    renderText(context.font,
+               "On niin kauhean inhottavaa, että tämä kirja jää keskeneräiseksi.",
+               white, context.textShaderProgram, context.textVAO, context.textVBO,
+               300.0f, 1000.0f, 50);
   }
 }
 
