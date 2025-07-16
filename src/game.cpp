@@ -462,12 +462,13 @@ void results_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint V
   SDL_Color white = {255, 255, 255, 255};
   if (state.success) {
     renderText(font,
-               "Kirja siis tulee valmiiksi. 251-sivuinen Inho (La Nausée) julkaistaan vuonna 1938.",
-               white, textShaderProgram, VAO, VBO, 300.0f, 1000.0f, 40);
+               "Kaikesta huolimatta kirja tulee valmiiksi. 251-sivuinen La Nausée julkaistaan "
+               "vuonna 1938.",
+               white, textShaderProgram, VAO, VBO, 300.0f, 1000.0f, 50);
   } else {
     renderText(font,
                "Sartre saattoi olla olemassa, mutta entäpä kirja? On niin kauhean inhottavaa.",
-               white, textShaderProgram, VAO, VBO, 300.0f, 1000.0f, 40);
+               white, textShaderProgram, VAO, VBO, 300.0f, 1000.0f, 50);
   }
 }
 
@@ -490,31 +491,15 @@ void menu_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint VBO)
 
   SDL_Color white = {255, 255, 255, 255};
 
-  // wrap the entire intro text at ~40 chars per line
   const std::string intro =
-    "Jean-Paul Sartre istui metsän keskellä, lehtien kahistessa ympärillään, "
-    "ja kirjoitti uutta kirjaansa, kun äkkiä metsän syvyyksistä alkoi hiipiä "
-    "häiritseviä varjoja, jotka uhkasivat keskeyttää hänen luomisprosessinsa.";
-  renderText(font,
-             intro,
-             white,
-             textShaderProgram,
-             VAO,
-             VBO,
-             300.0f,    // x
-             1300.0f,   // y
-             40);       // wrap at 40 chars
+      "Jean-Paul Sartre istuu metsän keskellä, lehtien kahistessa ympärillään, "
+      "ja kirjoittaa kirjaansa, kun äkkiä metsän syvyyksistä alkaa hiipiä "
+      "häiritseviä varjoja, jotka uhkaavat keskeyttää hänen luomisprosessinsa.";
+  renderText(font, intro, white, textShaderProgram, VAO, VBO, 300.0f, 1300.0f, 50);
 
   // single‐line “press enter” prompt (no wrap)
-  renderText(font,
-             "Jatka näpsäyttämällä entteriä",
-             white,
-             textShaderProgram,
-             VAO,
-             VBO,
-             600.0f,
-             500.0f,
-             0);        // 0 = no wrapping
+  renderText(font, "Jatka näpsäyttämällä entteriä", white, textShaderProgram, VAO, VBO, 600.0f,
+             500.0f, 0);
 }
 
 void menu_update(GameStateMenu &gameStateMenu, Uint32 totalElapsed, float deltaTime,
