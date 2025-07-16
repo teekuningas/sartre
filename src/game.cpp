@@ -547,8 +547,8 @@ void menu_draw(RenderContext& context, Textures& textures) {
   const std::string intro =
       "Jean-Paul Sartre istuu metsän keskellä, lehtien kahistessa ympärillään, "
       "ja kirjoittaa kirjaansa, kun äkkiä metsän syvyyksistä alkaa hiipiä "
-      "häiritseviä varjoja, jotka uhkaavat keskeyttää hänen luomisprosessinsa.";
-  renderText(context.font, intro, white, context.textShaderProgram, context.textVAO, context.textVBO, 300.0f, 1300.0f, 50);
+      "häiritseviä varjoja..";
+  renderText(context.font, intro, white, context.textShaderProgram, context.textVAO, context.textVBO, 300.0f, 1300.0f, 40);
 
   renderText(context.font, "Jatka näpsäyttämällä entteriä", white, context.textShaderProgram, context.textVAO, context.textVBO, 600.0f, 500.0f, 0);
 }
