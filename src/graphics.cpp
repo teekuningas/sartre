@@ -158,7 +158,12 @@ void free_surfaces(Surfaces& surfaces) { SDL_FreeSurface(surfaces.forestCollisio
 
 //
 // new helper in graphics.cpp
-// Uses a single static GL texture for all text rendering.
+/*
+ * Uses a single static GL texture for all text rendering.
+ * - Reallocates storage with glTexImage2D(NULL) if w/h changes.
+ * - Otherwise, uses glTexSubImage2D for new pixels.
+ * - Caches textColorLoc for efficiency.
+ */
 static void drawTextSurface(SDL_Surface* surface, SDL_Color color, GLuint shader, GLuint VAO,
                             GLuint VBO, float x, float y) {
   // bail if wrong format
@@ -168,16 +173,24 @@ static void drawTextSurface(SDL_Surface* surface, SDL_Color color, GLuint shader
     return;
   }
 
-  // 1) create or reuse a single static texture
+  // 1) create or reuse a single static texture, and track its size
   static GLuint textTexture = 0;
+  static int g_texWidth = 0, g_texHeight = 0;
+  static GLint textColorLoc = -1;
   if (textTexture == 0) {
     glGenTextures(1, &textTexture);
+    glBindTexture(GL_TEXTURE_2D, textTexture);
+    g_texWidth = 0;
+    g_texHeight = 0;
+    // Set texture params once
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   }
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, textTexture);
 
-  // 2) upload pixels manually (handles pitch)
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   int mode = GL_RGBA;
   const int pitch = surface->pitch;
   const int width = surface->w;
@@ -187,25 +200,28 @@ static void drawTextSurface(SDL_Surface* surface, SDL_Color color, GLuint shader
     std::memcpy(&pixels[row * width * 4],
                 static_cast<unsigned char*>(surface->pixels) + row * pitch, width * 4);
   }
-  glTexImage2D(GL_TEXTURE_2D, 0, mode, width, height, 0, mode, GL_UNSIGNED_BYTE, pixels.data());
 
-  // 3) set texture params
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  // 2) (Re)allocate storage if needed, else just update pixels
+  if (width != g_texWidth || height != g_texHeight) {
+    glTexImage2D(GL_TEXTURE_2D, 0, mode, width, height, 0, mode, GL_UNSIGNED_BYTE, nullptr);
+    g_texWidth = width;
+    g_texHeight = height;
+  }
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, mode, GL_UNSIGNED_BYTE, pixels.data());
 
-  // 4) set text color uniform
-  GLint textColorLoc = glGetUniformLocation(shader, "textColor");
+  // 3) set text color uniform (cache location)
+  if (textColorLoc == -1) {
+    textColorLoc = glGetUniformLocation(shader, "textColor");
+  }
   glUniform4f(textColorLoc, color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
 
-  // 5) build quad vertices for this texture
+  // 4) build quad vertices for this texture
   float w = static_cast<float>(width);
   float h = static_cast<float>(height);
   float verts[] = {x,     y,     0.0f, 0.0f, x + w, y,     1.0f, 0.0f,
                    x + w, y - h, 1.0f, 1.0f, x,     y - h, 0.0f, 1.0f};
 
-  // 6) draw it with alpha blending
+  // 5) draw it with alpha blending
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glBindVertexArray(VAO);
@@ -214,7 +230,7 @@ static void drawTextSurface(SDL_Surface* surface, SDL_Color color, GLuint shader
   glBindTexture(GL_TEXTURE_2D, textTexture);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
-  // 7) cleanup
+  // 6) cleanup
   glBindVertexArray(0);
   glBindTexture(GL_TEXTURE_2D, 0);
   SDL_FreeSurface(surface);
