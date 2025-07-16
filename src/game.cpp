@@ -73,8 +73,9 @@ void forest_update(GameStateForest &gameStateForest, RenderContext &context, Uin
     sartre.vy = sartre.vy - deltaTime * SARTRE_G;
   }
 
-  // 5) end‐of‐frame: transition if too many nasty collisions
-  if (gameStateForest.nausea_hits >= NUM_NAUSEA_LIMIT) {
+  // 5) end‐of‐frame: transition if too many nasty collisions OR enough pages
+  if (gameStateForest.nausea_hits >= NUM_NAUSEA_LIMIT ||
+      gameStateForest.pages_collected >= PAGE_GOAL) {
     inputResult.transition = true;
     inputResult.transitionTo = RESULTS;
   }
@@ -170,6 +171,9 @@ void run_game_frame(GameLoopData &data) {
       menu_init(data.gameStateMenu);
     }
     if (inputResult.transitionTo == RESULTS) {
+      data.gameStateResults.pages_collected = data.gameStateForest.pages_collected;
+      data.gameStateResults.success =
+          (data.gameStateResults.pages_collected >= PAGE_GOAL);
       results_init(data.gameStateResults);
     }
     data.gameMode = inputResult.transitionTo;
@@ -188,7 +192,7 @@ void run_game_frame(GameLoopData &data) {
       break;
     case RESULTS:
       results_draw(data.context.font, data.context.textShaderProgram, data.context.textVAO,
-                   data.context.textVBO);
+                   data.context.textVBO, data.gameStateResults);
       break;
     default:
       break;
@@ -442,7 +446,8 @@ static void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
 
 void results_init(GameStateResults &gameStateResults) {}
 
-void results_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint VBO) {
+void results_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint VBO,
+                  GameStateResults const &state) {
   // Set up the orthographic projection for the text rendering
   float orthoMatrix[16];
   createOrthographicMatrix(0.0f, MAP_WIDTH, 0.0f, MAP_HEIGHT, -1.0f, 1.0f, orthoMatrix);
@@ -455,10 +460,17 @@ void results_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint V
   glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, orthoMatrix);
 
   SDL_Color white = {255, 255, 255, 255};
-  renderText(font, "Ei ole filosofilla aina helppoa!", white, textShaderProgram, VAO, VBO, 300.0f,
-             1000.0f);
-  renderText(font, "Jatka näpsäyttämällä entteriä", white, textShaderProgram, VAO, VBO, 600.0f,
-             500.0f);
+  if (state.success) {
+    renderText(font,
+               "Kirja siis tulee valmiiksi. 251-sivuinen Inho (La Nausée) julkaistaan vuonna 1938.",
+               white, textShaderProgram, VAO, VBO,
+               300.0f, 1000.0f);
+  } else {
+    renderText(font,
+               "Sartre saattoi olla olemassa, mutta entäpä kirja? On niin kauhean inhottavaa.",
+               white, textShaderProgram, VAO, VBO,
+               300.0f, 1000.0f);
+  }
 }
 
 void results_update(GameStateResults &gameStateResults, Uint32 totalElapsed, float deltaTime,

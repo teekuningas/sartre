@@ -49,7 +49,10 @@ struct GameStateForest {
 
 struct GameStateMenu {};
 
-struct GameStateResults {};
+struct GameStateResults {
+  int pages_collected;  // carry over from forest
+  bool success;        // true if pages_collected >= PAGE_GOAL
+};
 
 struct InputResult {
   bool transition;
