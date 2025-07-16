@@ -1,5 +1,7 @@
 #include "game.h"
 
+#include <cmath>       // for fabs()
+
 #include "constants.h"
 #include "graphics.h"  // now provides format_sdl_surface, create_textures, renderText, etc.
 
@@ -12,6 +14,31 @@ static bool isPixelBlack(SDL_Surface *surface, int x, int y) {
   Uint32 offset = y * surface->pitch + x * 4;
   Uint8 *pixel = static_cast<Uint8 *>(surface->pixels) + offset;
   return pixel[0] < threshold && pixel[1] < threshold && pixel[2] < threshold;
+}
+
+// Spawn or respawn obj in a random location that does NOT overlap Sartre.
+static void spawn_object_avoiding_sartre(GameObject &obj,
+                                         Sartre const &sartre,
+                                         GameObjectType type)
+{
+  obj.type = type;
+  float halfW = (obj.width + sartre.width) * 0.5f;
+  float halfH = (obj.height + sartre.height) * 0.5f;
+  // loop until the new center is outside Sartre’s bounding box
+  do {
+    obj.x = (GLfloat)((rand() % (MAP_WIDTH - (int)obj.width))
+                      - (MAP_WIDTH/2) + obj.width/2);
+    obj.y = (GLfloat)((rand() % (MAP_HEIGHT - (int)obj.height - (MAP_HEIGHT/4)))
+                      + (MAP_HEIGHT/8) + obj.height/2);
+  } while (fabs(obj.x - sartre.x) < halfW && fabs(obj.y - sartre.y) < halfH);
+
+  // re‐randomize velocity and phase; keep amplitude & frequency
+  obj.vx    = ((((float)(rand() % 1000))/1000.0f)*1.5f + 0.5f)
+               * 0.3f * (rand()%2 ? 1.0f : -1.0f);
+  obj.ymid  = obj.y;
+  obj.phase = (((float)(rand() % 1000))/1000.0f) * 2.0f * 3.14159265f;
+  obj.collected   = false;
+  obj.collectedAt = 0; 
 }
 
 void run_game_frame(GameLoopData &data) {
@@ -169,10 +196,14 @@ void forest_init(GameStateForest &gameStateForest) {
 
   for (int i = 0; i < NUM_PAGES; ++i) {
     init_game_object(gameStateForest.objects[i], PAGE);
+    spawn_object_avoiding_sartre(gameStateForest.objects[i],
+                                 gameStateForest.sartre, PAGE);
   }
-
   for (int i = NUM_PAGES; i < TOTAL_GAME_OBJECTS; ++i) {
-    init_game_object(gameStateForest.objects[i], (rand() % 2 == 0) ? CHESTNUT : PIPE);
+    GameObjectType t = (rand() % 2 == 0) ? CHESTNUT : PIPE;
+    init_game_object(gameStateForest.objects[i], t);
+    spawn_object_avoiding_sartre(gameStateForest.objects[i],
+                                 gameStateForest.sartre, t);
   }
 }
 
@@ -283,48 +314,47 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
              context.textVBO, 50.0f, MAP_HEIGHT - 100.0f);  // Position near top-left
 }
 
-void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameStateForest,
-                        Uint32 totalElapsed) {
-  if (!obj.collected) {
-    // Change position for sinelike trajectory
-    obj.x = obj.x + obj.vx;
-    obj.y =
-        obj.ymid + obj.amplitude * sin(obj.frequency * ((float)totalElapsed / 1000 + obj.phase));
-
-    // If goes outside the window, come out from the other direction
-    if ((obj.x > MAP_WIDTH / 2 + obj.width) && (obj.vx > 0)) {
-      obj.x = -(obj.width / 2) - MAP_WIDTH / 2;
-    } else if ((obj.x < -MAP_WIDTH / 2 - obj.width) && (obj.vx < 0)) {
-      obj.x = MAP_WIDTH / 2 + obj.width / 2;
+void update_game_object(GameObject &obj,
+                        Sartre &sartre,
+                        GameStateForest &gameStateForest,
+                        Uint32 totalElapsed)
+{
+  // if it's already collected, wait 1 second then respawn:
+  if (obj.collected) {
+    if (totalElapsed - obj.collectedAt >= 1000) {
+      // choose a new type for non-page objects
+      GameObjectType newType =
+          (obj.type == PAGE ? PAGE
+                            : ((rand() % 2 == 0) ? CHESTNUT : PIPE));
+      spawn_object_avoiding_sartre(obj, sartre, newType);
     }
+    return;
+  }
 
-    // Check for collision with Sartre (AABB collision detection)
-    bool collisionX = sartre.x + sartre.width / 2 >= obj.x - obj.width / 2 &&
-                      obj.x + obj.width / 2 >= sartre.x - sartre.width / 2;
-    bool collisionY = sartre.y + sartre.height / 2 >= obj.y - obj.height / 2 &&
-                      obj.y + obj.height / 2 >= sartre.y - sartre.height / 2;
+  // 1) move along the sine-wave trajectory
+  obj.x += obj.vx;
+  obj.y = obj.ymid + obj.amplitude *
+          sinf(obj.frequency * (totalElapsed/1000.0f + obj.phase));
 
-    if (collisionX && collisionY) {
-      obj.collected = true;
-      if (obj.type == PAGE) {
-        gameStateForest.pages_collected++;
-      } else {
-        gameStateForest.nausea_hits++;
-      }
+  // 2) wrap‐around logic …
+  if (obj.x > MAP_WIDTH/2 + obj.width && obj.vx > 0)
+    obj.x = -MAP_WIDTH/2 - obj.width/2;
+  else if (obj.x < -MAP_WIDTH/2 - obj.width && obj.vx < 0)
+    obj.x =  MAP_WIDTH/2 + obj.width/2;
 
-      // Respawn the object at a new random location
-      obj.x = (GLfloat)((rand() % (MAP_WIDTH - (int)obj.width)) - (MAP_WIDTH / 2) +
-                        (int)(obj.width / 2));
-      obj.y = (GLfloat)((rand() % (MAP_HEIGHT - (int)obj.height - (MAP_HEIGHT / 4))) +
-                        (MAP_HEIGHT / 8) + (int)(obj.height / 2));
-      obj.vx = ((((GLfloat)(rand() % 1000)) / 1000.0f) * 1.5f + 0.5f) * 0.3f *
-               (rand() % 2 == 0 ? 1 : -1);
-      obj.ymid = obj.y;
-      obj.phase = (((GLfloat)(rand() % 1000)) / 1000.0f) * 3.141 * 2;
-      if (obj.type != PAGE) {
-        obj.type = (rand() % 2 == 0) ? CHESTNUT : PIPE;
-      }
-      obj.collected = false;
+  // 3) collision test
+  bool collisionX = sartre.x + sartre.width/2 >= obj.x - obj.width/2 &&
+                    obj.x + obj.width/2        >= sartre.x - sartre.width/2;
+  bool collisionY = sartre.y + sartre.height/2 >= obj.y - obj.height/2 &&
+                    obj.y + obj.height/2        >= sartre.y - sartre.height/2;
+
+  if (collisionX && collisionY) {
+    obj.collected    = true;
+    obj.collectedAt  = totalElapsed;    // start 1 second timer
+    if (obj.type == PAGE) {
+      gameStateForest.pages_collected++;
+    } else {
+      gameStateForest.nausea_hits++;
     }
   }
 }

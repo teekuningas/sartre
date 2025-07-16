@@ -24,6 +24,7 @@ struct GameObject {
   GLfloat amplitude;
   GLfloat frequency;
   bool collected;
+  Uint32 collectedAt;      // <— time when we picked it up, used to delay respawn
   GameObjectType type;
 };
 
