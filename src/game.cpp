@@ -493,7 +493,7 @@ void results_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint V
   glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, orthoMatrix);
 
   SDL_Color white = {255, 255, 255, 255};
-  renderText(font, "Ei ole kirjailijan työ aina helppoa!", white, textShaderProgram, VAO, VBO,
+  renderText(font, "Ei ole filosofilla aina helppoa!", white, textShaderProgram, VAO, VBO,
              300.0f, 1000.0f);
   renderText(font, "Jatka näpsäyttämällä entteriä", white, textShaderProgram, VAO, VBO, 600.0f,
              500.0f);
