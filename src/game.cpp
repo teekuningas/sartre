@@ -14,6 +14,25 @@ static bool aabbOverlap(GLfloat x1, GLfloat y1, GLfloat w1, GLfloat h1,
 
 #include "constants.h"
 #include "graphics.h"  // now provides format_sdl_surface, create_textures, renderText, etc.
+#include "engine.h"   // for the context.scribbleSound / bellSound members
+
+// --- update loop for the FOREST state ---
+void forest_update(GameStateForest&   gameStateForest,
+                   RenderContext&      context,
+                   Uint32              totalElapsed,
+                   float               deltaTime,
+                   Surfaces&           surfaces,
+                   InputResult&        inputResult)
+{
+  // For now we only need to tick objects (which will play SFX on collision).
+  for (auto &obj : gameStateForest.objects) {
+    update_game_object(obj,
+                       gameStateForest.sartre,
+                       gameStateForest,
+                       context,
+                       totalElapsed);
+  }
+}
 
 // A minimal in‐file helper, used by forest_update for collision‐map lookups:
 static bool isPixelBlack(SDL_Surface *surface, int x, int y) {
