@@ -175,6 +175,7 @@ static void drawTextSurface(SDL_Surface* surface, SDL_Color color, GLuint shader
 
   // 1) create or reuse a single static texture, and track its size
   static GLuint textTexture = 0;
+  // track the *maximum* size we've ever allocated
   static int g_texWidth = 0, g_texHeight = 0;
   static GLint textColorLoc = -1;
   if (textTexture == 0) {
@@ -201,11 +202,14 @@ static void drawTextSurface(SDL_Surface* surface, SDL_Color color, GLuint shader
                 static_cast<unsigned char*>(surface->pixels) + row * pitch, width * 4);
   }
 
-  // 2) (Re)allocate storage if needed, else just update pixels
-  if (width != g_texWidth || height != g_texHeight) {
-    glTexImage2D(GL_TEXTURE_2D, 0, mode, width, height, 0, mode, GL_UNSIGNED_BYTE, nullptr);
-    g_texWidth = width;
-    g_texHeight = height;
+  // 2) only grow backing storage when one of our strings exceeds prior max
+  if (width > g_texWidth || height > g_texHeight) {
+    // grow to the new maximum
+    g_texWidth  = std::max(g_texWidth,  width);
+    g_texHeight = std::max(g_texHeight, height);
+    glTexImage2D(GL_TEXTURE_2D, 0, mode,
+                 g_texWidth, g_texHeight,
+                 0, mode, GL_UNSIGNED_BYTE, nullptr);
   }
   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, mode, GL_UNSIGNED_BYTE, pixels.data());
 
@@ -215,11 +219,15 @@ static void drawTextSurface(SDL_Surface* surface, SDL_Color color, GLuint shader
   }
   glUniform4f(textColorLoc, color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
 
-  // 4) build quad vertices for this texture
-  float w = static_cast<float>(width);
-  float h = static_cast<float>(height);
-  float verts[] = {x,     y,     0.0f, 0.0f, x + w, y,     1.0f, 0.0f,
-                   x + w, y - h, 1.0f, 1.0f, x,     y - h, 0.0f, 1.0f};
+  // 4) build quad vertices – use only the sub‐region [0,width]×[0,height]
+  float uMax = float(width)  / float(g_texWidth);
+  float vMax = float(height) / float(g_texHeight);
+  float verts[] = {
+    x,           y,            0.0f, 0.0f,
+    x + width,   y,            uMax, 0.0f,
+    x + width,   y - height,   uMax, vMax,
+    x,           y - height,   0.0f, vMax
+  };
 
   // 5) draw it with alpha blending
   glEnable(GL_BLEND);
