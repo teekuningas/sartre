@@ -576,8 +576,8 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
 
   if (state.success) {
     renderText(context.font,
-               "Kaikista maailman inhottavista asioista huolimatta kirja tulee valmiiksi. " +
-                   "251-sivuinen La Nausée julkaistaan vuonna 1938.",
+               "Kaikista maailman inhottavista asioista huolimatta kirja tulee valmiiksi. "
+               "251-sivuinen La Nausée julkaistaan vuonna 1938.",
                white, context.textShaderProgram, context.textVAO, context.textVBO, 300.0f,
                MAP_HEIGHT - 500.0f, 50);
   } else {
