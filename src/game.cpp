@@ -536,25 +536,31 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
   glBindVertexArray(0);
 
   //
-  // 3) Draw a static Sartre sprite at the bottom‐center
+  // 3) Draw a static Sartre sprite at the bottom‐center (only on success)
   //
-  glUseProgram(context.forestShaderProgram);
-  glUniformMatrix4fv(context.forestLocProjection, 1, GL_FALSE, ortho);
-  glUniform1f(context.forestLocNausea, 0.0f);
-  glUniform1f(context.forestLocTime, 0.0f);
-  glBindVertexArray(context.forestVAO);
-  float model[16];
-  createTranslationMatrix(0.0f, MAP_HEIGHT / 4.0f, 0.0f, model);
-  glUniformMatrix4fv(context.forestLocModel, 1, GL_FALSE, model);
-  glBindTexture(GL_TEXTURE_2D, textures.forestSartre[0]);
-  // doubled size:
-  float quad[] = {
-      -SARTRE_WIDTH, SARTRE_HEIGHT,  0.0f, 0.0f, SARTRE_WIDTH,  SARTRE_HEIGHT,  1.0f, 0.0f,
-      SARTRE_WIDTH,  -SARTRE_HEIGHT, 1.0f, 1.0f, -SARTRE_WIDTH, -SARTRE_HEIGHT, 0.0f, 1.0f};
-  glBindBuffer(GL_ARRAY_BUFFER, context.forestVBO);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad);
-  glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-  glBindVertexArray(0);
+  if (state.success) {
+    glUseProgram(context.forestShaderProgram);
+    glUniformMatrix4fv(context.forestLocProjection, 1, GL_FALSE, ortho);
+    glUniform1f(context.forestLocNausea, 0.0f);
+    glUniform1f(context.forestLocTime, 0.0f);
+    glBindVertexArray(context.forestVAO);
+
+    float model[16];
+    createTranslationMatrix(0.0f, MAP_HEIGHT / 4.0f, 0.0f, model);
+    glUniformMatrix4fv(context.forestLocModel, 1, GL_FALSE, model);
+    glBindTexture(GL_TEXTURE_2D, textures.forestSartre[0]);
+    // doubled‐size quad
+    float quad[] = {
+      -SARTRE_WIDTH,  SARTRE_HEIGHT,  0.0f, 0.0f,
+       SARTRE_WIDTH,  SARTRE_HEIGHT,  1.0f, 0.0f,
+       SARTRE_WIDTH, -SARTRE_HEIGHT,  1.0f, 1.0f,
+      -SARTRE_WIDTH, -SARTRE_HEIGHT,  0.0f, 1.0f
+    };
+    glBindBuffer(GL_ARRAY_BUFFER, context.forestVBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glBindVertexArray(0);
+  }
 
   //
   // 4) Finally render your two result‐texts
