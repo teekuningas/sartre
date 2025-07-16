@@ -25,7 +25,8 @@ void forest_draw(GameStateForest& state, Textures& textures, RenderContext& cont
 void results_init(GameStateResults& state);
 void results_update(GameStateResults& state, Uint32 totalElapsed, float deltaTime,
                     Surfaces& surfaces, InputResult& result);
-void results_draw(TTF_Font* font, GLuint shaderProgram, GLuint VAO, GLuint VBO);
+void results_draw(TTF_Font* font, GLuint shaderProgram, GLuint VAO, GLuint VBO,
+                  GameStateResults const& state);
 
 // --- Input and transitions ---
 void handle_events(GameMode& gameMode, bool fullscreen, InputResult& result);
