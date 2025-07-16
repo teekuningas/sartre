@@ -22,10 +22,14 @@ void forest_draw(GameStateForest& state, Textures& textures, RenderContext& cont
                  GLuint shaderProgram, GLuint VAO, GLuint VBO);
 
 // --- Results state ---
+// --- Results state ---
+// Now takes both the GL/context+font and all textures, plus elapsed time
 void results_init(GameStateResults& state);
 void results_update(GameStateResults& state, Uint32 totalElapsed, float deltaTime,
                     Surfaces& surfaces, InputResult& result);
-void results_draw(TTF_Font* font, GLuint shaderProgram, GLuint VAO, GLuint VBO,
+void results_draw(RenderContext& context,
+                  Textures& textures,
+                  Uint32 totalElapsed,
                   GameStateResults const& state);
 
 // --- Input and transitions ---

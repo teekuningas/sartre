@@ -189,8 +189,10 @@ void run_game_frame(GameLoopData &data) {
                   data.context.forestShaderProgram, data.context.forestVAO, data.context.forestVBO);
       break;
     case RESULTS:
-      results_draw(data.context.font, data.context.textShaderProgram, data.context.textVAO,
-                   data.context.textVBO, data.gameStateResults);
+      results_draw(data.context,
+                   data.imageData.textures,
+                   data.totalElapsed,
+                   data.gameStateResults);
       break;
     default:
       break;
