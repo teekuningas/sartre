@@ -182,8 +182,7 @@ void run_game_frame(GameLoopData &data) {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   switch (data.gameMode) {
     case MENU:
-      menu_draw(data.context.font, data.context.textShaderProgram, data.context.textVAO,
-                data.context.textVBO);
+      menu_draw(data.context, data.imageData.textures);
       break;
     case FOREST:
       forest_draw(data.gameStateForest, data.imageData.textures, data.context,
@@ -477,29 +476,81 @@ void results_update(GameStateResults &gameStateResults, Uint32 totalElapsed, flo
 
 void menu_init(GameStateMenu &gameStateMenu) {}
 
-void menu_draw(TTF_Font *font, GLuint textShaderProgram, GLuint VAO, GLuint VBO) {
-  // Set up the orthographic projection for the text rendering
+void menu_draw(RenderContext& context, Textures& textures) {
+  // 1. Draw the forest background using the forest shader (no warp, no nausea)
+  glUseProgram(context.forestShaderProgram);
+
   float orthoMatrix[16];
-  createOrthographicMatrix(0.0f, MAP_WIDTH, 0.0f, MAP_HEIGHT, -1.0f, 1.0f, orthoMatrix);
+  createOrthographicMatrix(-MAP_WIDTH / 2, MAP_WIDTH / 2, 0.0f, MAP_HEIGHT, -100.0f, 100.0f, orthoMatrix);
+  glUniformMatrix4fv(context.forestLocProjection, 1, GL_FALSE, orthoMatrix);
 
-  // Use the text shader program
-  glUseProgram(textShaderProgram);
+  // Model matrix: identity (background at origin)
+  float translationMatrix[16];
+  createTranslationMatrix(0.0f, 0.0f, 0.0f, translationMatrix);
+  glUniformMatrix4fv(context.forestLocModel, 1, GL_FALSE, translationMatrix);
 
-  // Pass the projection matrix to the shader
-  GLuint projectionLoc = glGetUniformLocation(textShaderProgram, "projection");
-  glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, orthoMatrix);
+  // Texture unit and uniforms: no warp, no nausea
+  glUniform1i(context.forestLocOurTexture, 0);
+  glUniform1f(context.forestLocNausea, 0.0f);
+  glUniform1f(context.forestLocTime, 0.0f);
 
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LEQUAL);
+
+  glBindVertexArray(context.forestVAO);
+
+  glBindTexture(GL_TEXTURE_2D, textures.forestTausta[0]);
+  float backgroundVertices[] = {
+      -MAP_WIDTH / 2, MAP_HEIGHT, 0.0f, -1.0f, MAP_WIDTH / 2,  MAP_HEIGHT, 1.0f, -1.0f,
+      MAP_WIDTH / 2,  0.0f,       1.0f, 0.0f,  -MAP_WIDTH / 2, 0.0f,       0.0f, 0.0f};
+  glBindBuffer(GL_ARRAY_BUFFER, context.forestVBO);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(backgroundVertices), backgroundVertices);
+  glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+  glBindVertexArray(0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glDisable(GL_DEPTH_TEST);
+
+  // 2. Draw a translucent black quad over the whole screen using the text shader
+  glUseProgram(context.textShaderProgram);
+
+  float textOrtho[16];
+  createOrthographicMatrix(0.0f, MAP_WIDTH, 0.0f, MAP_HEIGHT, -1.0f, 1.0f, textOrtho);
+  glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, textOrtho);
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, textures.forestTausta[0]); // still bound, but not sampled
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  // Set textColor uniform to black with 70% opacity
+  GLint textColorLoc = glGetUniformLocation(context.textShaderProgram, "textColor");
+  glUniform4f(textColorLoc, 0.0f, 0.0f, 0.0f, 0.7f);
+
+  float blackQuadVerts[] = {
+      0.0f,      MAP_HEIGHT, 0.0f, 0.0f,
+      MAP_WIDTH, MAP_HEIGHT, 1.0f, 0.0f,
+      MAP_WIDTH, 0.0f,       1.0f, 1.0f,
+      0.0f,      0.0f,       0.0f, 1.0f
+  };
+  glBindVertexArray(context.textVAO);
+  glBindBuffer(GL_ARRAY_BUFFER, context.textVBO);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(blackQuadVerts), blackQuadVerts);
+  glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+  glBindVertexArray(0);
+  glDisable(GL_BLEND);
+
+  // 3. Draw the menu text as before
   SDL_Color white = {255, 255, 255, 255};
-
   const std::string intro =
       "Jean-Paul Sartre istuu metsän keskellä, lehtien kahistessa ympärillään, "
       "ja kirjoittaa kirjaansa, kun äkkiä metsän syvyyksistä alkaa hiipiä "
       "häiritseviä varjoja, jotka uhkaavat keskeyttää hänen luomisprosessinsa.";
-  renderText(font, intro, white, textShaderProgram, VAO, VBO, 300.0f, 1300.0f, 50);
+  renderText(context.font, intro, white, context.textShaderProgram, context.textVAO, context.textVBO, 300.0f, 1300.0f, 50);
 
-  // single‐line “press enter” prompt (no wrap)
-  renderText(font, "Jatka näpsäyttämällä entteriä", white, textShaderProgram, VAO, VBO, 600.0f,
-             500.0f, 0);
+  renderText(context.font, "Jatka näpsäyttämällä entteriä", white, context.textShaderProgram, context.textVAO, context.textVBO, 600.0f, 500.0f, 0);
 }
 
 void menu_update(GameStateMenu &gameStateMenu, Uint32 totalElapsed, float deltaTime,

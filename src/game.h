@@ -12,7 +12,7 @@ void run_game_frame(GameLoopData& data);
 void menu_init(GameStateMenu& state);
 void menu_update(GameStateMenu& state, Uint32 totalElapsed, float deltaTime, Surfaces& surfaces,
                  InputResult& result);
-void menu_draw(TTF_Font* font, GLuint shaderProgram, GLuint VAO, GLuint VBO);
+void menu_draw(RenderContext& context, Textures& textures);
 
 // --- Forest state ---
 void forest_init(GameStateForest& state);
