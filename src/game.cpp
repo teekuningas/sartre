@@ -2,6 +2,16 @@
 
 #include <cmath>       // for fabs()
 
+// --- AABB overlap test with optional extra margin on both axes ---
+static bool aabbOverlap(GLfloat x1, GLfloat y1, GLfloat w1, GLfloat h1,
+                        GLfloat x2, GLfloat y2, GLfloat w2, GLfloat h2,
+                        float extra = 0.0f)
+{
+  float halfX = w1 * 0.5f + w2 * 0.5f + extra;
+  float halfY = h1 * 0.5f + h2 * 0.5f + extra;
+  return fabs(x1 - x2) < halfX && fabs(y1 - y2) < halfY;
+}
+
 #include "constants.h"
 #include "graphics.h"  // now provides format_sdl_surface, create_textures, renderText, etc.
 
@@ -22,15 +32,16 @@ static void spawn_object_avoiding_sartre(GameObject &obj,
                                          GameObjectType type)
 {
   obj.type = type;
-  float halfW = (obj.width + sartre.width) * 0.5f;
-  float halfH = (obj.height + sartre.height) * 0.5f;
-  // loop until the new center is outside Sartre’s bounding box
+  // ensure we clear at least half an object’s-size buffer around Sartre
+  const float spawnMargin = obj.width * 0.5f;
   do {
     obj.x = (GLfloat)((rand() % (MAP_WIDTH - (int)obj.width))
                       - (MAP_WIDTH/2) + obj.width/2);
     obj.y = (GLfloat)((rand() % (MAP_HEIGHT - (int)obj.height - (MAP_HEIGHT/4)))
                       + (MAP_HEIGHT/8) + obj.height/2);
-  } while (fabs(obj.x - sartre.x) < halfW && fabs(obj.y - sartre.y) < halfH);
+  } while (aabbOverlap(obj.x, obj.y, obj.width, obj.height,
+                       sartre.x, sartre.y, sartre.width, sartre.height,
+                       spawnMargin));
 
   // re‐randomize velocity and phase; keep amplitude & frequency
   obj.vx    = ((((float)(rand() % 1000))/1000.0f)*1.5f + 0.5f)
@@ -343,12 +354,10 @@ void update_game_object(GameObject &obj,
     obj.x =  MAP_WIDTH/2 + obj.width/2;
 
   // 3) collision test
-  bool collisionX = sartre.x + sartre.width/2 >= obj.x - obj.width/2 &&
-                    obj.x + obj.width/2        >= sartre.x - sartre.width/2;
-  bool collisionY = sartre.y + sartre.height/2 >= obj.y - obj.height/2 &&
-                    obj.y + obj.height/2        >= sartre.y - sartre.height/2;
-
-  if (collisionX && collisionY) {
+  // unified AABB test, no extra margin now that we’re detecting real collisions
+  if (aabbOverlap(obj.x, obj.y, obj.width, obj.height,
+                  sartre.x, sartre.y, sartre.width, sartre.height))
+  {
     obj.collected    = true;
     obj.collectedAt  = totalElapsed;    // start 1 second timer
     if (obj.type == PAGE) {
