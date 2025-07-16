@@ -502,12 +502,8 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
   GLint textColorLoc = glGetUniformLocation(context.textShaderProgram, "textColor");
   glUniform4f(textColorLoc, 0.0f, 0.0f, 0.0f, 0.3f);
   glBindVertexArray(context.textVAO);
-  float dimQuad[] = {
-      0.0f,      MAP_HEIGHT, 0.0f, 0.0f,
-      MAP_WIDTH, MAP_HEIGHT, 1.0f, 0.0f,
-      MAP_WIDTH, 0.0f,       1.0f, 1.0f,
-      0.0f,      0.0f,       0.0f, 1.0f
-  };
+  float dimQuad[] = {0.0f,      MAP_HEIGHT, 0.0f, 0.0f, MAP_WIDTH, MAP_HEIGHT, 1.0f, 0.0f,
+                     MAP_WIDTH, 0.0f,       1.0f, 1.0f, 0.0f,      0.0f,       0.0f, 1.0f};
   glBindBuffer(GL_ARRAY_BUFFER, context.textVBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(dimQuad), dimQuad);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -553,11 +549,8 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
   glBindTexture(GL_TEXTURE_2D, textures.forestSartre[0]);
   // doubled size:
   float quad[] = {
-      -SARTRE_WIDTH,  SARTRE_HEIGHT,   0.0f, 0.0f,
-       SARTRE_WIDTH,  SARTRE_HEIGHT,   1.0f, 0.0f,
-       SARTRE_WIDTH, -SARTRE_HEIGHT,   1.0f, 1.0f,
-      -SARTRE_WIDTH, -SARTRE_HEIGHT,   0.0f, 1.0f
-  };
+      -SARTRE_WIDTH, SARTRE_HEIGHT,  0.0f, 0.0f, SARTRE_WIDTH,  SARTRE_HEIGHT,  1.0f, 0.0f,
+      SARTRE_WIDTH,  -SARTRE_HEIGHT, 1.0f, 1.0f, -SARTRE_WIDTH, -SARTRE_HEIGHT, 0.0f, 1.0f};
   glBindBuffer(GL_ARRAY_BUFFER, context.forestVBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -573,16 +566,17 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
   // Top summary line with actual page‐count
   std::string summary = "Sartre onnistuu kirjoittamaan " + std::to_string(state.pages_collected) +
                         " sivua ennen kuin inhottavat asiat lopulta saavat hänet kiinni.";
-  renderText(context.font, summary, white, context.textShaderProgram, context.textVAO,
-             context.textVBO, 200.0f, MAP_HEIGHT - 50.0f, 60);
+  if (!state.success) {
+    renderText(context.font, summary, white, context.textShaderProgram, context.textVAO,
+               context.textVBO, 200.0f, MAP_HEIGHT - 200.0f, 60);
+  }
 
-  // Then the old “success” / “failure” block, tweaked slightly:
   if (state.success) {
     renderText(context.font,
-               "Kaikesta huolimatta kirja tulee valmiiksi. " + std::to_string(PAGE_GOAL) +
-                   "-sivuinen La Nausée julkaistaan vuonna 1938.",
-               white, context.textShaderProgram, context.textVAO, context.textVBO, 300.0f, 1000.0f,
-               50);
+               "Kaikista maailman inhottavista asioista huolimatta kirja tulee valmiiksi. " +
+                   "251-sivuinen La Nausée julkaistaan vuonna 1938.",
+               white, context.textShaderProgram, context.textVAO, context.textVBO, 300.0f,
+               MAP_HEIGHT - 500.0f, 50);
   } else {
     renderText(context.font,
                "Sartre saattoi olla olemassa, mutta entäpä kirja? On niin kauhean inhottavaa.",
