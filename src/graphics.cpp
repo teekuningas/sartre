@@ -156,92 +156,95 @@ void free_textures(Textures& textures) {
 
 void free_surfaces(Surfaces& surfaces) { SDL_FreeSurface(surfaces.forestCollisionMap); }
 
+//
+// new helper in graphics.cpp
+static void drawTextSurface(SDL_Surface* surface,
+                            SDL_Color color,
+                            GLuint shader,
+                            GLuint VAO,
+                            GLuint VBO,
+                            float x,
+                            float y)
+{
+  // bail if wrong format
+  if (surface->format->BytesPerPixel != 4) {
+    printf("Unexpected surface format: %d bytes per pixel\n", surface->format->BytesPerPixel);
+    SDL_FreeSurface(surface);
+    return;
+  }
+
+  // 1) create & bind texture
+  GLuint texture;
+  glGenTextures(1, &texture);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture);
+
+  // 2) upload pixels manually (handles pitch)
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  int mode = GL_RGBA;
+  const int pitch  = surface->pitch;
+  const int width  = surface->w;
+  const int height = surface->h;
+  std::vector<unsigned char> pixels(width * height * 4);
+  for (int row = 0; row < height; ++row) {
+    std::memcpy(&pixels[row * width * 4],
+                static_cast<unsigned char*>(surface->pixels) + row * pitch,
+                width * 4);
+  }
+  glTexImage2D(GL_TEXTURE_2D, 0, mode, width, height, 0, mode, GL_UNSIGNED_BYTE,
+               pixels.data());
+
+  // 3) set texture params
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+  // 4) set text color uniform
+  GLint textColorLoc = glGetUniformLocation(shader, "textColor");
+  glUniform4f(textColorLoc,
+              color.r / 255.0f,
+              color.g / 255.0f,
+              color.b / 255.0f,
+              color.a / 255.0f);
+
+  // 5) build quad vertices for this texture
+  float w = static_cast<float>(width);
+  float h = static_cast<float>(height);
+  float verts[] = {
+    x,     y,     0.0f, 0.0f,
+    x + w, y,     1.0f, 0.0f,
+    x + w, y - h, 1.0f, 1.0f,
+    x,     y - h, 0.0f, 1.0f
+  };
+
+  // 6) draw it with alpha blending
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glBindVertexArray(VAO);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
+  glBindTexture(GL_TEXTURE_2D, texture);
+  glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+  // 7) cleanup
+  glBindVertexArray(0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glDeleteTextures(1, &texture);
+  SDL_FreeSurface(surface);
+  glDisable(GL_BLEND);
+}
+
 void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint shader, GLuint VAO,
                 GLuint VBO, float x, float y, int wrapChars) {
   // If wrapChars is 0, just render as before
   if (wrapChars <= 0) {
-    // Create an SDL surface with the text
     SDL_Surface* surface = TTF_RenderUTF8_Blended(font, text.c_str(), color);
     if (!surface) {
       printf("Failed to render text surface: %s\n", TTF_GetError());
       return;
     }
-
-    // Ensure the surface has the expected format
-    if (surface->format->BytesPerPixel != 4) {
-      printf("Unexpected surface format: %d bytes per pixel\n", surface->format->BytesPerPixel);
-      SDL_FreeSurface(surface);
-      return;
-    }
-
-    // Create OpenGL texture and upload data
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    // Use glPixelStorei to set unpack alignment
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-    // Manually buffer pixel data to handle pitch (row alignment) issues
-    int mode = GL_RGBA;
-    const int pitch = surface->pitch;  // The bytes per row in the surface
-    const int width = surface->w;
-    const int height = surface->h;
-
-    // Allocate buffer for tightly packed pixel data
-    std::vector<unsigned char> pixels(width * height * 4);  // 4 bytes per pixel for RGBA
-
-    // Copy each row from surface->pixels to the new buffer
-    for (int y = 0; y < height; ++y) {
-      std::memcpy(&pixels[y * width * 4],                                    // Target
-                  static_cast<unsigned char*>(surface->pixels) + y * pitch,  // Source
-                  width * 4  // Number of bytes to copy
-      );
-    }
-
-    // Upload to OpenGL
-    glTexImage2D(GL_TEXTURE_2D, 0, mode, width, height, 0, mode, GL_UNSIGNED_BYTE, pixels.data());
-
-    // Set texture parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    // Set the texture uniform and text color uniform
-    GLint textColorLoc = glGetUniformLocation(shader, "textColor");
-    glUniform4f(textColorLoc, color.r / 255.0f, color.g / 255.0f, color.b / 255.0f,
-                color.a / 255.0f);
-
-    // Define the vertices and texture coordinates for a quad
-    float w = static_cast<float>(width);
-    float h = static_cast<float>(height);
-    float vertices[] = {x,     y,     0.0f, 0.0f, x + w, y,     1.0f, 0.0f,
-                        x + w, y - h, 1.0f, 1.0f, x,     y - h, 0.0f, 1.0f};
-
-    // Blended font needs this
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    // Bind the text VAO and update buffer data
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-
-    // Use the uploaded texture in your shader
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);  // Drawing the quad
-
-    // Unbind the VAO and texture
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    // Cleanup
-    glDeleteTextures(1, &texture);
-    SDL_FreeSurface(surface);
-
-    glDisable(GL_BLEND);
+    drawTextSurface(surface, color, shader, VAO, VBO, x, y);
     return;
   }
 
@@ -262,73 +265,14 @@ void renderText(TTF_Font* font, const std::string& text, SDL_Color color, GLuint
   if (!line.empty()) lines.push_back(line);
 
   int lineSkip = TTF_FontLineSkip(font);
-  float curY = y;
+  float curY    = y;
   for (const std::string& l : lines) {
     SDL_Surface* surface = TTF_RenderUTF8_Blended(font, l.c_str(), color);
     if (!surface) {
       printf("Failed to render text surface: %s\n", TTF_GetError());
-      continue;
+    } else {
+      drawTextSurface(surface, color, shader, VAO, VBO, x, curY);
     }
-
-    if (surface->format->BytesPerPixel != 4) {
-      printf("Unexpected surface format: %d bytes per pixel\n", surface->format->BytesPerPixel);
-      SDL_FreeSurface(surface);
-      continue;
-    }
-
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-    int mode = GL_RGBA;
-    const int pitch = surface->pitch;
-    const int width = surface->w;
-    const int height = surface->h;
-
-    std::vector<unsigned char> pixels(width * height * 4);
-
-    for (int yrow = 0; yrow < height; ++yrow) {
-      std::memcpy(&pixels[yrow * width * 4],
-                  static_cast<unsigned char*>(surface->pixels) + yrow * pitch, width * 4);
-    }
-
-    glTexImage2D(GL_TEXTURE_2D, 0, mode, width, height, 0, mode, GL_UNSIGNED_BYTE, pixels.data());
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    GLint textColorLoc = glGetUniformLocation(shader, "textColor");
-    glUniform4f(textColorLoc, color.r / 255.0f, color.g / 255.0f, color.b / 255.0f,
-                color.a / 255.0f);
-
-    float w = static_cast<float>(width);
-    float h = static_cast<float>(height);
-    float vertices[] = {x,     curY,     0.0f, 0.0f, x + w, curY,     1.0f, 0.0f,
-                        x + w, curY - h, 1.0f, 1.0f, x,     curY - h, 0.0f, 1.0f};
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    glDeleteTextures(1, &texture);
-    SDL_FreeSurface(surface);
-
-    glDisable(GL_BLEND);
-
     curY -= lineSkip;
   }
 }
