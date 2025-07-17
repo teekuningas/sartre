@@ -75,6 +75,6 @@ const int PAGE_GOAL = 251;
 // const int PAGE_GOAL = 5;
 
 const int NUM_PAGES = 3;
-const int NUM_NAUSEOUS_OBJECTS = 5;
-const int TOTAL_GAME_OBJECTS = NUM_PAGES + NUM_NAUSEOUS_OBJECTS;
+const int INITIAL_NUM_NAUSEOUS_OBJECTS = 1;
+const float NAUSEA_SPAWN_PROBABILITY = 0.05f;
 #endif  // CONSTANTS_H

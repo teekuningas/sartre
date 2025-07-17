@@ -18,8 +18,9 @@ static bool aabbOverlap(GLfloat x1, GLfloat y1, GLfloat w1, GLfloat h1, GLfloat 
 static bool isPixelBlack(SDL_Surface *surface, int x, int y);
 
 // forward‐declared so forest_update can see it
-static void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameStateForest,
-                               RenderContext &context, Uint32 totalElapsed);
+static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameStateForest,
+                               RenderContext &context, Uint32 totalElapsed,
+                               std::vector<GameObject> &newObjects);
 
 // --- update loop for the FOREST state ---
 void forest_update(GameStateForest &gameStateForest, RenderContext &context, Uint32 totalElapsed,
@@ -29,10 +30,17 @@ void forest_update(GameStateForest &gameStateForest, RenderContext &context, Uin
   if (gameStateForest.warpTime >= 6.28318530718f) gameStateForest.warpTime -= 6.28318530718f;
 
   // 1) tick all objects (they may play SFX on collision):
+  std::vector<GameObject> newObjects;
   Sartre &sartre = gameStateForest.sartre;
-  for (auto &obj : gameStateForest.objects) {
-    update_game_object(obj, sartre, gameStateForest, context, totalElapsed);
+  for (auto it = gameStateForest.objects.begin(); it != gameStateForest.objects.end();) {
+    if (update_game_object(*it, sartre, gameStateForest, context, totalElapsed, newObjects)) {
+      it = gameStateForest.objects.erase(it);
+    } else {
+      ++it;
+    }
   }
+  gameStateForest.objects.insert(gameStateForest.objects.end(), newObjects.begin(),
+                                 newObjects.end());
 
   // 2) advance Sartre’s animation
   sartre.animIdx = (totalElapsed % 1000) / (1000 / sartre.animSize);
@@ -288,7 +296,7 @@ void forest_init(GameStateForest &gameStateForest) {
   sartre.jump = 0;
   sartre.vy = 0.0f;
 
-  gameStateForest.objects.resize(TOTAL_GAME_OBJECTS);
+  gameStateForest.objects.resize(NUM_PAGES + INITIAL_NUM_NAUSEOUS_OBJECTS);
   gameStateForest.pages_collected = 0;
   gameStateForest.nausea_hits = 0;
   gameStateForest.warpTime = 0.0f;  // ← init here
@@ -298,7 +306,7 @@ void forest_init(GameStateForest &gameStateForest) {
     spawn_object_avoiding_sartre(gameStateForest.objects[i], gameStateForest.sartre, PAGE,
                                  /* currentElapsed = */ 0u);
   }
-  for (int i = NUM_PAGES; i < TOTAL_GAME_OBJECTS; ++i) {
+  for (int i = NUM_PAGES; i < NUM_PAGES + INITIAL_NUM_NAUSEOUS_OBJECTS; ++i) {
     GameObjectType t = (rand() % 2 == 0) ? CHESTNUT : PIPE;
     init_game_object(gameStateForest.objects[i], t);
     spawn_object_avoiding_sartre(gameStateForest.objects[i], gameStateForest.sartre, t,
@@ -409,17 +417,20 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
       0);
 }
 
-static void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameStateForest,
-                               RenderContext &context, Uint32 totalElapsed) {
+static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameStateForest,
+                               RenderContext &context, Uint32 totalElapsed,
+                               std::vector<GameObject> &newObjects) {
   // if it's already collected, wait 1 second then respawn:
   if (obj.collected) {
     if (totalElapsed - obj.collectedAt >= 1000) {
-      // choose a new type for non-page objects
-      GameObjectType newType = (obj.type == PAGE ? PAGE : ((rand() % 2 == 0) ? CHESTNUT : PIPE));
-      // align new spawn with the wave at this exact time
-      spawn_object_avoiding_sartre(obj, sartre, newType, totalElapsed);
+      // only pages respawn
+      if (obj.type == PAGE) {
+        spawn_object_avoiding_sartre(obj, sartre, PAGE, totalElapsed);
+      } else {
+        return true;  // remove from game
+      }
     }
-    return;
+    return false;  // do nothing yet
   }
 
   // 1) move along the sine-wave trajectory
@@ -448,10 +459,19 @@ static void update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
 
     if (obj.type == PAGE) {
       gameStateForest.pages_collected++;
+      if (((float)rand() / RAND_MAX) < NAUSEA_SPAWN_PROBABILITY) {
+        GameObject newNauseousObject;
+        init_game_object(newNauseousObject, (rand() % 2 == 0) ? CHESTNUT : PIPE);
+        spawn_object_avoiding_sartre(newNauseousObject, sartre, newNauseousObject.type,
+                                     totalElapsed);
+        newObjects.push_back(newNauseousObject);
+      }
     } else {
       gameStateForest.nausea_hits++;
+      return true;  // remove from game
     }
   }
+  return false;  // keep in game
 }
 
 void results_init(GameStateResults &gameStateResults) {}

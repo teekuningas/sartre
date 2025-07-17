@@ -34,3 +34,8 @@ shell:
 .PHONY: format
 format:
 	@find src -name "*.cpp" -o -name "*.h" | xargs clang-format -i
+
+.PHONY: clean
+clean:
+	rm -fr obj/*
+	rm -fr obj_wasm/*
