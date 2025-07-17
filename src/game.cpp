@@ -103,7 +103,7 @@ static bool isPixelBlack(SDL_Surface *surface, int x, int y) {
 //
 // now takes currentElapsed (in ms) so we can align the sine‐wave
 static void spawn_object_avoiding_sartre(GameObject &obj, Sartre const &sartre, GameObjectType type,
-                                         Uint32 currentElapsed) {
+                                         Uint32 currentElapsed, GLfloat speedFactor) {
   obj.type = type;
   // we’ll keep trying random x|ymid|phase until the *actual* first‐frame y
   // (ymid + A·sin(ω*(t+phase))) does not overlap Sartre.
@@ -300,17 +300,18 @@ void forest_init(GameStateForest &gameStateForest) {
   gameStateForest.pages_collected = 0;
   gameStateForest.nausea_hits = 0;
   gameStateForest.warpTime = 0.0f;  // ← init here
+  gameStateForest.speedFactor = INITIAL_SPEED_FACTOR;
 
   for (int i = 0; i < NUM_PAGES; ++i) {
     init_game_object(gameStateForest.objects[i], PAGE);
     spawn_object_avoiding_sartre(gameStateForest.objects[i], gameStateForest.sartre, PAGE,
-                                 /* currentElapsed = */ 0u);
+                                 /* currentElapsed = */ 0u, gameStateForest.speedFactor);
   }
   for (int i = NUM_PAGES; i < NUM_PAGES + INITIAL_NUM_NAUSEOUS_OBJECTS; ++i) {
     GameObjectType t = (rand() % 2 == 0) ? CHESTNUT : PIPE;
     init_game_object(gameStateForest.objects[i], t);
     spawn_object_avoiding_sartre(gameStateForest.objects[i], gameStateForest.sartre, t,
-                                 /* currentElapsed = */ 0u);
+                                 /* currentElapsed = */ 0u, gameStateForest.speedFactor);
   }
 }
 
@@ -425,7 +426,7 @@ static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
     if (totalElapsed - obj.collectedAt >= 1000) {
       // only pages respawn
       if (obj.type == PAGE) {
-        spawn_object_avoiding_sartre(obj, sartre, PAGE, totalElapsed);
+        spawn_object_avoiding_sartre(obj, sartre, PAGE, totalElapsed, gameStateForest.speedFactor);
       } else {
         return true;  // remove from game
       }
@@ -434,8 +435,9 @@ static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
   }
 
   // 1) move along the sine-wave trajectory
-  obj.x += obj.vx;
-  obj.y = obj.ymid + obj.amplitude * sinf(obj.frequency * (totalElapsed / 1000.0f + obj.phase));
+  obj.x += obj.vx * gameStateForest.speedFactor;
+  obj.y = obj.ymid + obj.amplitude * sinf(obj.frequency * (totalElapsed / 1000.0f + obj.phase)) *
+                         gameStateForest.speedFactor;
 
   // 2) wrap‐around logic …
   if (obj.x > MAP_WIDTH / 2 + obj.width && obj.vx > 0)
@@ -459,11 +461,12 @@ static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
 
     if (obj.type == PAGE) {
       gameStateForest.pages_collected++;
+      gameStateForest.speedFactor += SPEED_INCREMENT_PER_PAGE;
       if (((float)rand() / RAND_MAX) < NAUSEA_SPAWN_PROBABILITY) {
         GameObject newNauseousObject;
         init_game_object(newNauseousObject, (rand() % 2 == 0) ? CHESTNUT : PIPE);
         spawn_object_avoiding_sartre(newNauseousObject, sartre, newNauseousObject.type,
-                                     totalElapsed);
+                                     totalElapsed, gameStateForest.speedFactor);
         newObjects.push_back(newNauseousObject);
       }
     } else {

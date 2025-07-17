@@ -46,6 +46,7 @@ struct GameStateForest {
   int pages_collected;
   int nausea_hits;
   float warpTime;  // ← add this
+  GLfloat speedFactor;
 };
 
 struct GameStateMenu {};

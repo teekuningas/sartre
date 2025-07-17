@@ -77,4 +77,7 @@ const int PAGE_GOAL = 251;
 const int NUM_PAGES = 3;
 const int INITIAL_NUM_NAUSEOUS_OBJECTS = 1;
 const float NAUSEA_SPAWN_PROBABILITY = 0.05f;
+
+const float INITIAL_SPEED_FACTOR = 0.5f;
+const float SPEED_INCREMENT_PER_PAGE = 0.005f;
 #endif  // CONSTANTS_H
