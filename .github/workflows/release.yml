@@ -130,24 +130,6 @@ jobs:
           export SDL2_LOCAL_LIB_DIR="./local/lib"
           make -f Makefile.release.macos
 
-      - name: Debug paths
-        run: |
-          echo "Looking for libGLEW..."
-          find /usr/local -name "libGLEW*.dylib"
-          ls -l /usr/local/opt/glew/lib/ || echo "GLEW lib dir not found"
-
-          echo "Looking for libSDL2..."
-          find /usr/local -name "libSDL2*.dylib"
-          ls -l /usr/local/opt/sdl2/lib/ || echo "SDL2 lib dir not found"
-
-          echo "Looking for libfreetype..."
-          find /usr/local -name "libfreetype*.dylib"
-          ls -l /usr/local/opt/freetype/lib/ || echo "Freetype lib dir not found"
-
-          echo "Looking for libpng..."
-          find /usr/local -name "libpng*.dylib"
-          ls -l /usr/local/opt/libpng/lib/ || echo "Libpng lib dir not found"
-
       - name: Create app bundle
         run: |
           mkdir -p Sartre.app/Contents/MacOS
@@ -162,9 +144,9 @@ jobs:
           install_name_tool -add_rpath @executable_path/../Frameworks Sartre
 
           # Copy GLEW library to the app bundle
-          cp /usr/local/opt/glew/lib/libGLEW.2.2.dylib Sartre.app/Contents/Frameworks/
-          install_name_tool -id @executable_path/../Frameworks/libGLEW.2.2.dylib Sartre.app/Contents/Frameworks/libGLEW.2.2.dylib
-          install_name_tool -change /usr/local/opt/glew/lib/libGLEW.2.2.dylib @executable_path/../Frameworks/libGLEW.2.2.dylib Sartre.app/Contents/MacOS/Sartre
+          cp /usr/local/opt/glew/lib/libGLEW.2.3.dylib Sartre.app/Contents/Frameworks/
+          install_name_tool -id @executable_path/../Frameworks/libGLEW.2.3.dylib Sartre.app/Contents/Frameworks/libGLEW.2.3.dylib
+          install_name_tool -change /usr/local/opt/glew/lib/libGLEW.2.3.dylib @executable_path/../Frameworks/libGLEW.2.3.dylib Sartre.app/Contents/MacOS/Sartre
 
           # Copy SDL2 library to the app bundle
           cp /usr/local/opt/sdl2/lib/libSDL2-2.0.0.dylib Sartre.app/Contents/Frameworks/
@@ -249,7 +231,7 @@ jobs:
           asset_content_type: application/zip
 
   test-macos:
-    runs-on: macos-13
+    runs-on: macos-15-intel
     needs: build-macos
 
     steps:
