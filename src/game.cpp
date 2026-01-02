@@ -816,7 +816,7 @@ static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
 
       if (milestone >= 0 && milestone < (int)imageData.pageDescriptions.size()) {
         gameStateForest.descriptionQueue.push(
-            {TEXT, imageData.pageDescriptions[milestone], 5000, true});
+            {TEXT, imageData.pageDescriptions[milestone], 8000, true});
         gameStateForest.descriptionQueue.push({WAIT, "", 1000, false});
         gameStateForest.lastPageMilestone = milestone;
       }
@@ -883,7 +883,7 @@ static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
       if (!gameStateForest.itemSeen[obj.type]) {
         if (imageData.itemDescriptions.count(obj.type)) {
           gameStateForest.descriptionQueue.push(
-              {TEXT, imageData.itemDescriptions[obj.type], 5000, true});
+              {TEXT, imageData.itemDescriptions[obj.type], 8000, true});
           gameStateForest.descriptionQueue.push({WAIT, "", 1000, false});
         }
         gameStateForest.itemSeen[obj.type] = true;
