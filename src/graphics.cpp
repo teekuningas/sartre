@@ -128,7 +128,7 @@ void free_textures(Textures& textures) {
 void free_surfaces(Surfaces& surfaces) { SDL_FreeSurface(surfaces.forestCollisionMap); }
 
 void renderText(RenderContext& context, TTF_Font* font, const std::string& text, SDL_Color color,
-                GLuint shader, GLuint VAO, GLuint VBO, float x, float y, int wrapChars) {
+                GLuint shader, GLuint VAO, GLuint VBO, float x, float y, int wrapChars, int style) {
   // 0) if wrapping requested, split into words & lines, then recurse without wrapping
   if (wrapChars > 0) {
     std::istringstream iss(text);
@@ -147,20 +147,28 @@ void renderText(RenderContext& context, TTF_Font* font, const std::string& text,
     int lineSkip = TTF_FontLineSkip(font);
     for (size_t i = 0; i < lines.size(); ++i) {
       // each line is treated as wrapChars==0
-      renderText(context, font, lines[i], color, shader, VAO, VBO, x, y - i * lineSkip, 0);
+      renderText(context, font, lines[i], color, shader, VAO, VBO, x, y - i * lineSkip, 0, style);
     }
     return;
   }
 
   // 1) build a cache key (now wrapChars==0)
-  std::string key = text + "#" + std::to_string(wrapChars);
+  std::string key = text + "#" + std::to_string(wrapChars) + "#" + std::to_string(style);
   auto it = context.textCache.find(key);
   RenderContext::TextCacheEntry e;
   if (it == context.textCache.end()) {
     // 2) create an SDL_Surface with no wrapping
     // Always render as white so we can tint it with uniform later
     SDL_Color white = {255, 255, 255, 255};
+
+    // Set style before rendering
+    TTF_SetFontStyle(font, style);
+
     SDL_Surface* surf = TTF_RenderUTF8_Blended(font, text.c_str(), white);
+
+    // Reset to normal just in case (optional, but good practice if font is shared)
+    TTF_SetFontStyle(font, TTF_STYLE_NORMAL);
+
     if (!surf) {
       printf("TTF error: %s\n", TTF_GetError());
       return;

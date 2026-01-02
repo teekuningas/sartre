@@ -33,7 +33,8 @@ void free_textures(Textures& textures);
 void free_surfaces(Surfaces& surfaces);
 
 void renderText(RenderContext& context, TTF_Font* font, const std::string& text, SDL_Color color,
-                GLuint shader, GLuint VAO, GLuint VBO, float x, float y, int wrapChars = 0);
+                GLuint shader, GLuint VAO, GLuint VBO, float x, float y, int wrapChars = 0,
+                int style = TTF_STYLE_NORMAL);
 
 void getTextSize(TTF_Font* font, const std::string& text, int wrapChars, int& outW, int& outH);
 

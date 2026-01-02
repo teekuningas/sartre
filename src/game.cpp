@@ -74,16 +74,19 @@ void forest_update(GameStateForest &gameStateForest, RenderContext &context, Uin
       // Text Logic
       if (t < 1.0f) {
         gameStateForest.activeDescription = "";  // 1s Wait
+        gameStateForest.activeIsQuote = false;
         gameStateForest.descriptionEndTime = now + 100;
       } else if (t < 16.0f) {
         gameStateForest.activeDescription =
             "Hienoa työtä! Kaikista inhottavista asioista huolimatta Sartre saa kirjansa valmiiksi "
             "ja sinä hetkenä saapuu taivaallinen valoilmiö joka valaisee vieläkin niiden tietä "
             "jotka kirjoittavat kirjaansa metsässä loputtomasti vaeltaen.";
+        gameStateForest.activeIsQuote = false;
         gameStateForest.descriptionEndTime = now + 100;
       } else {
         // Wait for exit
         gameStateForest.activeDescription = "";
+        gameStateForest.activeIsQuote = false;
         gameStateForest.descriptionEndTime = now + 100;
       }
 
@@ -119,15 +122,18 @@ void forest_update(GameStateForest &gameStateForest, RenderContext &context, Uin
       // Bad Ending Sequence
       if (t < 1.0f) {
         gameStateForest.activeDescription = "";  // 1s Wait
+        gameStateForest.activeIsQuote = false;
         gameStateForest.descriptionEndTime = now + 100;
       } else if (t < 11.0f) {
         std::string summary = "Sartre onnistuu kirjoittamaan " +
                               std::to_string(gameStateForest.pages_collected) +
                               " sivua ennen kuin inhottavat asiat lopulta saavat hänet kiinni.";
         gameStateForest.activeDescription = summary;
+        gameStateForest.activeIsQuote = false;
         gameStateForest.descriptionEndTime = now + 100;
       } else {
         gameStateForest.activeDescription = "";
+        gameStateForest.activeIsQuote = false;
         gameStateForest.descriptionEndTime = now + 100;
       }
       // Freeze animation on bad ending
@@ -169,10 +175,12 @@ void forest_update(GameStateForest &gameStateForest, RenderContext &context, Uin
 
     if (event.type == TEXT) {
       gameStateForest.activeDescription = event.text;
+      gameStateForest.activeIsQuote = event.isQuote;
       gameStateForest.descriptionStartTime = currentTime;
       gameStateForest.descriptionEndTime = currentTime + event.duration;
     } else {  // WAIT
       gameStateForest.activeDescription = "";
+      gameStateForest.activeIsQuote = false;
       gameStateForest.descriptionEndTime = currentTime + event.duration;
     }
   }
@@ -740,9 +748,10 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   if (!gameStateForest.activeDescription.empty() &&
       SDL_GetTicks() < gameStateForest.descriptionEndTime) {
     SDL_Color descColor = {255, 255, 255, (Uint8)(255 * gameStateForest.textAlpha)};
+    int style = gameStateForest.activeIsQuote ? TTF_STYLE_ITALIC : TTF_STYLE_NORMAL;
     renderText(context, context.font, gameStateForest.activeDescription, descColor,
                context.textShaderProgram, context.textVAO, context.textVBO, UI_DESC_X_OFFSET,
-               MAP_HEIGHT - UI_DESC_Y_OFFSET, 60);
+               MAP_HEIGHT - UI_DESC_Y_OFFSET, 60, style);
   }
 }
 
@@ -806,8 +815,9 @@ static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
       }
 
       if (milestone >= 0 && milestone < (int)imageData.pageDescriptions.size()) {
-        gameStateForest.descriptionQueue.push({TEXT, imageData.pageDescriptions[milestone], 5000});
-        gameStateForest.descriptionQueue.push({WAIT, "", 1000});
+        gameStateForest.descriptionQueue.push(
+            {TEXT, imageData.pageDescriptions[milestone], 5000, true});
+        gameStateForest.descriptionQueue.push({WAIT, "", 1000, false});
         gameStateForest.lastPageMilestone = milestone;
       }
 
@@ -872,8 +882,9 @@ static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
       // First time hit description
       if (!gameStateForest.itemSeen[obj.type]) {
         if (imageData.itemDescriptions.count(obj.type)) {
-          gameStateForest.descriptionQueue.push({TEXT, imageData.itemDescriptions[obj.type], 5000});
-          gameStateForest.descriptionQueue.push({WAIT, "", 1000});
+          gameStateForest.descriptionQueue.push(
+              {TEXT, imageData.itemDescriptions[obj.type], 5000, true});
+          gameStateForest.descriptionQueue.push({WAIT, "", 1000, false});
         }
         gameStateForest.itemSeen[obj.type] = true;
       }

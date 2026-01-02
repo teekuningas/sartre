@@ -47,6 +47,7 @@ struct DescriptionEvent {
   DescriptionEventType type;
   std::string text;
   Uint32 duration;  // milliseconds
+  bool isQuote;
 };
 
 struct GameStateForest {
@@ -62,6 +63,7 @@ struct GameStateForest {
   // Description queue system
   std::queue<DescriptionEvent> descriptionQueue;
   std::string activeDescription;
+  bool activeIsQuote;
   Uint32 descriptionEndTime;
   Uint32 descriptionStartTime;
   float textAlpha;
