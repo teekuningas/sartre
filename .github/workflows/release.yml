@@ -31,7 +31,7 @@ jobs:
           prerelease: false
 
   build-macos:
-    runs-on: macos-15-intel
+    runs-on: macos-15
     needs: create-release
 
     steps:
@@ -129,6 +129,24 @@ jobs:
           export SDL2_LOCAL_INCLUDE_DIR="./local/include/SDL2"
           export SDL2_LOCAL_LIB_DIR="./local/lib"
           make -f Makefile.release.macos
+
+      - name: Debug paths
+        run: |
+          echo "Looking for libGLEW..."
+          find /usr/local -name "libGLEW*.dylib"
+          ls -l /usr/local/opt/glew/lib/ || echo "GLEW lib dir not found"
+
+          echo "Looking for libSDL2..."
+          find /usr/local -name "libSDL2*.dylib"
+          ls -l /usr/local/opt/sdl2/lib/ || echo "SDL2 lib dir not found"
+
+          echo "Looking for libfreetype..."
+          find /usr/local -name "libfreetype*.dylib"
+          ls -l /usr/local/opt/freetype/lib/ || echo "Freetype lib dir not found"
+
+          echo "Looking for libpng..."
+          find /usr/local -name "libpng*.dylib"
+          ls -l /usr/local/opt/libpng/lib/ || echo "Libpng lib dir not found"
 
       - name: Create app bundle
         run: |
