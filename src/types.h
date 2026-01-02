@@ -12,7 +12,7 @@
 
 enum GameMode { MENU, FOREST, RESULTS, EXIT };
 
-enum GameObjectType { PAGE, CHESTNUT, PIPE };
+enum GameObjectType { PAGE, CHESTNUT, PIPE, BEER, CLOCK };
 
 struct GameObject {
   GLfloat x;
@@ -66,6 +66,8 @@ struct Textures {
   GLuint forestPage;
   GLuint forestChestnut;
   GLuint forestPipe;
+  GLuint forestBeer;
+  GLuint forestClock;
   GLuint forestTausta[1];
 };
 

@@ -115,6 +115,46 @@ void create_textures(Textures& textures, const std::string& dataPath) {
   SDL_FreeSurface(formattedPipeSurface);
   SDL_FreeSurface(forestPipeImage);
 
+  // Beer
+  SDL_Surface* forestBeerImage;
+  forestBeerImage = IMG_Load((dataPath + "images/objects/beer.png").c_str());
+  if (!forestBeerImage) {
+    printf("Error loading image: %s\n", SDL_GetError());
+    exit(1);
+  }
+  glGenTextures(1, &textures.forestBeer);
+  SDL_Surface* formattedBeerSurface = format_sdl_surface(forestBeerImage);
+  if (!formattedBeerSurface) {
+    exit(1);
+  }
+  glBindTexture(GL_TEXTURE_2D, textures.forestBeer);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedBeerSurface->w, formattedBeerSurface->h, 0,
+               GL_RGBA, GL_UNSIGNED_BYTE, formattedBeerSurface->pixels);
+  SDL_FreeSurface(formattedBeerSurface);
+  SDL_FreeSurface(forestBeerImage);
+
+  // Clock
+  SDL_Surface* forestClockImage;
+  forestClockImage = IMG_Load((dataPath + "images/objects/clock.png").c_str());
+  if (!forestClockImage) {
+    printf("Error loading image: %s\n", SDL_GetError());
+    exit(1);
+  }
+  glGenTextures(1, &textures.forestClock);
+  SDL_Surface* formattedClockSurface = format_sdl_surface(forestClockImage);
+  if (!formattedClockSurface) {
+    exit(1);
+  }
+  glBindTexture(GL_TEXTURE_2D, textures.forestClock);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedClockSurface->w, formattedClockSurface->h, 0,
+               GL_RGBA, GL_UNSIGNED_BYTE, formattedClockSurface->pixels);
+  SDL_FreeSurface(formattedClockSurface);
+  SDL_FreeSurface(forestClockImage);
+
   // Background
   SDL_Surface* forestTaustaImage;
   forestTaustaImage = IMG_Load((dataPath + "images/lehto.png").c_str());
@@ -153,6 +193,8 @@ void free_textures(Textures& textures) {
   glDeleteTextures(1, &textures.forestPage);
   glDeleteTextures(1, &textures.forestChestnut);
   glDeleteTextures(1, &textures.forestPipe);
+  glDeleteTextures(1, &textures.forestBeer);
+  glDeleteTextures(1, &textures.forestClock);
   glDeleteTextures(1, &textures.forestTausta[0]);
 }
 

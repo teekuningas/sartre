@@ -308,7 +308,8 @@ void forest_init(GameStateForest &gameStateForest) {
                                  /* currentElapsed = */ 0u, gameStateForest.speedFactor);
   }
   for (int i = NUM_PAGES; i < NUM_PAGES + INITIAL_NUM_NAUSEOUS_OBJECTS; ++i) {
-    GameObjectType t = (rand() % 2 == 0) ? CHESTNUT : PIPE;
+    GameObjectType types[] = {CHESTNUT, PIPE, BEER, CLOCK};
+    GameObjectType t = types[rand() % 4];
     init_game_object(gameStateForest.objects[i], t);
     spawn_object_avoiding_sartre(gameStateForest.objects[i], gameStateForest.sartre, t,
                                  /* currentElapsed = */ 0u, gameStateForest.speedFactor);
@@ -379,6 +380,12 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
         break;
       case PIPE:
         objTexture = textures.forestPipe;
+        break;
+      case BEER:
+        objTexture = textures.forestBeer;
+        break;
+      case CLOCK:
+        objTexture = textures.forestClock;
         break;
     }
     draw_textured_quad(obj.x, obj.y, obj.width, obj.height, objTexture, context.forestLocModel,
@@ -464,7 +471,8 @@ static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
       gameStateForest.speedFactor += SPEED_INCREMENT_PER_PAGE;
       if (((float)rand() / RAND_MAX) < NAUSEA_SPAWN_PROBABILITY) {
         GameObject newNauseousObject;
-        init_game_object(newNauseousObject, (rand() % 2 == 0) ? CHESTNUT : PIPE);
+        GameObjectType types[] = {CHESTNUT, PIPE, BEER, CLOCK};
+        init_game_object(newNauseousObject, types[rand() % 4]);
         spawn_object_avoiding_sartre(newNauseousObject, sartre, newNauseousObject.type,
                                      totalElapsed, gameStateForest.speedFactor);
         newObjects.push_back(newNauseousObject);
