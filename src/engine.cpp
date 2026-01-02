@@ -21,9 +21,6 @@ WindowParams compute_window_params(bool fullscreen) {
 }
 
 void shutdownEngine(RenderContext& context) {
-  if (context.backgroundMusic) {
-    Mix_FreeMusic(context.backgroundMusic);
-  }
   if (context.scribbleSound) {
     Mix_FreeChunk(context.scribbleSound);
     context.scribbleSound = nullptr;
@@ -135,16 +132,7 @@ bool initEngine(RenderContext& context, const std::string& dataPath, bool fullsc
     return false;
   }
 
-  Mix_Music* backgroundMusic = Mix_LoadMUS((dataPath + "music/music.ogg").c_str());
-  if (backgroundMusic == NULL) {
-    printf("Failed to load background music! SDL_mixer Error: %s\n", Mix_GetError());
-    return false;
-  }
-  context.backgroundMusic = backgroundMusic;
-  // lower the music volume to 50%
-  Mix_VolumeMusic(MIX_MAX_VOLUME / 2);
-
-  // ── now load our collision‐SFX │ format: 44 100 Hz, s16 stereo
+  // Load sound effects: format: 44 100 Hz, s16 stereo
   context.scribbleSound = Mix_LoadWAV((dataPath + "audio/scribble.wav").c_str());
   if (!context.scribbleSound) {
     printf("Error loading scribble.wav: %s\n", Mix_GetError());

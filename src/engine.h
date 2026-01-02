@@ -8,7 +8,7 @@
 // Tear down window, GL context, audio/mixer, TTF, delete VAOs/VBOs and shaders.
 void shutdownEngine(RenderContext& context);
 
-// Initialize SDL, create window + GL context, load font + music.
+// Initialize SDL, create window + GL context, load font + sound effects.
 // Returns false on any failure.
 bool initEngine(RenderContext& context, const std::string& dataPath, bool fullscreen);
 

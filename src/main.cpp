@@ -8,10 +8,11 @@
 #include <cstring>  // for strcmp
 #include <iostream>
 
-#include "constants.h"  // textVertexShaderSource, forestVertexShaderSource, …
+#include "constants.h"  // MAP_WIDTH, etc.
 #include "engine.h"     // initEngine, shutdownEngine
 #include "game.h"       // run_game_frame
 #include "graphics.h"   // now carries all of those routines
+#include "shaders.h"    // Shader source code
 
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
@@ -68,7 +69,11 @@ void main_loop_iteration(GameLoopData* pdata) {
     data.context.forestLocNausea =
         glGetUniformLocation(data.context.forestShaderProgram, "u_nausea");
     data.context.forestLocBliss = glGetUniformLocation(data.context.forestShaderProgram, "u_bliss");
-    data.context.forestLocTime = glGetUniformLocation(data.context.forestShaderProgram, "u_time");
+    data.context.forestLocBeams = glGetUniformLocation(data.context.forestShaderProgram, "u_beams");
+    data.context.forestLocWarpTime =
+        glGetUniformLocation(data.context.forestShaderProgram, "u_warpTime");
+    data.context.forestLocBeamTime =
+        glGetUniformLocation(data.context.forestShaderProgram, "u_beamTime");
     createShaderBuffers(data.context.forestVAO, data.context.forestVBO);
 
     createProgram(textVertexShaderSource, textFragmentShaderSource, data.context.textShaderProgram);

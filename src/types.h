@@ -6,11 +6,12 @@
 #include <SDL_mixer.h>
 #include <SDL_ttf.h>
 
+#include <queue>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-enum GameMode { MENU, FOREST, RESULTS, EXIT };
+enum GameMode { MENU, FOREST, EXIT };
 
 enum GameObjectType { PAGE, CHESTNUT, PIPE, BEER, CLOCK };
 
@@ -40,35 +41,53 @@ struct Sartre {
   bool jump;
 };
 
+enum DescriptionEventType { TEXT, WAIT };
+
+struct DescriptionEvent {
+  DescriptionEventType type;
+  std::string text;
+  Uint32 duration;  // milliseconds
+};
+
 struct GameStateForest {
   Sartre sartre;
   std::vector<GameObject> objects;
   int pages_collected;
   int nausea_hits;
   float warpTime;
+  float beamTime;
   GLfloat speedFactor;
   bool fastMode;
 
-  // Description tracking
-  std::unordered_map<int, bool> itemSeen;
+  // Description queue system
+  std::queue<DescriptionEvent> descriptionQueue;
   std::string activeDescription;
   Uint32 descriptionEndTime;
+  Uint32 descriptionStartTime;
+  float textAlpha;
+  std::unordered_map<int, bool> itemSeen;
   int lastPageMilestone;
 
   int pageGoal;
   int milestoneStep;
+
+  // Ending sequence
+  bool endingMode;
+  bool endingSuccess;
+  Uint32 endingStartTime;
+  Sartre endingStartPos;
 };
 
-struct GameStateMenu {};
-
-struct GameStateResults {
-  int pages_collected;  // carry over from forest
-  bool success;         // true if goal was reached
+struct GameStateMenu {
+  std::string cheatSequence;
+  Uint32 lastCheatTime;
+  bool cheatActive;
 };
 
 struct InputResult {
   bool transition;
   GameMode transitionTo;
+  bool confirm;
 };
 
 struct Textures {
@@ -96,7 +115,6 @@ struct RenderContext {
   SDL_Window* window = nullptr;
   SDL_GLContext glContext = nullptr;
   TTF_Font* font = nullptr;
-  Mix_Music* backgroundMusic = nullptr;
   Mix_Chunk* scribbleSound = nullptr;
   Mix_Chunk* nauseaSound = nullptr;
 
@@ -110,7 +128,9 @@ struct RenderContext {
   GLint forestLocOurTexture;
   GLint forestLocNausea;
   GLint forestLocBliss;
-  GLint forestLocTime;
+  GLint forestLocBeams;
+  GLint forestLocWarpTime;
+  GLint forestLocBeamTime;
 
   GLuint textVAO;
   GLuint textVBO;
@@ -137,7 +157,6 @@ struct GameLoopData {
   RenderContext context;
   GameStateMenu gameStateMenu;
   GameStateForest gameStateForest;
-  GameStateResults gameStateResults;
   ImageData imageData;
   Uint32 lastTick;
   Uint32 currentTick;

@@ -258,7 +258,9 @@ void renderText(RenderContext& context, TTF_Font* font, const std::string& text,
   RenderContext::TextCacheEntry e;
   if (it == context.textCache.end()) {
     // 2) create an SDL_Surface with no wrapping
-    SDL_Surface* surf = TTF_RenderUTF8_Blended(font, text.c_str(), color);
+    // Always render as white so we can tint it with uniform later
+    SDL_Color white = {255, 255, 255, 255};
+    SDL_Surface* surf = TTF_RenderUTF8_Blended(font, text.c_str(), white);
     if (!surf) {
       printf("TTF error: %s\n", TTF_GetError());
       return;
