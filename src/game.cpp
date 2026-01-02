@@ -19,12 +19,12 @@ static bool isPixelBlack(SDL_Surface *surface, int x, int y);
 
 // forward‐declared so forest_update can see it
 static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameStateForest,
-                               RenderContext &context, Uint32 totalElapsed,
+                               RenderContext &context, ImageData &imageData, Uint32 totalElapsed,
                                std::vector<GameObject> &newObjects);
 
 // --- update loop for the FOREST state ---
 void forest_update(GameStateForest &gameStateForest, RenderContext &context, Uint32 totalElapsed,
-                   float deltaTime, Surfaces &surfaces, InputResult &inputResult) {
+                   float deltaTime, ImageData &imageData, InputResult &inputResult) {
   // advance our warp‐phase at 2 radians/sec, keep it in [0,2π)
   gameStateForest.warpTime += deltaTime * 2.0f;
   if (gameStateForest.warpTime >= 6.28318530718f) gameStateForest.warpTime -= 6.28318530718f;
@@ -33,7 +33,8 @@ void forest_update(GameStateForest &gameStateForest, RenderContext &context, Uin
   std::vector<GameObject> newObjects;
   Sartre &sartre = gameStateForest.sartre;
   for (auto it = gameStateForest.objects.begin(); it != gameStateForest.objects.end();) {
-    if (update_game_object(*it, sartre, gameStateForest, context, totalElapsed, newObjects)) {
+    if (update_game_object(*it, sartre, gameStateForest, context, imageData, totalElapsed,
+                           newObjects)) {
       it = gameStateForest.objects.erase(it);
     } else {
       ++it;
@@ -72,8 +73,8 @@ void forest_update(GameStateForest &gameStateForest, RenderContext &context, Uin
   }
   // hit a platform from above?
   else if (predictedY < sartre.y &&
-           !isPixelBlack(surfaces.forestCollisionMap, px, MAP_HEIGHT - py) &&
-           isPixelBlack(surfaces.forestCollisionMap, px, MAP_HEIGHT - pyp)) {
+           !isPixelBlack(imageData.surfaces.forestCollisionMap, px, MAP_HEIGHT - py) &&
+           isPixelBlack(imageData.surfaces.forestCollisionMap, px, MAP_HEIGHT - pyp)) {
     sartre.jump = false;
     sartre.vy = 0;
   } else {
@@ -83,7 +84,7 @@ void forest_update(GameStateForest &gameStateForest, RenderContext &context, Uin
 
   // 5) end‐of‐frame: transition if too many nasty collisions OR enough pages
   if (gameStateForest.nausea_hits >= NUM_NAUSEA_LIMIT ||
-      gameStateForest.pages_collected >= PAGE_GOAL) {
+      gameStateForest.pages_collected >= gameStateForest.pageGoal) {
     inputResult.transition = true;
     inputResult.transitionTo = RESULTS;
   }
@@ -145,8 +146,8 @@ void run_game_frame(GameLoopData &data) {
                   inputResult);
       break;
     case FOREST:
-      forest_update(data.gameStateForest, data.context, data.totalElapsed, delta,
-                    data.imageData.surfaces, inputResult);
+      forest_update(data.gameStateForest, data.context, data.totalElapsed, delta, data.imageData,
+                    inputResult);
       break;
     case RESULTS:
       results_update(data.gameStateResults, data.totalElapsed, delta, data.imageData.surfaces,
@@ -171,7 +172,7 @@ void run_game_frame(GameLoopData &data) {
         printf("Failed to play background music! SDL_mixer Error: %s\n", Mix_GetError());
         data.shouldExit = true;
       }
-      forest_init(data.gameStateForest);
+      forest_init(data.gameStateForest, data.imageData, data.fastMode);
     } else {
       Mix_HaltMusic();
     }
@@ -180,7 +181,8 @@ void run_game_frame(GameLoopData &data) {
     }
     if (inputResult.transitionTo == RESULTS) {
       data.gameStateResults.pages_collected = data.gameStateForest.pages_collected;
-      data.gameStateResults.success = (data.gameStateResults.pages_collected >= PAGE_GOAL);
+      data.gameStateResults.success =
+          (data.gameStateResults.pages_collected >= data.gameStateForest.pageGoal);
       results_init(data.gameStateResults);
     }
     data.gameMode = inputResult.transitionTo;
@@ -285,7 +287,7 @@ void init_game_object(GameObject &obj, GameObjectType type) {
   obj.type = type;
 }
 
-void forest_init(GameStateForest &gameStateForest) {
+void forest_init(GameStateForest &gameStateForest, ImageData const &imageData, bool fastMode) {
   Sartre &sartre = gameStateForest.sartre;
   sartre.width = SARTRE_WIDTH;
   sartre.height = SARTRE_HEIGHT;
@@ -296,11 +298,26 @@ void forest_init(GameStateForest &gameStateForest) {
   sartre.jump = 0;
   sartre.vy = 0.0f;
 
+  gameStateForest.pageGoal = fastMode ? (PAGE_GOAL / 5) : PAGE_GOAL;
+  gameStateForest.milestoneStep = fastMode ? (60 / 5) : 60;
+  gameStateForest.fastMode = fastMode;
+
   gameStateForest.objects.resize(NUM_PAGES + INITIAL_NUM_NAUSEOUS_OBJECTS);
   gameStateForest.pages_collected = 0;
   gameStateForest.nausea_hits = 0;
   gameStateForest.warpTime = 0.0f;  // ← init here
   gameStateForest.speedFactor = INITIAL_SPEED_FACTOR;
+
+  gameStateForest.itemSeen.clear();
+  gameStateForest.activeDescription = "";
+  gameStateForest.descriptionEndTime = 0;
+  gameStateForest.lastPageMilestone = 0;
+
+  // Show first page text at start
+  if (!imageData.pageDescriptions.empty()) {
+    gameStateForest.activeDescription = imageData.pageDescriptions[0];
+    gameStateForest.descriptionEndTime = SDL_GetTicks() + 8000;  // Show for 8 seconds
+  }
 
   for (int i = 0; i < NUM_PAGES; ++i) {
     init_game_object(gameStateForest.objects[i], PAGE);
@@ -350,6 +367,9 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   glUniform1i(context.forestLocOurTexture, 0);
   float nauseaLevel = float(gameStateForest.nausea_hits) / float(NUM_NAUSEA_LIMIT);
   glUniform1f(context.forestLocNausea, nauseaLevel);
+  float progress = float(gameStateForest.pages_collected) / float(gameStateForest.pageGoal);
+  float blissLevel = progress;
+  glUniform1f(context.forestLocBliss, blissLevel);
   glUniform1f(context.forestLocTime, gameStateForest.warpTime);
 
   // Enable depth test
@@ -361,10 +381,13 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
 
   // Draw the Sartre character
   Sartre &sartre = gameStateForest.sartre;
+  glUniform1f(context.forestLocBliss, blissLevel);
   GLuint sartreTexture = textures.forestSartre[sartre.animIdx];
   draw_textured_quad(sartre.x, sartre.y, sartre.width, sartre.height, sartreTexture,
                      context.forestLocModel, context.forestVBO);
 
+  // Draw items with 0 bliss
+  glUniform1f(context.forestLocBliss, 0.0f);
   for (auto &obj : gameStateForest.objects) {
     if (obj.collected) {
       continue;
@@ -417,16 +440,59 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   createOrthographicMatrix(0.0f, MAP_WIDTH, 0.0f, MAP_HEIGHT, -1.0f, 1.0f, textOrtho);
   glUseProgram(context.textShaderProgram);
   glUniformMatrix4fv(context.textLocProjection, 1, GL_FALSE, textOrtho);
+
+  // Draw dark backgrounds for text
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  GLint textColorLoc = glGetUniformLocation(context.textShaderProgram, "textColor");
+  glBindVertexArray(context.textVAO);
+  glBindBuffer(GL_ARRAY_BUFFER, context.textVBO);
+
+  // Background for page count
+  int tw, th;
+  std::string pageCountText =
+      std::string("Kirjoitettuja sivuja: ") + std::to_string(gameStateForest.pages_collected);
+  getTextSize(context.font, pageCountText, 0, tw, th);
+  float padding = 20.0f;
+
+  glUniform4f(textColorLoc, 0.0f, 0.0f, 0.0f, 0.5f);
+  float bgPageCount[] = {50.0f - padding,      MAP_HEIGHT - 50.0f + padding,      0.0f, 0.0f,
+                         50.0f + tw + padding, MAP_HEIGHT - 50.0f + padding,      1.0f, 0.0f,
+                         50.0f + tw + padding, MAP_HEIGHT - 50.0f - th - padding, 1.0f, 1.0f,
+                         50.0f - padding,      MAP_HEIGHT - 50.0f - th - padding, 0.0f, 1.0f};
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(bgPageCount), bgPageCount);
+  glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+  // Background for description (if active)
+  if (!gameStateForest.activeDescription.empty() &&
+      SDL_GetTicks() < gameStateForest.descriptionEndTime) {
+    int dw, dh;
+    getTextSize(context.font, gameStateForest.activeDescription, 60, dw, dh);
+
+    glUniform4f(textColorLoc, 0.0f, 0.0f, 0.0f, 0.6f);
+    float bgDesc[] = {100.0f - padding,      MAP_HEIGHT - 250.0f + padding,      0.0f, 0.0f,
+                      100.0f + dw + padding, MAP_HEIGHT - 250.0f + padding,      1.0f, 0.0f,
+                      100.0f + dw + padding, MAP_HEIGHT - 250.0f - dh - padding, 1.0f, 1.0f,
+                      100.0f - padding,      MAP_HEIGHT - 250.0f - dh - padding, 0.0f, 1.0f};
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(bgDesc), bgDesc);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+  }
+  glDisable(GL_BLEND);
+
   SDL_Color white = {255, 255, 255, 255};
-  renderText(
-      context, context.font,
-      std::string("Kirjoitettuja sivuja: ") + std::to_string(gameStateForest.pages_collected),
-      white, context.textShaderProgram, context.textVAO, context.textVBO, 50.0f, MAP_HEIGHT - 50.0f,
-      0);
+  renderText(context, context.font, pageCountText, white, context.textShaderProgram,
+             context.textVAO, context.textVBO, 50.0f, MAP_HEIGHT - 50.0f, 0);
+
+  if (!gameStateForest.activeDescription.empty() &&
+      SDL_GetTicks() < gameStateForest.descriptionEndTime) {
+    renderText(context, context.font, gameStateForest.activeDescription, white,
+               context.textShaderProgram, context.textVAO, context.textVBO, 100.0f,
+               MAP_HEIGHT - 250.0f, 60);
+  }
 }
 
 static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest &gameStateForest,
-                               RenderContext &context, Uint32 totalElapsed,
+                               RenderContext &context, ImageData &imageData, Uint32 totalElapsed,
                                std::vector<GameObject> &newObjects) {
   // if it's already collected, wait 1 second then respawn:
   if (obj.collected) {
@@ -469,7 +535,18 @@ static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
     if (obj.type == PAGE) {
       gameStateForest.pages_collected++;
       gameStateForest.speedFactor += SPEED_INCREMENT_PER_PAGE;
-      if (((float)rand() / RAND_MAX) < NAUSEA_SPAWN_PROBABILITY) {
+
+      // Page milestones for descriptions
+      int milestone = gameStateForest.pages_collected / gameStateForest.milestoneStep;
+      if (milestone > gameStateForest.lastPageMilestone &&
+          milestone < (int)imageData.pageDescriptions.size()) {
+        gameStateForest.activeDescription = imageData.pageDescriptions[milestone];
+        gameStateForest.descriptionEndTime = SDL_GetTicks() + 8000;
+        gameStateForest.lastPageMilestone = milestone;
+      }
+
+      float baseProbability = gameStateForest.fastMode ? NAUSEA_SPAWN_PROBABILITY_FAST : NAUSEA_SPAWN_PROBABILITY_NORMAL;
+      if (((float)rand() / RAND_MAX) < baseProbability) {
         GameObject newNauseousObject;
         GameObjectType types[] = {CHESTNUT, PIPE, BEER, CLOCK};
         init_game_object(newNauseousObject, types[rand() % 4]);
@@ -479,6 +556,16 @@ static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
       }
     } else {
       gameStateForest.nausea_hits++;
+
+      // First time hit description
+      if (!gameStateForest.itemSeen[obj.type]) {
+        if (imageData.itemDescriptions.count(obj.type)) {
+          gameStateForest.activeDescription = imageData.itemDescriptions[obj.type];
+          gameStateForest.descriptionEndTime = SDL_GetTicks() + 8000;
+        }
+        gameStateForest.itemSeen[obj.type] = true;
+      }
+
       return true;  // remove from game
     }
   }
@@ -504,6 +591,7 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
   glUniformMatrix4fv(context.forestLocProjection, 1, GL_FALSE, ortho);
   glUniform1i(context.forestLocOurTexture, 0);
   glUniform1f(context.forestLocNausea, state.success ? 0.0f : 1.0f);
+  glUniform1f(context.forestLocBliss, 0.0f);
   // wrap the time in [0,2π) to keep sin() fast & precise
   {
     const float TWO_PI = 6.28318530718f;
@@ -575,6 +663,7 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
     glUseProgram(context.forestShaderProgram);
     glUniformMatrix4fv(context.forestLocProjection, 1, GL_FALSE, ortho);
     glUniform1f(context.forestLocNausea, 0.0f);
+    glUniform1f(context.forestLocBliss, 1.0f);
     glUniform1f(context.forestLocTime, 0.0f);
     glBindVertexArray(context.forestVAO);
 
@@ -582,10 +671,11 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
     createTranslationMatrix(0.0f, MAP_HEIGHT / 4.0f, 0.0f, model);
     glUniformMatrix4fv(context.forestLocModel, 1, GL_FALSE, model);
     glBindTexture(GL_TEXTURE_2D, textures.forestSartre[0]);
-    // doubled‐size quad
-    float quad[] = {
-        -SARTRE_WIDTH, SARTRE_HEIGHT,  0.0f, 0.0f, SARTRE_WIDTH,  SARTRE_HEIGHT,  1.0f, 0.0f,
-        SARTRE_WIDTH,  -SARTRE_HEIGHT, 1.0f, 1.0f, -SARTRE_WIDTH, -SARTRE_HEIGHT, 0.0f, 1.0f};
+    // standard‐size quad
+    float quad[] = {-SARTRE_WIDTH / 2.0f, SARTRE_HEIGHT / 2.0f,  0.0f, 0.0f,
+                    SARTRE_WIDTH / 2.0f,  SARTRE_HEIGHT / 2.0f,  1.0f, 0.0f,
+                    SARTRE_WIDTH / 2.0f,  -SARTRE_HEIGHT / 2.0f, 1.0f, 1.0f,
+                    -SARTRE_WIDTH / 2.0f, -SARTRE_HEIGHT / 2.0f, 0.0f, 1.0f};
     glBindBuffer(GL_ARRAY_BUFFER, context.forestVBO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -608,7 +698,7 @@ void results_draw(RenderContext &context, Textures &textures, Uint32 totalElapse
   } else {
     renderText(context, context.font,
                "Kaikista maailman inhottavista asioista huolimatta kirja tulee valmiiksi. "
-               "251-sivuinen La Nausée julkaistaan vuonna 1938.",
+               "251-sivuinen Inho julkaistaan vuonna 1938.",
                white, context.textShaderProgram, context.textVAO, context.textVBO, 300.0f,
                MAP_HEIGHT - 500.0f, 40);
   }
@@ -636,6 +726,7 @@ void menu_draw(RenderContext &context, Textures &textures) {
   // Texture unit and uniforms: no warp, no nausea
   glUniform1i(context.forestLocOurTexture, 0);
   glUniform1f(context.forestLocNausea, 0.0f);
+  glUniform1f(context.forestLocBliss, 0.0f);
   glUniform1f(context.forestLocTime, 0.0f);
 
   glEnable(GL_DEPTH_TEST);

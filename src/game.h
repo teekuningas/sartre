@@ -15,9 +15,9 @@ void menu_update(GameStateMenu& state, Uint32 totalElapsed, float deltaTime, Sur
 void menu_draw(RenderContext& context, Textures& textures);
 
 // --- Forest state ---
-void forest_init(GameStateForest& state);
+void forest_init(GameStateForest& state, ImageData const& imageData, bool fastMode);
 void forest_update(GameStateForest& state, RenderContext& context, Uint32 totalElapsed,
-                   float deltaTime, Surfaces& surfaces, InputResult& result);
+                   float deltaTime, ImageData& imageData, InputResult& result);
 void forest_draw(GameStateForest& state, Textures& textures, RenderContext& context,
                  GLuint shaderProgram, GLuint VAO, GLuint VBO);
 

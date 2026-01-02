@@ -30,10 +30,13 @@ SDL_Surface* format_sdl_surface(SDL_Surface* surface);
 
 void create_textures(Textures& textures, const std::string& dataPath);
 void create_surfaces(Surfaces& surfaces, const std::string& dataPath);
+void load_descriptions(ImageData& imageData, const std::string& dataPath);
 void free_textures(Textures& textures);
 void free_surfaces(Surfaces& surfaces);
 
 void renderText(RenderContext& context, TTF_Font* font, const std::string& text, SDL_Color color,
                 GLuint shader, GLuint VAO, GLuint VBO, float x, float y, int wrapChars = 0);
+
+void getTextSize(TTF_Font* font, const std::string& text, int wrapChars, int& outW, int& outH);
 
 #endif  // GRAPHICS_H

@@ -45,15 +45,25 @@ struct GameStateForest {
   std::vector<GameObject> objects;
   int pages_collected;
   int nausea_hits;
-  float warpTime;  // ← add this
+  float warpTime;
   GLfloat speedFactor;
+  bool fastMode;
+
+  // Description tracking
+  std::unordered_map<int, bool> itemSeen;
+  std::string activeDescription;
+  Uint32 descriptionEndTime;
+  int lastPageMilestone;
+
+  int pageGoal;
+  int milestoneStep;
 };
 
 struct GameStateMenu {};
 
 struct GameStateResults {
   int pages_collected;  // carry over from forest
-  bool success;         // true if pages_collected >= PAGE_GOAL
+  bool success;         // true if goal was reached
 };
 
 struct InputResult {
@@ -78,6 +88,8 @@ struct Surfaces {
 struct ImageData {
   Textures textures;
   Surfaces surfaces;
+  std::unordered_map<int, std::string> itemDescriptions;
+  std::vector<std::string> pageDescriptions;
 };
 
 struct RenderContext {
@@ -97,6 +109,7 @@ struct RenderContext {
   GLint forestLocModel;
   GLint forestLocOurTexture;
   GLint forestLocNausea;
+  GLint forestLocBliss;
   GLint forestLocTime;
 
   GLuint textVAO;
@@ -130,6 +143,7 @@ struct GameLoopData {
   Uint32 currentTick;
   Uint32 totalElapsed;
   bool fullscreen;
+  bool fastMode;
   bool shouldExit;
   bool initialized;
   std::string dataPath;

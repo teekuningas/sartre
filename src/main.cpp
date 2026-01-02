@@ -67,6 +67,7 @@ void main_loop_iteration(GameLoopData* pdata) {
         glGetUniformLocation(data.context.forestShaderProgram, "ourTexture");
     data.context.forestLocNausea =
         glGetUniformLocation(data.context.forestShaderProgram, "u_nausea");
+    data.context.forestLocBliss = glGetUniformLocation(data.context.forestShaderProgram, "u_bliss");
     data.context.forestLocTime = glGetUniformLocation(data.context.forestShaderProgram, "u_time");
     createShaderBuffers(data.context.forestVAO, data.context.forestVBO);
 
@@ -85,6 +86,7 @@ void main_loop_iteration(GameLoopData* pdata) {
 
     create_textures(data.imageData.textures, data.dataPath);
     create_surfaces(data.imageData.surfaces, data.dataPath);
+    load_descriptions(data.imageData, data.dataPath);
 
     data.gameMode = MENU;
     data.lastTick = SDL_GetTicks();
@@ -104,7 +106,12 @@ int main(int argc, char** argv) {
   }
 
   GameLoopData data{};
-  data.fullscreen = (argc > 1 && std::strcmp(argv[1], "--fullscreen") == 0);
+  data.fullscreen = false;
+  data.fastMode = false;
+  for (int i = 1; i < argc; ++i) {
+    if (std::strcmp(argv[i], "--fullscreen") == 0) data.fullscreen = true;
+    if (std::strcmp(argv[i], "--fast") == 0) data.fastMode = true;
+  }
   data.shouldExit = false;
   data.initialized = false;
 

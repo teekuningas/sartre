@@ -39,17 +39,23 @@ static const char* forestFragmentShaderSource =
     "#version 100\n"
     "precision mediump float;\n"
     "uniform float u_nausea;      // [0,1], how “nauseated” we are\n"
+    "uniform float u_bliss;       // [0,1], how “blissful” we are\n"
     "uniform float u_time;        // sec, used to animate the warp\n"
     "varying vec2 fragTexCoord;\n"
     "uniform sampler2D ourTexture;\n"
     "void main() {\n"
     "    vec2 uv = fragTexCoord;\n"
-    "    // warp the UVs more as nausea increases\n"
     "    float wt = u_time;\n"
-    "    uv += (u_nausea * 0.05) * sin(uv.yx * 30.0 + wt);\n"
+    "    // nausea: subtle wavy (affects gameplay)\n"
+    "    uv += (u_nausea * 0.015) * sin(uv.yx * 30.0 + wt);\n"
     "    vec4 col = texture2D(ourTexture, uv);\n"
-    "    // desaturate proportionally to nausea\n"
     "    if (col.a <= 0.1) discard;\n"
+    "    // Apply nausea effect (subtle desaturate - converts to grayscale)\n"
+    "    float gray = dot(col.rgb, vec3(0.299, 0.587, 0.114));\n"
+    "    col.rgb = mix(col.rgb, vec3(gray), u_nausea * 0.3);\n"
+    "    // Apply bliss effect (golden glow)\n"
+    "    col.rgb = mix(col.rgb, vec3(1.0, 0.95, 0.7), u_bliss * 0.4);\n"
+    "    col.rgb = clamp(col.rgb + u_bliss * 0.3, 0.0, 1.0);\n"
     "    gl_FragColor = col;\n"
     "}\n";
 
@@ -76,7 +82,8 @@ const int PAGE_GOAL = 251;
 
 const int NUM_PAGES = 3;
 const int INITIAL_NUM_NAUSEOUS_OBJECTS = 1;
-const float NAUSEA_SPAWN_PROBABILITY = 0.05f;
+const float NAUSEA_SPAWN_PROBABILITY_NORMAL = 0.05f;
+const float NAUSEA_SPAWN_PROBABILITY_FAST = 0.15f;
 
 const float INITIAL_SPEED_FACTOR = 0.5f;
 const float SPEED_INCREMENT_PER_PAGE = 0.005f;

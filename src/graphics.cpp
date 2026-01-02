@@ -3,6 +3,7 @@
 #include <SDL_image.h>
 
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -186,6 +187,32 @@ void create_surfaces(Surfaces& surfaces, const std::string& dataPath) {
   }
 }
 
+static std::string readFile(const std::string& path) {
+  std::ifstream file(path);
+  if (!file.is_open()) {
+    return "";
+  }
+  std::stringstream buffer;
+  buffer << file.rdbuf();
+  return buffer.str();
+}
+
+void load_descriptions(ImageData& imageData, const std::string& dataPath) {
+  std::string descPath = dataPath + "descriptions/";
+
+  imageData.itemDescriptions[CHESTNUT] = readFile(descPath + "chestnut.txt");
+  imageData.itemDescriptions[PIPE] = readFile(descPath + "pipe.txt");
+  imageData.itemDescriptions[BEER] = readFile(descPath + "beer.txt");
+  imageData.itemDescriptions[CLOCK] = readFile(descPath + "clock.txt");
+
+  for (int i = 0; i <= 3; ++i) {
+    std::string content = readFile(descPath + "page" + std::to_string(i) + ".txt");
+    if (!content.empty()) {
+      imageData.pageDescriptions.push_back(content);
+    }
+  }
+}
+
 void free_textures(Textures& textures) {
   for (int a = 0; a < 2; a++) {
     glDeleteTextures(1, &textures.forestSartre[a]);
@@ -286,9 +313,46 @@ void renderText(RenderContext& context, TTF_Font* font, const std::string& text,
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(verts), verts);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-  glBindVertexArray(0);
   glBindTexture(GL_TEXTURE_2D, 0);
   glDisable(GL_BLEND);
+}
+
+void getTextSize(TTF_Font* font, const std::string& text, int wrapChars, int& outW, int& outH) {
+  if (wrapChars <= 0) {
+    TTF_SizeUTF8(font, text.c_str(), &outW, &outH);
+    return;
+  }
+
+  std::istringstream iss(text);
+  std::string word, line;
+  std::vector<std::string> lines;
+  while (iss >> word) {
+    if (!line.empty() && line.size() + 1 + word.size() > (size_t)wrapChars) {
+      lines.push_back(line);
+      line = word;
+    } else {
+      if (!line.empty()) line += ' ';
+      line += word;
+    }
+  }
+  if (!line.empty()) lines.push_back(line);
+
+  int maxW = 0;
+  int totalH = 0;
+  int lineSkip = TTF_FontLineSkip(font);
+
+  for (size_t i = 0; i < lines.size(); ++i) {
+    int w, h;
+    TTF_SizeUTF8(font, lines[i].c_str(), &w, &h);
+    if (w > maxW) maxW = w;
+    if (i == lines.size() - 1) {
+      totalH += h;
+    } else {
+      totalH += lineSkip;
+    }
+  }
+  outW = maxW;
+  outH = totalH;
 }
 
 GLuint loadShader(GLenum type, const std::string& source) {
