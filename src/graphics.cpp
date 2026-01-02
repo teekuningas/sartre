@@ -10,7 +10,7 @@
 
 #include "types.h"
 
-SDL_Surface* format_sdl_surface(SDL_Surface* surface) {
+static SDL_Surface* format_sdl_surface(SDL_Surface* surface) {
   if (!surface) {
     printf("Error: SDL surface null.\n");
     return nullptr;
@@ -28,153 +28,53 @@ SDL_Surface* format_sdl_surface(SDL_Surface* surface) {
   return formattedSurface;
 }
 
+static GLuint load_texture(const std::string& path) {
+  SDL_Surface* surface = IMG_Load(path.c_str());
+  if (!surface) {
+    printf("Error loading image %s: %s\n", path.c_str(), SDL_GetError());
+    exit(1);
+  }
+
+  SDL_Surface* formatted = format_sdl_surface(surface);
+  SDL_FreeSurface(surface);
+  if (!formatted) {
+    exit(1);
+  }
+
+  GLuint textureID;
+  glGenTextures(1, &textureID);
+  glBindTexture(GL_TEXTURE_2D, textureID);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formatted->w, formatted->h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+               formatted->pixels);
+
+  SDL_FreeSurface(formatted);
+  return textureID;
+}
+
 void create_textures(Textures& textures, const std::string& dataPath) {
   // Sartre
-  SDL_Surface* forestSartreImage[2];
-  forestSartreImage[0] = IMG_Load((dataPath + "images/sartre.png").c_str());
-  if (!forestSartreImage[0]) {
-    printf("Error loading image: %s\n", SDL_GetError());
-    exit(1);
-  }
-  forestSartreImage[1] = IMG_Load((dataPath + "images/sartre2.png").c_str());
-  if (!forestSartreImage[1]) {
-    printf("Error loading image: %s\n", SDL_GetError());
-    exit(1);
-  }
-  glGenTextures(2, textures.forestSartre);
-  for (int i = 0; i < 2; i++) {
-    SDL_Surface* formattedSurface = format_sdl_surface(forestSartreImage[i]);
-    if (!formattedSurface) {
-      exit(1);
-    }
-    glBindTexture(GL_TEXTURE_2D, textures.forestSartre[i]);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedSurface->w, formattedSurface->h, 0, GL_RGBA,
-                 GL_UNSIGNED_BYTE, formattedSurface->pixels);
-    SDL_FreeSurface(formattedSurface);
-    SDL_FreeSurface(forestSartreImage[i]);
-  }
+  textures.forestSartre[0] = load_texture(dataPath + "images/sartre.png");
+  textures.forestSartre[1] = load_texture(dataPath + "images/sartre2.png");
 
   // Pages
-  SDL_Surface* forestPageImage;
-  forestPageImage = IMG_Load((dataPath + "images/objects/page.png").c_str());
-  if (!forestPageImage) {
-    printf("Error loading image: %s\n", SDL_GetError());
-    exit(1);
-  }
-  glGenTextures(1, &textures.forestPage);
-  SDL_Surface* formattedPageSurface = format_sdl_surface(forestPageImage);
-  if (!formattedPageSurface) {
-    exit(1);
-  }
-  glBindTexture(GL_TEXTURE_2D, textures.forestPage);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedPageSurface->w, formattedPageSurface->h, 0,
-               GL_RGBA, GL_UNSIGNED_BYTE, formattedPageSurface->pixels);
-  SDL_FreeSurface(formattedPageSurface);
-  SDL_FreeSurface(forestPageImage);
+  textures.forestPage = load_texture(dataPath + "images/objects/page.png");
 
   // Chestnut
-  SDL_Surface* forestChestnutImage;
-  forestChestnutImage = IMG_Load((dataPath + "images/objects/chestnut.png").c_str());
-  if (!forestChestnutImage) {
-    printf("Error loading image: %s\n", SDL_GetError());
-    exit(1);
-  }
-  glGenTextures(1, &textures.forestChestnut);
-  SDL_Surface* formattedChestnutSurface = format_sdl_surface(forestChestnutImage);
-  if (!formattedChestnutSurface) {
-    exit(1);
-  }
-  glBindTexture(GL_TEXTURE_2D, textures.forestChestnut);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedChestnutSurface->w, formattedChestnutSurface->h,
-               0, GL_RGBA, GL_UNSIGNED_BYTE, formattedChestnutSurface->pixels);
-  SDL_FreeSurface(formattedChestnutSurface);
-  SDL_FreeSurface(forestChestnutImage);
+  textures.forestChestnut = load_texture(dataPath + "images/objects/chestnut.png");
 
   // Pipe
-  SDL_Surface* forestPipeImage;
-  forestPipeImage = IMG_Load((dataPath + "images/objects/pipe.png").c_str());
-  if (!forestPipeImage) {
-    printf("Error loading image: %s\n", SDL_GetError());
-    exit(1);
-  }
-  glGenTextures(1, &textures.forestPipe);
-  SDL_Surface* formattedPipeSurface = format_sdl_surface(forestPipeImage);
-  if (!formattedPipeSurface) {
-    exit(1);
-  }
-  glBindTexture(GL_TEXTURE_2D, textures.forestPipe);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedPipeSurface->w, formattedPipeSurface->h, 0,
-               GL_RGBA, GL_UNSIGNED_BYTE, formattedPipeSurface->pixels);
-  SDL_FreeSurface(formattedPipeSurface);
-  SDL_FreeSurface(forestPipeImage);
+  textures.forestPipe = load_texture(dataPath + "images/objects/pipe.png");
 
   // Beer
-  SDL_Surface* forestBeerImage;
-  forestBeerImage = IMG_Load((dataPath + "images/objects/beer.png").c_str());
-  if (!forestBeerImage) {
-    printf("Error loading image: %s\n", SDL_GetError());
-    exit(1);
-  }
-  glGenTextures(1, &textures.forestBeer);
-  SDL_Surface* formattedBeerSurface = format_sdl_surface(forestBeerImage);
-  if (!formattedBeerSurface) {
-    exit(1);
-  }
-  glBindTexture(GL_TEXTURE_2D, textures.forestBeer);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedBeerSurface->w, formattedBeerSurface->h, 0,
-               GL_RGBA, GL_UNSIGNED_BYTE, formattedBeerSurface->pixels);
-  SDL_FreeSurface(formattedBeerSurface);
-  SDL_FreeSurface(forestBeerImage);
+  textures.forestBeer = load_texture(dataPath + "images/objects/beer.png");
 
   // Clock
-  SDL_Surface* forestClockImage;
-  forestClockImage = IMG_Load((dataPath + "images/objects/clock.png").c_str());
-  if (!forestClockImage) {
-    printf("Error loading image: %s\n", SDL_GetError());
-    exit(1);
-  }
-  glGenTextures(1, &textures.forestClock);
-  SDL_Surface* formattedClockSurface = format_sdl_surface(forestClockImage);
-  if (!formattedClockSurface) {
-    exit(1);
-  }
-  glBindTexture(GL_TEXTURE_2D, textures.forestClock);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedClockSurface->w, formattedClockSurface->h, 0,
-               GL_RGBA, GL_UNSIGNED_BYTE, formattedClockSurface->pixels);
-  SDL_FreeSurface(formattedClockSurface);
-  SDL_FreeSurface(forestClockImage);
+  textures.forestClock = load_texture(dataPath + "images/objects/clock.png");
 
   // Background
-  SDL_Surface* forestTaustaImage;
-  forestTaustaImage = IMG_Load((dataPath + "images/lehto.png").c_str());
-  if (!forestTaustaImage) {
-    printf("Error loading image: %s\n", SDL_GetError());
-    exit(1);
-  }
-  SDL_Surface* formattedSurface = format_sdl_surface(forestTaustaImage);
-  if (!formattedSurface) {
-    exit(1);
-  }
-  glGenTextures(1, textures.forestTausta);
-  glBindTexture(GL_TEXTURE_2D, textures.forestTausta[0]);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, formattedSurface->w, formattedSurface->h, 0, GL_RGBA,
-               GL_UNSIGNED_BYTE, formattedSurface->pixels);
-  SDL_FreeSurface(formattedSurface);
-  SDL_FreeSurface(forestTaustaImage);
+  textures.forestTausta[0] = load_texture(dataPath + "images/lehto.png");
 }
 
 void create_surfaces(Surfaces& surfaces, const std::string& dataPath) {

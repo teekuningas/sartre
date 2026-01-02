@@ -1,6 +1,7 @@
 #include "game.h"
 
-#include <cmath>  // for fabs()
+#include <algorithm>  // for std::min, std::max
+#include <cmath>      // for fabs()
 
 // --- AABB overlap test with optional extra margin on both axes ---
 static bool aabbOverlap(GLfloat x1, GLfloat y1, GLfloat w1, GLfloat h1, GLfloat x2, GLfloat y2,
@@ -487,7 +488,6 @@ void forest_init(GameStateForest &gameStateForest, ImageData const &imageData, b
   sartre.vy = 0.0f;
 
   gameStateForest.pageGoal = fastMode ? (PAGE_GOAL / 5) : PAGE_GOAL;
-  gameStateForest.milestoneStep = fastMode ? (60 / 5) : 60;
   gameStateForest.fastMode = fastMode;
 
   gameStateForest.endingMode = false;
@@ -705,13 +705,14 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
   std::string pageCountText =
       std::string("Kirjoitettuja sivuja: ") + std::to_string(gameStateForest.pages_collected);
   getTextSize(context.font, pageCountText, 0, tw, th);
-  float padding = 20.0f;
+  float padding = UI_PADDING;
 
   glUniform4f(textColorLoc, 0.0f, 0.0f, 0.0f, 0.5f);
-  float bgPageCount[] = {50.0f - padding,      MAP_HEIGHT - 50.0f + padding,      0.0f, 0.0f,
-                         50.0f + tw + padding, MAP_HEIGHT - 50.0f + padding,      1.0f, 0.0f,
-                         50.0f + tw + padding, MAP_HEIGHT - 50.0f - th - padding, 1.0f, 1.0f,
-                         50.0f - padding,      MAP_HEIGHT - 50.0f - th - padding, 0.0f, 1.0f};
+  float bgPageCount[] = {
+      UI_MARGIN - padding,      MAP_HEIGHT - UI_MARGIN + padding,      0.0f, 0.0f,
+      UI_MARGIN + tw + padding, MAP_HEIGHT - UI_MARGIN + padding,      1.0f, 0.0f,
+      UI_MARGIN + tw + padding, MAP_HEIGHT - UI_MARGIN - th - padding, 1.0f, 1.0f,
+      UI_MARGIN - padding,      MAP_HEIGHT - UI_MARGIN - th - padding, 0.0f, 1.0f};
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(bgPageCount), bgPageCount);
   glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
@@ -722,10 +723,11 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
     getTextSize(context.font, gameStateForest.activeDescription, 60, dw, dh);
 
     glUniform4f(textColorLoc, 0.0f, 0.0f, 0.0f, 0.6f * gameStateForest.textAlpha);
-    float bgDesc[] = {100.0f - padding,      MAP_HEIGHT - 250.0f + padding,      0.0f, 0.0f,
-                      100.0f + dw + padding, MAP_HEIGHT - 250.0f + padding,      1.0f, 0.0f,
-                      100.0f + dw + padding, MAP_HEIGHT - 250.0f - dh - padding, 1.0f, 1.0f,
-                      100.0f - padding,      MAP_HEIGHT - 250.0f - dh - padding, 0.0f, 1.0f};
+    float bgDesc[] = {
+        UI_DESC_X_OFFSET - padding,      MAP_HEIGHT - UI_DESC_Y_OFFSET + padding,      0.0f, 0.0f,
+        UI_DESC_X_OFFSET + dw + padding, MAP_HEIGHT - UI_DESC_Y_OFFSET + padding,      1.0f, 0.0f,
+        UI_DESC_X_OFFSET + dw + padding, MAP_HEIGHT - UI_DESC_Y_OFFSET - dh - padding, 1.0f, 1.0f,
+        UI_DESC_X_OFFSET - padding,      MAP_HEIGHT - UI_DESC_Y_OFFSET - dh - padding, 0.0f, 1.0f};
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(bgDesc), bgDesc);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
   }
@@ -733,14 +735,14 @@ void forest_draw(GameStateForest &gameStateForest, Textures &textures, RenderCon
 
   SDL_Color white = {255, 255, 255, 255};
   renderText(context, context.font, pageCountText, white, context.textShaderProgram,
-             context.textVAO, context.textVBO, 50.0f, MAP_HEIGHT - 50.0f, 0);
+             context.textVAO, context.textVBO, UI_MARGIN, MAP_HEIGHT - UI_MARGIN, 0);
 
   if (!gameStateForest.activeDescription.empty() &&
       SDL_GetTicks() < gameStateForest.descriptionEndTime) {
     SDL_Color descColor = {255, 255, 255, (Uint8)(255 * gameStateForest.textAlpha)};
     renderText(context, context.font, gameStateForest.activeDescription, descColor,
-               context.textShaderProgram, context.textVAO, context.textVBO, 100.0f,
-               MAP_HEIGHT - 250.0f, 60);
+               context.textShaderProgram, context.textVAO, context.textVBO, UI_DESC_X_OFFSET,
+               MAP_HEIGHT - UI_DESC_Y_OFFSET, 60);
   }
 }
 
@@ -813,8 +815,53 @@ static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
                                                        : NAUSEA_SPAWN_PROBABILITY_NORMAL;
       if (((float)rand() / RAND_MAX) < baseProbability) {
         GameObject newNauseousObject;
-        GameObjectType types[] = {CHESTNUT, PIPE, BEER, CLOCK};
-        init_game_object(newNauseousObject, types[rand() % 4]);
+
+        const GameObjectType candidates[] = {CHESTNUT, PIPE, BEER, CLOCK};
+        const int NUM_CANDIDATES = 4;
+
+        // Count existing instances directly using enum as index
+        // Max enum is CLOCK=4, so size 5 is sufficient
+        int typeCounts[5] = {0};
+
+        auto countObj = [&](const GameObject &o) {
+          if (o.type >= 0 && o.type < 5) {
+            typeCounts[o.type]++;
+          }
+        };
+
+        for (const auto &o : gameStateForest.objects) countObj(o);
+        for (const auto &o : newObjects) countObj(o);
+
+        int weights[NUM_CANDIDATES];
+        int totalWeight = 0;
+
+        for (int i = 0; i < NUM_CANDIDATES; ++i) {
+          GameObjectType t = candidates[i];
+          int count = typeCounts[t];
+
+          // Scalable exponential decay: 10000 -> 1000 -> 100 -> 10 -> 1 ...
+          // Heavily discourages higher counts recursively (factor of 10)
+          int w = 10000;
+          for (int k = 0; k < count && w > 1; ++k) {
+            w /= 10;
+          }
+          weights[i] = w;
+          totalWeight += weights[i];
+        }
+
+        int pick = rand() % totalWeight;
+        int current = 0;
+        int selectedIndex = 0;
+
+        for (int i = 0; i < NUM_CANDIDATES; ++i) {
+          current += weights[i];
+          if (pick < current) {
+            selectedIndex = i;
+            break;
+          }
+        }
+
+        init_game_object(newNauseousObject, candidates[selectedIndex]);
         spawn_object_avoiding_sartre(newNauseousObject, sartre, newNauseousObject.type,
                                      totalElapsed, gameStateForest.speedFactor);
         newObjects.push_back(newNauseousObject);

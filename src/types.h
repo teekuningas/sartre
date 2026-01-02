@@ -69,7 +69,6 @@ struct GameStateForest {
   int lastPageMilestone;
 
   int pageGoal;
-  int milestoneStep;
 
   // Ending sequence
   bool endingMode;

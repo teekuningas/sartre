@@ -20,13 +20,18 @@ const float GAME_OBJECT_FREQUENCY = 1.5f;
 const int NUM_NAUSEA_LIMIT = 3;
 
 const int PAGE_GOAL = 251;
-// const int PAGE_GOAL = 5;
 
 const int NUM_PAGES = 3;
 const int INITIAL_NUM_NAUSEOUS_OBJECTS = 1;
 const float NAUSEA_SPAWN_PROBABILITY_NORMAL = 0.05f;
-const float NAUSEA_SPAWN_PROBABILITY_FAST = 0.05f;
+const float NAUSEA_SPAWN_PROBABILITY_FAST = 0.04f;
 
 const float INITIAL_SPEED_FACTOR = 0.5f;
 const float SPEED_INCREMENT_PER_PAGE = 0.005f;
+
+const float UI_PADDING = 20.0f;
+const float UI_MARGIN = 50.0f;
+const float UI_DESC_X_OFFSET = 100.0f;
+const float UI_DESC_Y_OFFSET = 250.0f;
+
 #endif  // CONSTANTS_H

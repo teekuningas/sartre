@@ -26,8 +26,6 @@ void createTranslationMatrix(float tx, float ty, float tz, float* matrix);
 void createOrthographicMatrix(float left, float right, float bottom, float top, float nearPlane,
                               float farPlane, float* matrix);
 
-SDL_Surface* format_sdl_surface(SDL_Surface* surface);
-
 void create_textures(Textures& textures, const std::string& dataPath);
 void create_surfaces(Surfaces& surfaces, const std::string& dataPath);
 void load_descriptions(ImageData& imageData, const std::string& dataPath);
