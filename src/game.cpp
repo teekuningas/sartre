@@ -970,8 +970,7 @@ void menu_draw(RenderContext &context, Textures &textures, GameStateMenu const &
   SDL_Color white = {255, 255, 255, 255};
   const std::string intro =
       "Jean-Paul Sartre istuu metsän keskellä, lehtien kahistessa ympärillään, "
-      "ja kirjoittaa kirjaansa, kun äkkiä metsän syvyyksistä alkaa hiipiä "
-      "häiritseviä varjoja..";
+      "ja kirjoittaa kirjaansa. Yhtäkkiä hän näkee jotakin, joka herättää hänessä inhoa...";
   renderText(context, context.font, intro, white, context.textShaderProgram, context.textVAO,
              context.textVBO, 300.0f, 1300.0f, 40);
 
