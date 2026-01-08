@@ -34,6 +34,9 @@ void forest_update(GameStateForest &gameStateForest, RenderContext &context, Uin
   gameStateForest.beamTime += deltaTime * 2.0f;
   if (gameStateForest.beamTime >= 62.8318530718f) gameStateForest.beamTime -= 62.8318530718f;
 
+  // Accumulate scaled time for object movement (speedFactor affects speed of time, not amplitude)
+  gameStateForest.scaledTime += deltaTime * gameStateForest.speedFactor;
+
   if (gameStateForest.endingMode) {
     Uint32 now = SDL_GetTicks();
 
@@ -78,9 +81,7 @@ void forest_update(GameStateForest &gameStateForest, RenderContext &context, Uin
         gameStateForest.descriptionEndTime = now + 100;
       } else if (t < 16.0f) {
         gameStateForest.activeDescription =
-            "Hienoa työtä! Kaikista inhottavista asioista huolimatta Sartre saa kirjansa valmiiksi "
-            "ja sinä hetkenä saapuu taivaallinen valoilmiö joka valaisee vieläkin niiden tietä "
-            "jotka kirjoittavat kirjaansa metsässä loputtomasti vaeltaen.";
+            "Hienoa työtä! Oli hirveän inhottavaa, mutta kirja tuli valmiiksi!";
         gameStateForest.activeIsQuote = false;
         gameStateForest.descriptionEndTime = now + 100;
       } else {
@@ -282,10 +283,9 @@ static bool isPixelBlack(SDL_Surface *surface, int x, int y) {
   return pixel[0] < threshold && pixel[1] < threshold && pixel[2] < threshold;
 }
 
-//
-// now takes currentElapsed (in ms) so we can align the sine‐wave
+// now takes currentScaledTime so we can align the sine‐wave
 static void spawn_object_avoiding_sartre(GameObject &obj, Sartre const &sartre, GameObjectType type,
-                                         Uint32 currentElapsed, GLfloat speedFactor) {
+                                         float currentScaledTime, GLfloat speedFactor) {
   obj.type = type;
   // we’ll keep trying random x|ymid|phase until the *actual* first‐frame y
   // (ymid + A·sin(ω*(t+phase))) does not overlap Sartre.
@@ -301,7 +301,7 @@ static void spawn_object_avoiding_sartre(GameObject &obj, Sartre const &sartre, 
         ((((float)(rand() % 1000)) / 1000.0f) * 1.5f + 0.5f) * 0.3f * (rand() % 2 ? 1.0f : -1.0f);
     candPhase = (((float)(rand() % 1000)) / 1000.0f) * 2.0f * 3.14159265f;
     // 3) compute where it *will* actually draw on this frame
-    candY = candYmid + obj.amplitude * sinf(obj.frequency * (currentElapsed / 1000.0f + candPhase));
+    candY = candYmid + obj.amplitude * sinf(obj.frequency * (currentScaledTime + candPhase));
   } while (aabbOverlap(candX, candY, obj.width, obj.height, sartre.x, sartre.y, sartre.width,
                        sartre.height, spawnMargin));
   // now commit
@@ -507,7 +507,11 @@ void forest_init(GameStateForest &gameStateForest, ImageData const &imageData, b
   gameStateForest.nausea_hits = 0;
   gameStateForest.warpTime = 0.0f;  // ← init here
   gameStateForest.beamTime = 0.0f;
+  gameStateForest.scaledTime = 0.0f;
   gameStateForest.speedFactor = INITIAL_SPEED_FACTOR;
+  // We want to reach 5x speed (factor 2.5) by the end.
+  // Delta = 2.5 - 0.5 = 2.0.
+  gameStateForest.speedIncrement = 2.0f / (float)gameStateForest.pageGoal;
 
   gameStateForest.itemSeen.clear();
   gameStateForest.activeDescription = "";
@@ -521,14 +525,14 @@ void forest_init(GameStateForest &gameStateForest, ImageData const &imageData, b
   for (int i = 0; i < NUM_PAGES; ++i) {
     init_game_object(gameStateForest.objects[i], PAGE);
     spawn_object_avoiding_sartre(gameStateForest.objects[i], gameStateForest.sartre, PAGE,
-                                 /* currentElapsed = */ 0u, gameStateForest.speedFactor);
+                                 /* currentScaledTime = */ 0.0f, gameStateForest.speedFactor);
   }
   for (int i = NUM_PAGES; i < NUM_PAGES + INITIAL_NUM_NAUSEOUS_OBJECTS; ++i) {
     GameObjectType types[] = {CHESTNUT, PIPE, BEER, CLOCK};
     GameObjectType t = types[rand() % 4];
     init_game_object(gameStateForest.objects[i], t);
     spawn_object_avoiding_sartre(gameStateForest.objects[i], gameStateForest.sartre, t,
-                                 /* currentElapsed = */ 0u, gameStateForest.speedFactor);
+                                 /* currentScaledTime = */ 0.0f, gameStateForest.speedFactor);
   }
 }
 
@@ -763,7 +767,8 @@ static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
     if (totalElapsed - obj.collectedAt >= 1000) {
       // only pages respawn
       if (obj.type == PAGE) {
-        spawn_object_avoiding_sartre(obj, sartre, PAGE, totalElapsed, gameStateForest.speedFactor);
+        spawn_object_avoiding_sartre(obj, sartre, PAGE, gameStateForest.scaledTime,
+                                     gameStateForest.speedFactor);
       } else {
         return true;  // remove from game
       }
@@ -773,8 +778,7 @@ static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
 
   // 1) move along the sine-wave trajectory
   obj.x += obj.vx * gameStateForest.speedFactor;
-  obj.y = obj.ymid + obj.amplitude * sinf(obj.frequency * (totalElapsed / 1000.0f + obj.phase)) *
-                         gameStateForest.speedFactor;
+  obj.y = obj.ymid + obj.amplitude * sinf(obj.frequency * (gameStateForest.scaledTime + obj.phase));
 
   // 2) wrap‐around logic …
   if (obj.x > MAP_WIDTH / 2 + obj.width && obj.vx > 0)
@@ -798,7 +802,7 @@ static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
 
     if (obj.type == PAGE) {
       gameStateForest.pages_collected++;
-      gameStateForest.speedFactor += SPEED_INCREMENT_PER_PAGE;
+      gameStateForest.speedFactor += gameStateForest.speedIncrement;
 
       // Page milestones: 5 pages, then 25%, 50%, 75%
       int milestone = -1;
@@ -819,6 +823,15 @@ static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
             {TEXT, imageData.pageDescriptions[milestone], 8000, true});
         gameStateForest.descriptionQueue.push({WAIT, "", 1000, false});
         gameStateForest.lastPageMilestone = milestone;
+      }
+
+      // Check for extra page spawn (increasing total count)
+      if (((float)rand() / RAND_MAX) < PAGE_SPAWN_PROBABILITY) {
+        GameObject newPage;
+        init_game_object(newPage, PAGE);
+        spawn_object_avoiding_sartre(newPage, sartre, PAGE, gameStateForest.scaledTime,
+                                     gameStateForest.speedFactor);
+        newObjects.push_back(newPage);
       }
 
       float baseProbability = gameStateForest.fastMode ? NAUSEA_SPAWN_PROBABILITY_FAST
@@ -873,7 +886,7 @@ static bool update_game_object(GameObject &obj, Sartre &sartre, GameStateForest 
 
         init_game_object(newNauseousObject, candidates[selectedIndex]);
         spawn_object_avoiding_sartre(newNauseousObject, sartre, newNauseousObject.type,
-                                     totalElapsed, gameStateForest.speedFactor);
+                                     gameStateForest.scaledTime, gameStateForest.speedFactor);
         newObjects.push_back(newNauseousObject);
       }
     } else {

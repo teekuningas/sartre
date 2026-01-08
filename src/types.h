@@ -57,6 +57,8 @@ struct GameStateForest {
   int nausea_hits;
   float warpTime;
   float beamTime;
+  float scaledTime;
+  float speedIncrement;
   GLfloat speedFactor;
   bool fastMode;
 
